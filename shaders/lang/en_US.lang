@@ -1,0 +1,230 @@
+profile.LOWEST=§4Lowest
+profile.LOWER=§cLower
+profile.LOW=§6Low
+profile.MEDIUM=§eMedium
+profile.HIGH=§bHigh
+profile.HIGHER=§9Higher
+profile.ULTRA=§dUltra
+profile.EXTREME=§5Extreme
+profile.SCREENSHOT=§c⌚§r §5§lScreenshot
+profile.comment=§c⌚§r §5§lScreenshot§r configures some options to values normally not accessible that may severely impact performance
+
+option.VERSION=§6§oRender§d§oPearl
+	option.VERSION.comment=By Luracasmus\n§9https://modrinth.com/shader/renderpearl
+	suffix.VERSION=2.2.0-beta.9
+
+screen.LIGHTING_AND_SHADOWS=§6◀§r Lighting & Shadows §6▶
+	option.ambientOcclusionLevel=§b⌚§r Ambient Occlusion
+		option.ambientOcclusionLevel.comment=Darkens corners between blocks
+		value.ambientOcclusionLevel.0.0=§cOff
+		value.ambientOcclusionLevel.0.1=10%
+		value.ambientOcclusionLevel.0.2=20%
+		value.ambientOcclusionLevel.0.3=30%
+		value.ambientOcclusionLevel.0.4=40%
+		value.ambientOcclusionLevel.0.5=50%
+		value.ambientOcclusionLevel.0.6=60%
+		value.ambientOcclusionLevel.0.7=70%
+		value.ambientOcclusionLevel.0.8=80%
+		value.ambientOcclusionLevel.0.9=90%
+		value.ambientOcclusionLevel.1.0=100%
+
+	option.shadowMapResolution=§c⌚§r Shadow Map Resolution
+		suffix.shadowMapResolution=\ px
+
+	option.SHADOW_DIST=§c⌚§r Shadow Distance
+		option.SHADOW_DIST.comment=The distance within which shadows are rendered\nLower values also make closer shadows sharper\n\n§6⚠§r It's recommended to set this lower than or equal to your §lRender Distance§r for optimal performance and quality
+		suffix.SHADOW_DIST=\ chunks
+
+	option.SUNLIGHT=§b⌚§r Sunlight
+
+	option.AMBIENT=§b⌚§r Ambient Light
+		value.AMBIENT.0=§cOff
+
+	option.ENTITY_SHADOWS=§c⌚§r Entity Shadows
+	option.PLAYER_SHADOWS=§e⌚§r Player Shadows
+		option.PLAYER_SHADOWS.comment=§b🛈§r Always active when §l§6⌚§r §lEntity Shadows§r are enabled
+	option.BLOCK_ENTITY_SHADOWS=§e⌚§r Block Entity Shadows
+
+	option.SSS=§6⌚§r Subsurface Scattering
+		option.SSS.comment=Allows some light to shine through thin surfaces\n\n§6⚠§r This disables some shadow map sampling optimizations
+		value.SSS.0=§cOff
+
+	option.SHADOW_FADE_DIST=§b⌚§r Shadow Fade distance
+
+	option.SHADOW_BLUR=§c⌚§r Shadow Blur
+		value.SHADOW_BLUR.0=§cOff
+		value.SHADOW_BLUR.1=Linear
+		value.SHADOW_BLUR.2=Gaussian
+
+screen.POST=§6◀§r Post Processing §6▶
+	option.SATURATION=§b⌚§r Saturation
+		suffix.SATURATION=%
+
+	option.RED_MUL=§b⌚ §cRed
+		suffix.RED_MUL=%
+	option.GREEN_MUL=§b⌚ §aGreen
+		suffix.GREEN_MUL=%
+	option.BLUE_MUL=§b⌚ §9Blue
+		suffix.BLUE_MUL=%
+
+	option.TONEMAP=§b⌚§r Tonemap Operator
+		option.TONEMAP.comment=Determines the method used to transform colors into a range that the display can show
+
+		value.TONEMAP.0=Saturate
+		value.TONEMAP.1=Tony McMapface
+		value.TONEMAP.2=Uchimura
+		value.TONEMAP.3=ACES Fitted
+		value.TONEMAP.4=SBDT
+
+	option.SHARPNESS=§b⌚§r FFX CAS Sharpness
+		option.SHARPNESS.comment=Controlls the sharpness of RenderPearl's modified variant of FidelityFX Contrast Adaptive Sharpening 1.2
+
+	option.AUTO_EXP=§e⌚§r Automatic Exposure
+		value.AUTO_EXP.0=§cOff
+	option.AUTO_EXP_SPEED=§b⌚§r Interpolation Speed
+		option.AUTO_EXP_SPEED.comment=Controls the interpolation speed of §l§b⌚§r§l Automatic Exposure§r
+
+	screen.SMAA=§6◀§r SMAA §6▶
+		option.SMAA_THRESHOLD=§e⌚§r Contrast Threshold
+			option.SMAA_THRESHOLD.comment=The threshold used in color-based edge detection\nLower values cause more edges to be anti-aliased
+
+		option.SMAA_SEARCH=§e⌚§r Search Steps
+			option.SMAA_SEARCH.comment=The maximum amount of steps in vertical and horizontal pattern searches\nDistance searched in pixels is double this value
+
+		option.SMAA_SEARCH_DIAG=§e⌚§r Diagonal Search Steps
+			option.SMAA_SEARCH_DIAG.comment=The maximum amount of diagonal steps/pixels searched in pattern searches
+			value.SMAA_SEARCH_DIAG.0=§cOff
+
+		option.SMAA_CORNER=§e⌚§r Corner Rounding
+			value.SMAA_CORNER.0=§cOff
+
+screen.ATMOSPHERICS=§6◀§r Atmospherics §6▶
+	option.VL=§c⌚§r Volumetric Light
+		value.VL.0=§cOff
+	option.VL_SAMPLES=§c⌚§r VL Samples
+
+	option.sunPathRotation=§b⌚§r Sun Path Rotation
+		suffix.sunPathRotation=\ °
+
+	option.FOG=§b⌚§r Base Fog
+		value.FOG.0=§cOff
+
+	option.RAIN_FOG=§b⌚§r Rain Fog
+		value.RAIN_FOG.0=§cOff
+
+	option.WATER_FOG=§b⌚§r Water Fog
+		value.WATER_FOG.0=§cOff
+
+	option.SUN_BLOOM=§b⌚§r Sun Bloom
+		value.SUN_BLOOM.0=§cOff
+
+	option.SKY_BLOOM=§b⌚§r Sky Bloom
+		value.SKY_BLOOM.0=§cOff
+
+screen.BLOCK_LIGHT=§6◀§r Block Light §6▶
+	option.INDEXED_BLOCK_LIGHT=§c⌚§r Indexed Block Light
+		option.INDEXED_BLOCK_LIGHT.comment=Light index-powered colored lighting
+
+	option.HAND_LIGHT=§e⌚§r Hand Light
+		value.HAND_LIGHT.0=§cOff
+
+	option.EMISSIVE_REDSTONE_BLOCK=§e⌚§c Emissive Redstone Block
+	option.EMISSIVE_EMERALD_BLOCK=§e⌚§a Emissive Emerald Block
+	option.EMISSIVE_LAPIS_BLOCK=§e⌚§9 Emissive Lapis Block
+
+	screen.LIGHT_INDEX=§6◀§r Light Index §6▶
+		option.IND_ILLUM=§b⌚§r Indirect Illumination
+
+		option.INDEX_DIST=§c⌚§r Index Distance
+			option.INDEX_DIST.comment=Chebychev distance within which lights are indexed\n\n§6⚠§r Changing this sometimes requires modifying §l§c⌚§r§l Index Size§r and/or §l§6⌚§r§l LDS Ratio§r to avoid artifacts and maintain optimal performance - It is therefore recommended to use the Profile option instead
+
+		option.INDEX_SIZE=§c⌚§r Index Size
+			option.INDEX_SIZE.comment=Controls the amount of lights §obefore culling§r that can be indexed before artifacts occur\n\n§c⚠§r The maximum supported value depends on active GPU, graphics drivers and §l§6⌚§r§l 16/8-Bit Types§r status and support
+			value.INDEX_SIZE.6144=§c⚠§r 6144
+			value.INDEX_SIZE.7168=§c⚠§r 7168
+			value.INDEX_SIZE.8192=§c⚠§r 8192
+			value.INDEX_SIZE.9216=§c⚠§r 9216
+			value.INDEX_SIZE.10240=§c⚠§r 10240
+			value.INDEX_SIZE.11264=§c⚠§r 11264
+			value.INDEX_SIZE.12288=§c⚠§r 12288
+			value.INDEX_SIZE.13312=§c⚠§r 13312
+			value.INDEX_SIZE.14336=§c⚠§r 14336
+			value.INDEX_SIZE.15360=§c⚠§r 15360
+			value.INDEX_SIZE.16384=§c⚠§r 16384
+
+		option.MIN_INDEX_LL=§6⌚§r Min. Light Level
+		option.INDEX_RATE=§6⌚§r Index Rate
+			option.INDEX_RATE.comment=Delay in frames between each time the Light Index is rebuilt\n\nHigher values improve performance but increase latency in light updates
+
+		option.LOD_FALLOFF=§c⌚§r LOD Falloff
+			option.LOD_FALLOFF.comment=Multiplier on reduction in quality over distance
+
+		option.LAVA_LOD_BIAS=§6⌚§r Lava LOD Bias
+			option.LAVA_LOD_BIAS.comment=Additional LOD bias added to lava to reduce it's otherwise often overwhelming amount of light sources
+			value.LAVA_LOD_BIAS.0.0=§cOff
+
+		option.LDS_RATIO=§6⌚§r LDS Ratio
+			option.LDS_RATIO.comment=The amount of Local Data Share memory allocated per tile (work group) as a ratio of §l§c⌚§r§l Index Size§r\n\nThis affects the maximum amount of lights that can be processed §oafter culling§r before artifacts occur
+screen.SURFACE=§6◀§r Surface §6▶
+	option.WATER_OPACITY=§b⌚§r Water Opacity
+		suffix.WATER_OPACITY=%
+
+	option.WAVE_SPEED=§b⌚§r Wave Speed
+	option.WAVES=§b⌚§r Waves
+		value.WAVES.0=§fOff
+
+	option.SPECULAR=§b⌚§r Specular Intensity
+	option.SM=§e⌚§r RP Specular Map Roughness
+		option.SM.comment=Enables sampling PBR resource packs' specular maps for surface roughness\nWhen disabled, roughness values are auto-generated
+		value.SM.0=§fOff
+	option.SM_CH=§b⌚§r Channel
+		value.SM_CH.r=R
+		value.SM_CH.g=G
+		value.SM_CH.b=B
+		value.SM_CH.a=A
+	option.SM_TYPE=§b⌚§r Type
+		value.SM_TYPE.0=Linear Roughness
+		value.SM_TYPE.1=Perceptual Roughness
+		value.SM_TYPE.2=Perceptual Smoothness
+	option.NORMALS=§e⌚§r Normals
+		value.NORMALS.0=Auto-Generated
+		value.NORMALS.1=RP Normal Maps
+		value.NORMALS.2=Flat
+
+screen.UTIL=§6◀§r Utility §6▶
+	option.LINE_WIDTH=§b⌚§r Line Width
+		option.LINE_WIDTH.comment=Determines the width of block selection outlines and fishing rod lines
+
+	option.COMPASS=§b⌚§r Compass
+	option.LIGHT_LEVELS=§b⌚§r Light Level Visualization
+
+screen.COMPAT=§6◀§r Compatibility §6▶
+	option.CONST_IMMUT=§e⌚§r Immutable Constants
+		option.CONST_IMMUT.comment=Marks all shader variables that can be immutable as constant, possibly enabling better optimizations\n\n§c⚠§r May be incompatible with some non-NVIDIA/Geforce graphics drivers
+		value.CONST_IMMUT.0=§cOff
+		value.CONST_IMMUT.1=On NVIDIA/Geforce
+		value.CONST_IMMUT.2=§c⚠§r Always
+
+	option.MINMAX_3=§e⌚§r Trinary Min./Max.
+		option.MINMAX_3.comment=Performs trinary minimum and maximum operations in singular function calls using the §oAMD_shader_trinary_minmax§r extension, which may allow generation of more optimal instruction sequences\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed
+		value.MINMAX_3.0=§cOff
+		value.MINMAX_3.1=With extension support declared
+		value.MINMAX_3.2=§c⚠§r Always on AMD/Radeon
+		value.MINMAX_3.3=§c⚠§r Always
+
+	option.MUL_32x16=§e⌚§r 32x16-Bit Multiplication
+		option.MUL_32x16.comment=Performs multiplication between 32-bit integers and integers in the 16-bit-representable range using special functions provided by the §oINTEL_shader_integer_functions2§r extension, that may be faster than regular 32-bit multiplication operators\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed
+		value.MUL_32x16.0=§cOff
+		value.MUL_32x16.1=With extension support declared
+		value.MUL_32x16.2=§c⚠§r Always on Mesa+Intel
+		value.MUL_32x16.3=§c⚠§r Always
+
+	option.SIZED_16_8=§6⌚§r 16/8-Bit Types
+		option.SIZED_16_8.comment=Uses extension-provided half- or quarter-sized data types to reduce register, LDS and VRAM usage\nPerformance impact varies depending on hardware and drivers, as conversion between types has a cost, but operations with smaller types can be faster\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed - See options below
+
+	option.NVIDIA_ASSUME_SHADER5=§6⌚ §c⚠§r Assume §oNV_gpu_shader5§r support on NVIDIA/Geforce
+	option.AMD_ASSUME_FLOAT16=§6⌚ §c⚠§r Assume §oAMD_gpu_shader_half_float§r support on AMD/Radeon
+	option.AMD_ASSUME_INT16=§6⌚ §c⚠§r Assume §oAMD_gpu_shader_int16§r support on AMD/Radeon
+
+	option.BUFFER_16_8=§6⌚ §c⚠§r 16/8-Bit Buffers
+		option.BUFFER_16_8.comment=Shrinks buffers, assuming complete support for all data types added by §l§6⌚§r§l 16/8-Bit Types§r\n\n§c⚠§r May cause issues if some extensions optionally enabled by §l§6⌚§r§l 16/8-Bit Types§r are disabled or unavailable

@@ -1,0 +1,166 @@
+profile.LOWEST=§4Lägst
+profile.LOWER=§cLägre
+profile.LOW=§6Låg
+profile.MEDIUM=§eMedium
+profile.HIGH=§bHög
+profile.HIGHER=§9Högre
+profile.ULTRA=§dUltra
+profile.EXTREME=§5Extrem
+profile.SCREENSHOT=§c⌚§r §5§lSkärmdump
+profile.comment=§c⌚§r §5§lSkärmdump§r konfigurerar vissa alternativ till värden som normalt inte är tillgängliga, och som allvarligt kan påverka prestandan
+
+option.VERSION.comment=Av Luracasmus\n§9https://modrinth.com/shader/renderpearl
+
+screen.LIGHTING_AND_SHADOWS=§6◀§r Ljus & Skuggor §6▶
+	option.ambientOcclusionLevel.comment=Gör hörn mellan block mörkare
+
+	option.shadowMapResolution=§c⌚§r Shadow Map-upplösning
+
+	option.SHADOW_DIST=§c⌚§r Skuggavstånd
+		option.SHADOW_DIST.comment=Avståndet inom vilket skuggor återges\nLägre värden gör också närmare skuggor skarpare\n\n§6⚠§r Det är rekommenderat att ställa in detta lägre än eller lika med inställningen för §lSynligt Avstånd§r för optimal prestanda och kvalitet
+		suffix.SHADOW_DIST=\ datablock
+
+	option.SUNLIGHT=§b⌚§r Solljus
+
+	option.AMBIENT=§b⌚§r Omgivande Ljus
+
+	option.ENTITY_SHADOWS=§c⌚§r Entitetsskuggor
+	option.PLAYER_SHADOWS=§e⌚§r Spelarskuggor
+		option.PLAYER_SHADOWS.comment=§b🛈§r Alltid aktiva när §l§6⌚§r §lEntitetsskuggor§r är aktiverade
+	option.BLOCK_ENTITY_SHADOWS=§e⌚§r Blockentitetsskuggor
+
+	option.SSS.comment=Låter en del ljus skina genom tunna ytor\n\n§6⚠§r Detta avaktiverar vissa optimeringar för provtagning av shadow map:en
+
+	option.SHADOW_FADE_DIST=§b⌚§r Skuggblekningsavstånd
+
+	option.SHADOW_BLUR=§c⌚§r Skuggutsuddning
+		value.SHADOW_BLUR.1=Linjär
+		value.SHADOW_BLUR.2=Gaussisk
+
+screen.POST=§6◀§r Efterbearbetning §6▶
+	option.SATURATION=§b⌚§r Mättnad
+
+	option.RED_MUL=§b⌚ §cRöd
+	option.GREEN_MUL=§b⌚ §aGrön
+	option.BLUE_MUL=§b⌚ §9Blå
+
+	option.TONEMAP=§b⌚§r Tonemap-Operatör
+		option.TONEMAP.comment=Avgör metoden som används för att omvandla färger till ett intervall som displayen kan visa
+
+	option.SHARPNESS=§b⌚§r FFX CAS-Skärpa
+		option.SHARPNESS.comment=Styr skärpan på RenderPearls modifierade variant av FidelityFX Contrast Adaptive Sharpening 1.2
+
+	option.AUTO_EXP=§e⌚§r Automatisk Exponering
+	option.AUTO_EXP_SPEED=§b⌚§r Interpolationshastighet
+		option.AUTO_EXP_SPEED.comment=Styr interpolationshastigheten i §l§b⌚§r§l Automatisk Exponering§r
+
+	option.SMAA_THRESHOLD=§e⌚§r Kontrasttröskel
+		option.SMAA_THRESHOLD.comment=Tröskeln som används i färgbaserad kantdetektering\nLägre värden gör att fler kanter kantutjämnas
+
+	option.SMAA_SEARCH=§e⌚§r Söksteg
+		option.SMAA_SEARCH.comment=Det maximala antalet steg i vertikala och horisontella mönstersökningar\nAvståndet sökt i pixlar är dubbelt så stort
+
+	option.SMAA_SEARCH_DIAG=§e⌚§r Diagonala Söksteg
+		option.SMAA_SEARCH_DIAG.comment=Det maximala antalet diagonala steg/pixlar som söks i mönstersökningar
+
+	option.SMAA_CORNER=§e⌚§r Hörnrundning
+
+screen.ATMOSPHERICS=§6◀§r Atmosfär §6▶
+	option.VL=§c⌚§r Volumetriskt Ljus
+	option.VL_SAMPLES=§c⌚§r VL-Prov
+
+	option.sunPathRotation=§b⌚§r Solbanerotation
+
+	option.FOG=§b⌚§r Grunddimma
+	option.RAIN_FOG=§b⌚§r Regndimma
+	option.WATER_FOG=§b⌚§r Vattendimma
+
+	option.SUN_BLOOM=§b⌚§r Sol-Bloom
+	option.SKY_BLOOM=§b⌚§r Himmel-Bloom
+
+screen.BLOCK_LIGHT=§6◀§r Blockljus §6▶
+	screen.BLOCK_LIGHT.comment=Inte sådana man tänder då alltså
+
+	option.INDEXED_BLOCK_LIGHT=§c⌚§r Indexerat Blockljus
+		option.INDEXED_BLOCK_LIGHT.comment=Ljusindexdriven färgad belysning
+
+	option.HAND_LIGHT=§e⌚§r Handljus
+
+	option.EMISSIVE_REDSTONE_BLOCK=§e⌚§c Emitterande Redstoneblock
+	option.EMISSIVE_EMERALD_BLOCK=§e⌚§a Emitterande Smaragdblock
+	option.EMISSIVE_LAPIS_BLOCK=§e⌚§9 Emitterande Lapis lazuliblock
+
+	screen.LIGHT_INDEX=§6◀§r Ljusindex §6▶
+		option.IND_ILLUM=§b⌚§r Indirekt Belysning
+
+		option.INDEX_DIST=§c⌚§r Indexavstånd
+			option.INDEX_DIST.comment=Chebyshev-avstånd inom vilket ljus indexeras\n\n§6⚠§r Att ändra detta kräver ibland modifiering av §l§c⌚§r§l Indexstorlek§r och/eller §l§6⌚§r§l LDS-förhållande§r för att undvika artefakter och bibehålla optimal prestanda - Det rekommenderas därför att använda Profil-inställningen istället
+
+		option.INDEX_SIZE=§c⌚§r Indexstorlek
+			option.INDEX_SIZE.comment=Styr antalet ljus §oföre utsortering§r som kan bli indexerade innan artifakter uppstår\n\n§c⚠§r Det maximala värdet som stöds beror på aktiv GPU, grafikdrivrutiner och läge och stöd av §l§6⌚§r §l16/8-Bitars Typer§r
+
+		option.MIN_INDEX_LL=§6⌚§r Min. Ljusnivå
+		option.INDEX_RATE=§6⌚§r Indextakt
+			option.INDEX_RATE.comment=Fördröjning i bildrutor mellan varje gång ljusindexet byggs om\n\nHögre värden förbättrar prestandan men ökar latensen i ljusuppdateringar
+
+		option.LOD_FALLOFF=§c⌚§r Detaljnivåavtagande
+			option.LOD_FALLOFF.comment=Multiplikator på minskning av kvalitet över avstånd
+
+		option.LAVA_LOD_BIAS=§6⌚§r Detaljnivå-Bias på Lava
+			option.LAVA_LOD_BIAS.comment=Ytterligare Detaljnivå-bias som adderas till lava för att minska dess annars ofta överväldigande antal ljuskällor
+
+		option.LDS_RATIO=§6⌚§r LDS-förhållande
+			option.LDS_RATIO.comment=Mängden Local Data Share-minne som allokeras per ruta (work group) som en andel av §l§c⌚§r§l Indexstorlek§r\n\nDetta påverkar den maximala mängden ljus som kan bearbetas §oefter utsortering§r innan artifakter uppstår
+screen.SURFACE=§6◀§r Yta §6▶
+	option.WATER_OPACITY=§b⌚§r Vattenopacitet
+
+	option.WAVE_SPEED=§b⌚§r Våghastighet
+	option.WAVES=§b⌚§r Vågor
+
+	option.SPECULAR=§b⌚§r Speglande Intensitet
+	option.SM.comment=Aktiverar provtagning av PBR-resurspakets specular maps för ojämnhet av ytor\nNär detta är inaktivt genereras ojämnhetsvärden automatiskt
+	option.SM_CH=§b⌚§r Kanal
+	option.SM_TYPE=§b⌚§r Typ
+		value.SM_TYPE.0=Linjär Ojämnhet
+		value.SM_TYPE.1=Perceptuell Ojämnhet
+		value.SM_TYPE.2=Perceptuell Släthet
+	option.NORMALS=§e⌚§r Normaler
+		value.NORMALS.0=Auto-Genererade
+		value.NORMALS.2=Platta
+
+screen.UTIL=§6◀§r Verktyg §6▶
+	option.LINE_WIDTH=§b⌚§r Linjetjocklek
+		option.LINE_WIDTH.comment=Bestämmer tjockleken av blockväljningsmarkeringar och fiskespötrådar
+
+	option.COMPASS=§b⌚§r Kompass
+	option.LIGHT_LEVELS=§b⌚§r Ljusnivåvisualisering
+
+screen.COMPAT=§6◀§r Kompatibilitet §6▶
+	option.CONST_IMMUT=§e⌚§r Invariabla Konstanter
+		option.CONST_IMMUT.comment=Markerar alla shadervariabler som kan vara invariabla som konstanta, vilket kan möjliggöra bättre optimeringar\n\n§c⚠§r Kan vara inkompatibelt med vissa icke-NVIDIA/Geforce-drivrutiner
+		value.CONST_IMMUT.1=På NVIDIA/Geforce
+		value.CONST_IMMUT.2=§c⚠§r Alltid
+
+	option.MINMAX_3=§e⌚§r Trinära Min./Max.
+		option.MINMAX_3.comment=Utför trinära minimum- och maximumoperationer i enkla funktionsanrop med hjälp av §oAMD_shader_trinary_minmax§r-tillägget, vilket kan tillåta generering av mer optimala instruktionssekvenser\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas
+
+		value.MINMAX_3.1=När tilläggsstöd är deklarerat
+		value.MINMAX_3.2=§c⚠§r Alltid på AMD/Radeon
+		value.MINMAX_3.3=§c⚠§r Alltid
+
+	option.MUL_32x16=§e⌚§r 32x16-Bit Multiplication
+		option.MUL_32x16.comment=Utför multiplikation mellan 32-bitars integers och integers i det av 16-bitar representerbara intervallet med hjälp av speciella funktioner tillhandahållna av §oINTEL_shader_integer_functions2§r-tillägget, som kan vara snabbare än vanliga 32-bitars multiplikationsoperatörer\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas
+
+		value.MUL_32x16.1=När tilläggsstöd är deklarerat
+		value.MUL_32x16.2=§c⚠§r Alltid på Mesa+Intel
+		value.MUL_32x16.3=§c⚠§r Alltid
+
+	option.SIZED_16_8=§6⌚§r 16/8-Bitars Typer
+		option.SIZED_16_8.comment=Använder av tillägg försedda halv- och kvartsstora datatyper för att minska register-, LDS- och VRAM-användning\nPrestandapåverkan varierar beroende på hårdvara och drivrutiner, då konvertering mellan typer har en kostnad, men operationer med mindre typer kan vara snabbare\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas - Se inställningar nedan
+
+	option.NVIDIA_ASSUME_SHADER5=§6⌚ §c⚠§r Anta stöd av §oNV_gpu_shader5§r på NVIDIA/Geforce
+	option.AMD_ASSUME_FLOAT16=§6⌚ §c⚠§r Anta stöd av §oAMD_gpu_shader_half_float§r på AMD/Radeon
+	option.AMD_ASSUME_INT16=§6⌚ §c⚠§r Anta stöd av §oAMD_gpu_shader_int16§r på AMD/Radeon
+
+	option.BUFFER_16_8=§6⌚ §c⚠§r 16/8-Bitars Buffertar
+		option.BUFFER_16_8.comment=Krymper buffertar genom att anta fullständigt stöd för alla datatyper som läggs till av §l§6⌚§r§l 16/8-Bitars Typer§r\n\n§c⚠§r Kan orsaka problem om några av tilläggen som kan aktiveras av §l§6⌚§r§l 16/8-Bitars Typer§r är inaktiverade eller otillgängliga
