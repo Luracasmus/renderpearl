@@ -2,15 +2,15 @@
 
 /* Light Index Deduplication */
 
-// #ifdef MC_GL_VENDOR_INTEL // seems like all graphics drivers for Intel GPUs are broken, not just proprietary ones
-#ifdef MC_GL_RENDERER_INTEL // work around compiler bug
-	#if INDEX_SIZE <= 1024 // we assume GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS >= 1024 && GL_MAX_COMPUTE_WORK_GROUP_SIZE[0] >= 1024
+#if defined MC_GL_VENDOR_NVIDIA || defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI
+	layout(local_size_x = min(gl_MaxComputeWorkGroupSize.x, INDEX_SIZE), local_size_y = 1, local_size_z = 1) in;
+#else // work around compiler bug on Intel drivers (and I think Mesa and maybe elsewhere too)
+	#if INDEX_SIZE < 1024
 		layout(local_size_x = INDEX_SIZE, local_size_y = 1, local_size_z = 1) in;
 	#else
-		layout(local_size_x = gl_MaxComputeWorkGroupSize.x, local_size_y = 1, local_size_z = 1) in;
+		// we assume GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS >= 1024 && GL_MAX_COMPUTE_WORK_GROUP_SIZE[0] >= 1024
+		layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 	#endif
-#else
-	layout(local_size_x = min(gl_MaxComputeWorkGroupSize.x, INDEX_SIZE), local_size_y = 1, local_size_z = 1) in;
 #endif
 
 const ivec3 workGroups = ivec3(1, 1, 1);
