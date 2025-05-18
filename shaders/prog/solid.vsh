@@ -12,10 +12,18 @@ out gl_PerVertex {
 };
 
 uniform float day, farSquared;
-uniform vec3 cameraPositionFract, shadowLightDirectionPlr;
-uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, shadowModelView, textureMatrix;
+uniform vec3 cameraPositionFract;
+uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, textureMatrix;
 
-#if defined TERRAIN || (HAND_LIGHT && defined HAND) || (!defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
+#ifndef NETHER
+	uniform vec3 shadowLightDirectionPlr;
+	uniform mat4 shadowModelView;
+
+	#include "/lib/sm/distort.glsl"
+	#include "/lib/sm/bias.glsl"
+#endif
+
+#if defined TERRAIN || (HAND_LIGHT && defined HAND) || (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
 	uniform sampler2D gtexture;
 #endif
 
@@ -47,7 +55,7 @@ uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, shadowM
 	uniform vec4 entityColor;
 #endif
 
-#if defined TERRAIN || (HAND_LIGHT && defined HAND) || (!defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
+#if defined TERRAIN || (HAND_LIGHT && defined HAND) || (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
 	in vec2 mc_midTexCoord;
 #endif
 
@@ -76,9 +84,11 @@ out VertexData {
 		#endif
 	#endif
 
-	layout(location = 3, component = 0) vec3 s_screen;
+	#ifndef NETHER
+		layout(location = 3, component = 0) vec3 s_screen;
+	#endif
 
-	#if !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)
+	#if NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)
 		layout(location = 0, component = 3) flat uint mid_coord;
 		layout(location = 4, component = 0) flat uint face_tex_size;
 	#endif
@@ -87,8 +97,6 @@ out VertexData {
 #include "/lib/mmul.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/srgb.glsl"
-#include "/lib/sm/distort.glsl"
-#include "/lib/sm/bias.glsl"
 #include "/lib/norm_uv2.glsl"
 
 void main() {
@@ -127,7 +135,7 @@ void main() {
 
 			init_tbn(w_normal, w_tangent); // this must run before writing to `v_tbn.handedness_and_misc`
 
-			#if !(NORMALS == 1 && defined MC_NORMAL_MAP)
+			#if NORMALS != 2 && !(NORMALS == 1 && defined MC_NORMAL_MAP)
 				immut uvec2 texels = uvec2(fma(abs(v.coord - mc_midTexCoord), vec2(2 * textureSize(gtexture, 0)), vec2(0.5)));
 				v.face_tex_size = bitfieldInsert(texels.x, texels.y, 16, 16);
 				v.mid_coord = packUnorm2x16(mc_midTexCoord);
@@ -208,21 +216,23 @@ void main() {
 			#endif
 		#endif
 
-		if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
-			#ifdef NO_NORMAL
-				immut f16vec3 w_normal = f16vec3(mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0));
-			#endif
+		#ifndef NETHER
+			if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
+				#ifdef NO_NORMAL
+					immut f16vec3 w_normal = f16vec3(mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0));
+				#endif
 
-			// todo!() this bias is better than before but it would probably be best to do it in shadow screen space and offset a scaled amount of texels
-			immut f16vec2 bias = shadow_bias(dot(w_normal, f16vec3(shadowLightDirectionPlr)));
+				// todo!() this bias is better than before but it would probably be best to do it in shadow screen space and offset a scaled amount of texels
+				immut f16vec2 bias = shadow_bias(dot(w_normal, f16vec3(shadowLightDirectionPlr)));
 
-			vec3 s_ndc = shadow_proj_scale * (mat3(shadowModelView) * rot_trans_mmul(gbufferModelViewInverse, view));
-			s_ndc.xy = distort(s_ndc.xy);
+				vec3 s_ndc = shadow_proj_scale * (mat3(shadowModelView) * rot_trans_mmul(gbufferModelViewInverse, view));
+				s_ndc.xy = distort(s_ndc.xy);
 
-			s_ndc = fma(mat3(shadowModelView) * vec3(bias.y * w_normal), shadow_proj_scale, s_ndc);
-			// s_ndc.z += float(bias.x); // doesn't really seem to help :/
+				s_ndc = fma(mat3(shadowModelView) * vec3(bias.y * w_normal), shadow_proj_scale, s_ndc);
+				// s_ndc.z += float(bias.x); // doesn't really seem to help :/
 
-			v.s_screen = fma(s_ndc, vec3(0.5), vec3(0.5));
-		}
+				v.s_screen = fma(s_ndc, vec3(0.5), vec3(0.5));
+			}
+		#endif
 	} else gl_Position = vec4(0.0/0.0, 0.0/0.0, 1.0/0.0, 1.0);
 }

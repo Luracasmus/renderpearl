@@ -3,7 +3,10 @@
 /* RENDERTARGETS: 1,2,3 */
 layout(location = 0) out vec4 colortex1; // layout(location = 0) out f16vec4 colortex1; // does this work outside of NVIDIA drivers?
 layout(location = 1) out uvec2 colortex2;
-layout(location = 2) out vec3 colortex3;
+
+#ifndef NETHER
+	layout(location = 2) out vec3 colortex3;
+#endif
 
 #ifdef ALPHA_CHECK
 	layout(depth_greater) out float gl_FragDepth;
@@ -43,9 +46,11 @@ in VertexData {
 		#endif
 	#endif
 
-	layout(location = 3, component = 0) vec3 s_screen;
+	#ifndef NETHER
+		layout(location = 3, component = 0) vec3 s_screen;
+	#endif
 
-	#if !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)
+	#if NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)
 		layout(location = 0, component = 3) flat uint mid_coord;
 		layout(location = 4, component = 0) flat uint face_tex_size;
 	#endif
@@ -62,7 +67,9 @@ void main() {
 		f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
 	#endif
 
-	colortex3 = v.s_screen;
+	#ifndef NETHER
+		colortex3 = v.s_screen;
+	#endif
 
 	immut f16vec3 tint = f16vec3(v.tint);
 	color.rgb *= tint;
@@ -75,7 +82,7 @@ void main() {
 		immut mat3 tbn = get_tbn();
 	#endif
 
-	#if (!defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)) || !(SM && defined MC_SPECULAR_MAP)
+	#if (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)) || !(SM && defined MC_SPECULAR_MAP)
 		immut float16_t luma = luminance(color.rgb);
 	#endif
 
