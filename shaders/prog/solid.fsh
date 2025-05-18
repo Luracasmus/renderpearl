@@ -1,7 +1,7 @@
 #include "/prelude/core.glsl"
 
 /* RENDERTARGETS: 1,2,3 */
-layout(location = 0) out vec4 colortex1;
+layout(location = 0) out vec4 colortex1; // layout(location = 0) out f16vec4 colortex1; // does this work outside of NVIDIA drivers?
 layout(location = 1) out uvec2 colortex2;
 layout(location = 2) out vec3 colortex3;
 
@@ -17,44 +17,37 @@ uniform sampler2D gtexture;
 
 #ifdef NO_NORMAL
 	uniform mat4 gbufferModelViewInverse;
+
+	#include "/lib/octa_normal.glsl"
 #else
 	#include "/lib/tbn/fsh.glsl"
 #endif
 
-#include "/lib/octa_normal.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/material/specular.glsl"
 #include "/lib/material/normal.glsl"
 #include "/lib/srgb.glsl"
 
 in VertexData {
-	layout(location = 2, component = 0) vec2 coord;
+	layout(location = 1, component = 0) vec2 coord;
 
 	#ifdef HAND
-		layout(location = 6, component = 0) flat vec2 light;
-		layout(location = 3, component = 0) flat vec3 tint;
+		layout(location = 5, component = 0) flat vec2 light;
+		layout(location = 2, component = 0) flat vec3 tint;
 	#else
-		layout(location = 2, component = 2) vec2 light;
-		layout(location = 3, component = 0) vec3 tint;
+		layout(location = 1, component = 2) vec2 light;
+		layout(location = 2, component = 0) vec3 tint;
+
+		#ifdef TERRAIN
+			layout(location = 2, component = 3) float ao;
+		#endif
 	#endif
 
-	layout(location = 4, component = 0) vec3 s_screen;
+	layout(location = 3, component = 0) vec3 s_screen;
 
 	#if !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)
-		layout(location = 5, component = 2) flat uint mid_coord;
-		layout(location = 5, component = 3) flat uint face_tex_size;
-	#endif
-
-	#ifdef MAYBE_EMISSIVE
-		layout(location = 5, component = 1) flat uint emission;
-	#endif
-
-	#ifdef TERRAIN
-		layout(location = 3, component = 3) float ao;
-
-		#if !(SM && defined MC_SPECULAR_MAP)
-			layout(location = 1, component = 3) flat float avg_luma;
-		#endif
+		layout(location = 0, component = 3) flat uint mid_coord;
+		layout(location = 4, component = 0) flat uint face_tex_size;
 	#endif
 } v;
 
@@ -114,7 +107,7 @@ void main() {
 
 	immut uint packed_normal = packSnorm4x8(f16vec4(
 		octa_encode(w_tex_normal),
-		octa_encode(f16vec3(tbn[2]))
+		octa_encode(f16vec3(tbn[2])) // todo!() just pass through octa normal when "Flat" normals are used
 	));
 
 	#ifdef TERRAIN
@@ -135,10 +128,13 @@ void main() {
 
 	uint packed_light_and_emission_and_hand = bitfieldInsert(scaled_light.x, scaled_light.y, 13, 13);
 
-	#ifdef TERRAIN
-		packed_light_and_emission_and_hand = bitfieldInsert(packed_light_and_emission_and_hand, v.emission, 26, 4);
-	#elif defined HAND
-		packed_light_and_emission_and_hand |= 0x80000000u; // set most significant bit to 1
+	#if defined TERRAIN || defined HAND
+		immut uint emission = bitfieldExtract(v_tbn.handedness_and_misc, 1, 4);
+		packed_light_and_emission_and_hand = bitfieldInsert(packed_light_and_emission_and_hand, emission, 26, 4);
+
+		#ifdef HAND
+			packed_light_and_emission_and_hand |= 0x80000000u; // set most significant bit to 1
+		#endif
 	#endif
 
 	colortex2 = uvec2(packed_normal, packed_light_and_emission_and_hand);
@@ -147,7 +143,7 @@ void main() {
 		float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
 		#ifdef TERRAIN
-			immut float16_t avg_luma = float16_t(v.avg_luma);
+			immut float16_t avg_luma = float16_t(bitfieldExtract(v_tbn.handedness_and_misc, 5, 13)) * float16_t(1.0/8191.0);
 		#else
 			const float16_t avg_luma = float16_t(0.8);
 		#endif

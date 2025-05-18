@@ -11,7 +11,7 @@ layout(location = 0) out vec4 colortex1;
 	layout(depth_unchanged) out float gl_FragDepth;
 #endif
 
-uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferModelViewInverse, gbufferProjectionInverse;
 uniform sampler2D gtexture;
 
 #ifdef NO_NORMAL
@@ -23,24 +23,15 @@ uniform sampler2D gtexture;
 in VertexData {
 	layout(location = 2, component = 0) vec3 tint;
 	layout(location = 3, component = 0) vec3 light;
-	layout(location = 4, component = 0) vec3 view;
-	layout(location = 5, component = 0) vec2 coord;
-
-	#ifdef TERRAIN
-		layout(location = 1, component = 3) flat float alpha;
-
-		#if !(SM && defined MC_SPECULAR_MAP)
-			layout(location = 6, component = 0) flat float avg_luma;
-		#endif
-	#endif
+	layout(location = 4, component = 0) vec2 coord;
 
 	#ifndef NETHER
-		layout(location = 7, component = 0) vec3 s_screen;
+		layout(location = 5, component = 0) vec3 s_screen;
 	#endif
 
 	#if !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)
-		layout(location = 8, component = 0) flat uint mid_coord;
-		layout(location = 8, component = 1) flat uint face_tex_size;
+		layout(location = 0, component = 3) flat uint mid_coord;
+		layout(location = 6, component = 0) flat uint face_tex_size;
 	#endif
 } v;
 
@@ -78,7 +69,9 @@ void main() {
 	immut f16vec3 tint = f16vec3(v.tint);
 
 	#ifdef TERRAIN
-		color *= f16vec4(tint, v.alpha);
+		immut bool fluid = v_tbn.handedness_and_misc >= 0x80000000u; // most significant bit is set
+		immut float16_t alpha = fluid ? float16_t(WATER_OPACITY * 0.01) : float16_t(1.0);
+		color *= f16vec4(tint, alpha);
 	#else
 		color.rgb *= tint;
 	#endif
@@ -87,7 +80,7 @@ void main() {
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
 		#ifdef TERRAIN
-			immut float16_t avg_luma = float16_t(v.avg_luma);
+			immut float16_t avg_luma = float16_t(unpackHalf2x16(v_tbn.handedness_and_misc >> 1u).x);
 		#else
 			const float16_t avg_luma = float16_t(0.8);
 		#endif
@@ -110,6 +103,9 @@ void main() {
 	#endif
 
 	color.rgb = linear(color.rgb);
+
+	immut vec3 ndc = fma(vec3(gl_FragCoord.xy / view_size(), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
+	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
 
 	f16vec3 lighting = f16vec3(v.light);
 
@@ -135,7 +131,7 @@ void main() {
 			#endif
 
 			if (dot(light, f16vec3(1.0)) > float16_t(0.0)) {
-				immut f16vec2 specular_diffuse = brdf(face_n_dot_l, v_tex_normal, f16vec3(normalize(v.view)), shadow_light_dir, roughness);
+				immut f16vec2 specular_diffuse = brdf(face_n_dot_l, v_tex_normal, f16vec3(normalize(view)), shadow_light_dir, roughness);
 
 				light *= float16_t(3.0) * (specular_diffuse.y + specular_diffuse.x / max(color.rgb, float16_t(1.0e-5)));
 
@@ -171,7 +167,7 @@ void main() {
 		} // todo!() self-colored fog should be based on the distance between the current surface and the solid one behind it, not the distance from the camera to the solid surface
 	*/
 
-	color.a *= float16_t(1.0) - edge_fog(rot_trans_mmul(gbufferModelViewInverse, v.view));
+	color.a *= float16_t(1.0) - edge_fog(rot_trans_mmul(gbufferModelViewInverse, view));
 
 	colortex1 = color;
 }
