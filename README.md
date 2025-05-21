@@ -40,7 +40,7 @@ The name "RenderPearl" is inspired by the Bedrock Edition [RenderDragon](https:/
   * `ENTITY_TRANSLUCENT`
   * `SEPARATE_HARDWARE_SAMPLERS`
   * `SSBO`
-* **[GLSL](https://www.wikiwand.com/en/OpenGL_Shading_Language) 4.60+**
+* **[GLSL](https://www.wikiwand.com/en/OpenGL_Shading_Language) 4.60.8+**
 
 > This may require updating your graphics drivers
 
