@@ -72,7 +72,7 @@ searchtex       : >-*-------------*--------------*---┘            *           
 
 ## Packing & Layout
 
-> Remember "When bit-packing fields into a G-Buffer, put highly correlated bits in the Most Significant Bits (MSBs) and noisy data in the Least Significant Bits (LSBs)." (https://gpuopen.com/learn/rdna-performance-guide/)
+> Remember "When bit-packing fields into a G-Buffer, put highly correlated bits in the Most Significant Bits (MSBs) and noisy data in the Least Significant Bits (LSBs)." ([AMD RDNA Performance Guide](https://gpuopen.com/learn/rdna-performance-guide/))
 
 ```
 ┌ colortex0 ┐
@@ -114,8 +114,8 @@ searchtex       : >-*-------------*--------------*---┘            *           
 |- data  -|- color -|
 └9 9 9 4 1┴ 6  5  5 ┘
  | | | | |  |  |  |
- | | | | |  └[color (GRB)]: 6/5/5
- | | | | └["wide" flag]: 1x1
+ | | | | |  └[color (GRB)]
+ | | | | └["wide" flag]
  | | | └[intensity]
  └[player feet space position]
 ```
