@@ -16,8 +16,8 @@ colortex2 :   *          *          |||└X--*->
 colortex3 :   *          *          ||└X---*->
 lightIndex: >-*----------*----------┼X-----*->
 handLight : >-*----------*----------X------*->
-[Barriers]: [ X          X                X ]
-              |            └> Solid geometry
+[Barriers]: [ X          X                 X ]
+              |          └> Solid geometry
               └> Shadow geometry
 ```
 
