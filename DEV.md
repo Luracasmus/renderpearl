@@ -1,120 +1,112 @@
 # Technical Overview
 
-## Pipeline (outdated)
+## Pipeline
 
 > X marks the spot... where a write happens (in the buffer corresponding to the line)
 
 ### Shadow & Solid Geometry
 
 ```
-shadow*   :   * ┌> shadow -X┬--*-------------------*->
-gtexture  : >-*-┴-----------┼--*-> gbuffers(solid) *
-specular  : >-*-SM----------┤  *    ||||           *
-normals   : >-*-NORMALS-----┘  *    ||||           *
-colortex1 :   *                *    |||└X----------*->
-colortex2 :   *                *    ||└X-----------*->
-colortex3 :   *                *    |└X------------*->
-lightIndex: >-*----------------*----X--------------*->
-[Barriers]: [ X                X                   X ]
-              |                └> Solid Geometry
-              └> Shadow Map Geometry
+shadow*   : >-*-shadow-X-*--┬--------------*->
+gtexture  : >-*--┴-------*-gbuffers(solid) *
+specular  : >-*----------*--┘|      |||||  *
+normals   : >-*----------*---┘      |||||  *
+colortex1 :   *          *          ||||└X-*->
+colortex2 :   *          *          |||└X--*->
+colortex3 :   *          *          ||└X---*->
+lightIndex: >-*----------*----------┼X-----*->
+handLight : >-*----------*----------X------*->
+[Barriers]: [ X          X                X ]
+              |            └> Solid geometry
+              └> Shadow geometry
 ```
 
 ### Deferred Processing
 
 ```
-indirectGeometry: >-*--┐    ┌----X-*-------------------*-------------*->
-indirectSMFacing: >-*-deferred---X-*--┬----------------*-------------*->
-deferredLight1  :   *  |           * deferred1-------X-*---┐         *
-deferredLight  :   *  |           *  || deferred1_a-X-*--┐|         *
-colortex2       : >-*--┴-----------*--┴┼--┘|||         *  ||         *
-colortex3       : >-*--------------*---┼---┘||         *  ||         *
-lightIndex      : >-*-deferred_a-X-*---┼----┘|         *  ||         *
-colortex1       : >-*--------------*---┴-----┴---------*-deferred2-X-*->
-[Barriers]      : [ X              X                   X             X ]
-                    |              |                   └> Light Buffer Application and Sky Rendering
-                    |              └> Shadow Map and Vanilla + Light Index Lighting
-                    └> Indirect Dispatch Setup and Light Index Deduplication
+indirectDispatch: >-*------┬-----X-*---┬---------------*->
+indirectControl :   *      |┌----X-*--┐|               *
+colortex1       : >-*-deferred---X-*-deferred1-------X-*->
+lightIndex      : >-*-deferred_a-X-*--┘|||             *
+handLight       : >-*--------------*---┘||             *
+colortex2       : >-*--------------*----┘|             *
+colortex3       : >-*--------------*-----┘             *
+[Barriers]      : [ X              X                   X ]
+                    |              └> Deferred lighting
+                    └> Indirect dispatch setup, light index deduplication, and sky
 ```
 
 ### Translucent Geometry
 
 ```
-shadow*   : >-*---------┐                        *
-gtexture  : >-*---------┼> gbuffers(translucent) *
-specular  : >-*-SM------┤   |                    *
-normals   : >-*-NORMALS-┤   |                    *
-lightIndex: >-*---------┘   |                    *
-colortex1 : >-*-------------X--------------------*->
-[Barriers]: [ X                                  X ]
-              └> Translucent Geometry
+handLight : >-*----┐                    *
+lightIndex: >-*---┐|                    *
+shadow*   : >-*--┐||                    *
+colortex1 : >-*-gbuffers(translucent)-X-*->
+gtexture  : >-*--┘||                    *
+specular  : >-*---┘|                    *
+normals   : >-*----┘                    *
+[Barriers]: [ X                         X ]
+              └> Translucent geometry
 ```
 
 ### Post-Processing
 
 ```
-indirectGeometry:   *             *          ┌---X-*--------------*------------*--------------*--------------*->
-indirectSMFacing: >-*--┬----------*----------┼---X-*--------------*------------*--------------*--------------*->
-dcgBuffer       :   *  |        ┌-*-> composite1-X-*┐             *            *              *              *
-colortex1       : >-*-composite-X-*----┴-----------*┴> composite1_a *            *              *              *
-tempCol         :   *             *                *           └X-*-composite2-*--------------*----┐         *
-colortex0       :   *             *                *              *         |  *              *    |      ┌X-*->
-edge            :   *             *                *              *         └X-*-> composite3 *    |      |  *
-blendWeight     :   *             *                *              *            *    ^^     └X-*-> composite4 *
-areatex         : >-*-------------*----------------*--------------*------------*----┘|        *              *
-searchtex       : >-*-------------*----------------*--------------*------------*-----┘        *              *
-[Barriers]      : [ X             X                X              X            X              X              X ]
-                    |             |                |              |            |              └> SMAA Neighborhood Blending and CAS
-                    |             |                |              |            └> SMAA Blend Weight Calculation
-                    |             |                |              └> SMAA Edge Detection
-                    |             |                └> DCG Application, Color Balance, Saturation, Tone Mapping, and Compass
-                    |             └> DCG Analysis
-                    └> Fog and VL
+handLight       :   *             *              *  ┌-----------X-*--------------*->
+indirectDispatch:   *             *              *  |┌----------X-*--------------*->
+autoExp         : >-*---┬-------X-*--------------*-composite2_a-X-*--------------*->
+depthtex0       : >-*--┐|         *              *                *              *
+colortex0       :   *  ||         *              *                * composite3-X-*->
+colortex1       : >-*-composite-X-*--┬-----------*----------------*--┘|          *
+edge            :   *             * composite1-X-*--┐             *   |          *
+blendWeight     :   *             *              * composite2---X-*---┘          *
+areatex         : >-*-------------*--------------*--┘|            *              *
+searchtex       : >-*-------------*--------------*---┘            *              *
+[Barriers]      : [ X             X              X                X              X ]
+                    |             |              |                └> SMAA neighborhood blending, and CAS
+                    |             |              └> SMAA blend weight calculation, automatic exposure geometric average, and atomic counter zero
+                    |             └> SMAA edge detection
+                    └> Fog, volumetric light, automatic exposure luma sum and application, and color-related post-processing
 ```
 
-## Packing & Layout (outdated)
+## Packing & Layout
 
-> Remember "When bit-packing fields into a G-Buffer, put highly correlated bits in the Most Significant Bits (MSBs) and noisy data in the Least Significant Bits (LSBs)."
+> Remember "When bit-packing fields into a G-Buffer, put highly correlated bits in the Most Significant Bits (MSBs) and noisy data in the Least Significant Bits (LSBs)." (https://gpuopen.com/learn/rdna-performance-guide/)
 
 ```
 ┌ colortex0 ┐
 |R |G |B |A |
-└16┴16┴16┴16┘
+└8 ┴8 ┴8 ┴8 ┘
  |  |  |  └X
- └[normalized color]: 3x16
+ └[normalized color (RGB)]
 ```
 
 ```
 ┌ colortex1 ┐
 |R |G |B | A|
 └16┴16┴16┴16┘
- |  |  |  └[roughness ("hand" flag stored in sign)]: 1x16
- └[hdr color (emission packed in sign bits)]: 3x16
+ |  |  |  └[roughness]
+ └[color (RGB)]
 ```
 
 ```
 ┌ colortex2 ┐
-|R |G |B |A |
-└8 ┴8 ┴8 ┴8 ┘
- |  |  |  |
- |  |  └[face normal]: 2x8
- └[texture normal]: 2x8
+|---  R  ---|
+└13 13 4 1 1┘
+ |  |  | | └["hand" flag]
+ |  |  | └["pure light" flag]
+ |  |  └[emission]
+ |  └[sky light]
+ └[block light]
 ```
 
 ```
 ┌ colortex3 ┐
-|- R -|- G -|
-└  8  ┴  8  ┘
-   |     └[sky + ambient light level]: 1x8
-   └[block light level]: 1x8
-```
-
-```
-┌ colortex4 ┐
-| R | G | B |
-└16 ┴16 ┴16 ┘
-  |   |   |
-  └[Biased distorted shadow screen space position]: 3x16
+|R |G |B | A|
+└16┴16┴16┴16┘
+ |  |  |  |
+ └[biased shadow screen space position]
 ```
 
 ```
@@ -123,7 +115,7 @@ searchtex       : >-*-------------*----------------*--------------*------------*
 └9 9 9 4 1┴ 6  5  5 ┘
  | | | | |  |  |  |
  | | | | |  └[color (GRB)]: 6/5/5
- | | | | └[wide]: 1x1
- | | | └[brightness]: 1x4
- └[pos]: 3x9
+ | | | | └["wide" flag]: 1x1
+ | | | └[intensity]
+ └[player feet space position]
 ```
