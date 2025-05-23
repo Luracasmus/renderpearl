@@ -69,11 +69,11 @@ The default configuration and all values selectable with profiles are intended t
 
 RenderPearl's source code is intended to be modifiable and re-usable. It's written according to best practice to the best of my ability, but prioritizing performance over readability. If you have any questions about how it works, feel free to contact me on any platform
 
-Technical information can be found in `/shaders/prelude/config.glsl` or `/shaders/lib/config.glsl` in modern RenderPearl
+Technical information can be found in [DEV.md](https://github.com/Luracasmus/renderpearl/blob/main/DEV.md)
 
 * Explanation of the Indexed Block Light system based on `v2.2.0-beta.3`: [GitHub Gist](https://gist.github.com/Luracasmus/2278519efd02d765060ebd8083af9fa0)
-* Extension support and compatibility prelude used in RenderPearl: [GitHub Gist](https://gist.github.com/Luracasmus/ff78f1998a5a440899e1904fa23cc9c6)
+* Extension support and compatibility prelude based on RenderPearl: [GitHub Gist](https://gist.github.com/Luracasmus/ff78f1998a5a440899e1904fa23cc9c6)
 
 ---
 
-> **This and [the PMC page](https://www.planetminecraft.com/mod/luracasmus-s-shaders/) are the only RenderPearl pages made by me.** If you want to distribute RenderPearl, or just spread the word of it, I would greatly appreciate if you would link to at least one of them (preferrably Modrinth)
+> **This, [the Modrinth page](https://modrinth.com/shader/renderpearl), [the CurseForge page](https://www.curseforge.com/minecraft/shaders/renderpearl) and [the PMC page](https://www.planetminecraft.com/mod/luracasmus-s-shaders/) are the RenderPearl project pages made by me.** If you want to distribute RenderPearl, or just spread the word of it, I would greatly appreciate if you would link to at least one of them, preferrably Modrinth
