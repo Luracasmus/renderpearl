@@ -3,28 +3,21 @@
 #include "/lib/sm/bias.glsl"
 
 #if SHADOW_BLUR == 2
-	// terrible generated versions of the above with offsets
+	// terrible generated versions of 'sample_sm' from '/lib/sm/sample.glsl' with offsets
 	// const parameters don't work here (probably since they're patched away by Iris)
-	// and using a non-const parameter causes compile failures on AMD ;-;
-	/*
-		const ivec2 offset = ivec2(X, Y);
+	// and using a non-const parameter causes compile failures on AMD :(
 
-		immut float16_t solid_vis = float16_t(textureLodOffset(shadowtex1HW, s_scrn, 0.0, offset));
-
-		if (solid_vis > float16_t(0.0)) {
-			immut float16_t trans_vis = float16_t(textureLodOffset(shadowtex0HW, s_scrn, 0.0, offset));
-
-			f16vec3 color = (mul * solid_vis).xxx;
-
-			if (trans_vis < solid_vis) color = mix(color * f16vec3(textureLodOffset(shadowcolor0, s_scrn.xy, 0.0, offset).rgb), color, trans_vis);
-
-			return color;
+	#define SAMPLE_SM(X, Y) \
+		const ivec2 offset = ivec2(X, Y); \
+		immut float16_t solid_vis = float16_t(textureLodOffset(shadowtex1HW, s_scrn, 0.0, offset)); \
+		if (solid_vis > float16_t(0.0)) { \
+			immut float16_t trans_vis = float16_t(textureLodOffset(shadowtex0HW, s_scrn, 0.0, offset)); \
+			f16vec3 color = (mul * solid_vis).xxx; \
+			if (trans_vis < solid_vis) color = mix(color * f16vec3(textureLodOffset(shadowcolor0, s_scrn.xy, 0.0, offset).rgb), color, trans_vis); \
+			return color; \
 		} else return f16vec3(0.0);
-	*/
 
 	#define SAMPLE_SM_ARGS float16_t mul, vec3 s_scrn
-
-	#define SAMPLE_SM(X, Y) const ivec2 offset = ivec2(X, Y); immut float16_t solid_vis = float16_t(textureLodOffset(shadowtex1HW, s_scrn, 0.0, offset)); if (solid_vis > float16_t(0.0)) { immut float16_t trans_vis = float16_t(textureLodOffset(shadowtex0HW, s_scrn, 0.0, offset)); f16vec3 color = (mul * solid_vis).xxx; if (trans_vis < solid_vis) color = mix(color * f16vec3(textureLodOffset(shadowcolor0, s_scrn.xy, 0.0, offset).rgb), color, trans_vis); return color; } else return f16vec3(0.0);
 
 	f16vec3 sample_sm_0_n2(SAMPLE_SM_ARGS) { SAMPLE_SM(0, -2) }
 	f16vec3 sample_sm_0_2(SAMPLE_SM_ARGS) { SAMPLE_SM(0, 2) }

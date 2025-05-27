@@ -1,7 +1,7 @@
 #define VERSION v // [v]
 
 // Lighting & Shadows
-	#define SUNLIGHT 2.5 // [0.5 0.75 1 1.25 1.5 1.75 2 2.25 2.5 2.75 3 3.25 3.5 3.75 4]
+	#define SUNLIGHT 3.0 // [0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.25 2.5 2.75 3.0 3.25 3.5 3.75 4.0 4.25 4.5 4.75 5.0]
 	#define AMBIENT 0.05 // [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
 	#define ENTITY_SHADOWS
 	#define PLAYER_SHADOWS
@@ -38,11 +38,11 @@
 	#define WATER_FOG 20 // [0 5 10 15 20 25 30 35 40 45 50]
 	#define SUN_BLOOM 3 // [0 1 2 3 4 5]
 	#define SKY_BLOOM 1 // [0 1 2 3 4 5]
-	#define VL 5 // [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20]
+	#define VL 4 // [0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48]
 	#define VL_SAMPLES 1 // [1 2 3]
 
 	/*
-		const float sunPathRotation = 25.0; // [5.0 10.0 15.0 20.0 25.0]
+		const float sunPathRotation = 25.0; // [-25.0 -20.0 -15.0 -10.0 -5.0 5.0 10.0 15.0 20.0 25.0]
 	*/
 
 // Block Light
@@ -81,8 +81,9 @@
 	#define CONST_IMMUT 1 // [0 1 2]
 	#define MINMAX_3 2 // [0 1 2 3]
 	#define MUL_32x16 2 // [0 1 2 3]
+	#define SUBGROUP 1 // [0 1 2]
 	#define SIZED_16_8
-	#define NVIDIA_ASSUME_SHADER5
-	// #define AMD_ASSUME_FLOAT16
-	// #define AMD_ASSUME_INT16
 	// #define BUFFER_16_8
+	#define ASSUME_NV_GPU_SHADER5
+	#define ASSUME_AMD_GPU_SHADER_HALF_FLOAT
+	#define ASSUME_AMD_GPU_SHADER_INT16

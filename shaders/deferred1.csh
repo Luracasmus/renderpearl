@@ -65,7 +65,7 @@ void main() {
 	#else
 		immut uint tile = indirect_control.coords[gl_WorkGroupID.x];
 
-		immut i16vec2 texel = i16vec2(uvec2(tile & 65535u, bitfieldExtract(tile, 16, 16)) + gl_LocalInvocationID.xy);
+		immut i16vec2 texel = i16vec2(uvec2(tile & 65535u, tile >> 16u) + gl_LocalInvocationID.xy);
 	#endif
 
 	if (gl_LocalInvocationIndex == 0u) {
@@ -199,7 +199,7 @@ void main() {
 		immut f16vec2 light = f16vec2(
 			gbuffer_data.y & 8191u,
 			bitfieldExtract(gbuffer_data.y, 13, 13)
-		) / f16vec2(8191.0);
+		) * f16vec2(1.0/8191.0);
 
 		#ifdef LIGHT_LEVELS
 			f16vec3 block_light = f16vec3(visualize_ll(light.x));
@@ -232,17 +232,16 @@ void main() {
 					immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
 					immut f16vec3 n_w_rel_light = w_rel_light * inversesqrt(sq_dist_light);
 
-					// make falloff start a block away of the light source when the "wide" flag is set
+					// make falloff start a block away of the light source when the "wide" flag (most significant bit) is set
 					immut float16_t falloff = float16_t(1.0) / (
-						bitfieldExtract(light_data, 31, 1) == 1u ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
+						light_data >= 0x80000000u ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
 					);
 
 					immut float16_t brightness = min(min(intensity - mhtn_dist, float16_t(1.0)) * intensity * falloff, float16_t(48.0));
-					immut uint light_color_u32 = uint(light_color);
 					immut f16vec3 illum = brightness * f16vec3(
-						bitfieldExtract(light_color_u32, 6, 5),
+						bitfieldExtract(uint(light_color), 6, 5),
 						light_color & uint16_t(63u),
-						bitfieldExtract(light_color_u32, 11, 5)
+						light_color >> uint16_t(11u)
 					);
 
 					immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);

@@ -43,11 +43,11 @@ void main() {
 
 	immut float depth = texelFetch(depthtex0, texel, 0).r;
 	immut bool geometry = depth < 1.0;
-	if (geometry) sh_geometry = true;
+	if (subgroupAny(geometry)) if (subgroupElect()) sh_geometry = true;
 
 	barrier();
 
-	if (gl_LocalInvocationIndex == 0u && sh_geometry) {
+	if (gl_LocalInvocationIndex == 0u) if (sh_geometry) {
 		#ifdef INT16
 			immut i16vec2 packed_texel = i16vec2(gl_WorkGroupSize.xy) * i16vec2(gl_WorkGroupID.xy);
 		#else

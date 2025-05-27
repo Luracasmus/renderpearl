@@ -186,13 +186,13 @@ float search_y_down(vec2 coord, float end, float texel_size_y) {
 #if SMAA_CORNER
 	vec2 corner_rounding(vec2 d) {
 		immut vec2 left_right = step(d, d.yx);
-		return (1.0 - float(SMAA_CORNER) / 100.0) * left_right / (left_right.x + left_right.y);
+		return (1.0 - float(SMAA_CORNER) * 0.01) * left_right / (left_right.x + left_right.y);
 	}
 
 	vec2 detect_horizontal_corner_pattern(vec3 coord, vec2 d) {
 		immut vec2 rounding = corner_rounding(d);
 
-		return clamp(1.0 - vec2(
+		return saturate(1.0 - vec2(
 			dot(rounding, vec2(
 				textureLodOffset(edgeS, coord.xy, 0.0, ivec2(0, 1)).r,
 				textureLodOffset(edgeS, coord.zy, 0.0, ivec2(1, 1)).r
@@ -201,13 +201,13 @@ float search_y_down(vec2 coord, float end, float texel_size_y) {
 				textureLodOffset(edgeS, coord.xy, 0.0, ivec2(0, -2)).r,
 				textureLodOffset(edgeS, coord.zy, 0.0, ivec2(1, -2)).r
 			))
-		), 0.0, 1.0);
+		));
 	}
 
 	vec2 detect_vertical_corner_pattern(vec3 coord, vec2 d) {
 		immut vec2 rounding = corner_rounding(d);
 
-		return clamp(1.0 - vec2(
+		return saturate(1.0 - vec2(
 			dot(rounding, vec2(
 				textureLodOffset(edgeS, coord.xy, 0.0, ivec2(1, 0)).g,
 				textureLodOffset(edgeS, coord.zy, 0.0, ivec2(1, 1)).g
@@ -216,7 +216,7 @@ float search_y_down(vec2 coord, float end, float texel_size_y) {
 				textureLodOffset(edgeS, coord.xy, 0.0, ivec2(-2, 0)).g,
 				textureLodOffset(edgeS, coord.zy, 0.0, ivec2(-2, 1)).g
 			))
-		), 0.0, 1.0);
+		));
 	}
 #endif
 

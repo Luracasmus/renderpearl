@@ -24,7 +24,7 @@
 
 		immut ivec2 half_texels = ivec2(
 			face_tex_size & 65535u,
-			bitfieldExtract(face_tex_size, 16, 16)
+			face_tex_size >> 16u
 		) / (2 << int(textureQueryLod(source, coord).x + 0.5)) - 1;
 
 		f16vec4 bump = srgb_luma.xxxx;

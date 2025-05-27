@@ -3,6 +3,7 @@
 
 {
 	// todo!() make u8vec2 once it works in Iris
+	// todo!() check: this may be upside down, not that it matters too much
 	immut i8vec2 local = i8vec2(gl_LocalInvocationID.xy);
 	immut bool down = local.y == int8_t(gl_WorkGroupSize.y - 1u);
 
@@ -22,5 +23,5 @@
 		BORDER_OP(ivec2(2, -1))
 	} else if (local == i8vec2(gl_WorkGroupSize.xy - 2u)) { // 1 step inside lower right corner
 		BORDER_OP(ivec2(1, 2))
-	} else NON_BORDER_OP
+	} else { NON_BORDER_OP }
 }

@@ -1,34 +1,51 @@
 // see https://gist.github.com/Luracasmus/ff78f1998a5a440899e1904fa23cc9c6
 
+// We sometimes assume support based on device characteristics,
+// since it's not always properly advertised by drivers,
+// which causes Iris to not define all macros for supported extensions
+
+#ifdef ASSUME_NV_GPU_SHADER5
+#endif
+#ifdef ASSUME_AMD_GPU_SHADER_HALF_FLOAT
+#endif
+#ifdef ASSUME_AMD_GPU_SHADER_INT16
+#endif
+
 #if (CONST_IMMUT == 1 && defined MC_GL_VENDOR_NVIDIA) || CONST_IMMUT == 2
 	#define immut const
 #else
 	#define immut
 #endif
 
-#if (MINMAX_3 >= 1 && defined MC_GL_AMD_shader_trinary_minmax) || (MINMAX_3 >= 2 && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI || defined MC_GL_RENDERER_RADEON)) || MINMAX_3 >= 3
+// It seems like this is always supported on non-NVIDIA drivers
+// Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_shader_trinary_minmax
+#if (MINMAX_3 >= 1 && defined MC_GL_AMD_shader_trinary_minmax) || (MINMAX_3 >= 2 && !defined MC_GL_VENDOR_NVIDIA) || MINMAX_3 >= 3
 	#extension GL_AMD_shader_trinary_minmax : require
 #else
 	#define min3(v0, v1, v2) min(v0, min(v1, v2))
 	#define max3(v0, v1, v2) max(v0, max(v1, v2))
 #endif
 
+// It seems like this is always on Mesa drivers for Intel GPUs (excluding some mobile or very old GPUs)
+// Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_INTEL_shader_integer_functions2
 #if (MUL_32x16 >= 1 && defined MC_GL_INTEL_shader_integer_functions2) || (MUL_32x16 >= 2 && defined MC_GL_VENDOR_MESA && defined MC_GL_RENDERER_INTEL) || MUL_32x16 >= 3
 	#extension GL_INTEL_shader_integer_functions2 : require
 #else
 	#define multiply32x16(v0, v1) (v0 * v1)
 #endif
 
-// these can be used to enable extensions even when they're not listed as supported, which seems to be required on some drivers
-#ifdef NVIDIA_ASSUME_SHADER5
-#endif
-#ifdef AMD_ASSUME_FLOAT16
-#endif
-#ifdef AMD_ASSUME_INT16
+#if (SUBGROUP >= 1 && defined MC_GL_AMD_shader_trinary_minmax) || SUBGROUP >= 2
+	#extension GL_KHR_shader_subgroup_basic : require
+	#extension GL_KHR_shader_subgroup_vote : require
+#else
+	#define subgroupAny(v) (v)
+	#define subgroupElect() true
 #endif
 
 #ifdef SIZED_16_8
-	#if defined MC_GL_NV_gpu_shader5 || (defined NVIDIA_ASSUME_SHADER5 && defined MC_GL_VENDOR_NVIDIA)
+	// It seems like this is always supported on NVIDIA drivers
+	// Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_NV_gpu_shader5
+	#if defined MC_GL_NV_gpu_shader5 || (defined ASSUME_NV_GPU_SHADER5 && defined MC_GL_VENDOR_NVIDIA)
 		#extension GL_NV_gpu_shader5 : require
 		#define FLOAT16
 		#define INT16
@@ -36,19 +53,27 @@
 		// #define MAT16 // doesn't seem to work :/
 	#endif
 
-	#if defined MC_GL_AMD_gpu_shader_half_float || (defined AMD_ASSUME_FLOAT16 && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI || defined MC_GL_RENDERER_RADEON))
+	// It seems like this is always supported on Windows with ATI/AMD drivers for Radeon GPUs (excluding some mobile or very old GPUs)
+	// Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_gpu_shader_half_float
+	#if defined MC_GL_AMD_gpu_shader_half_float || (defined ASSUME_AMD_GPU_SHADER_HALF_FLOAT && defined MC_GL_RENDERER_RADEON && defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
 		#extension GL_AMD_gpu_shader_half_float : require
 		#define FLOAT16
 		// #define MAT16 // seems to cause some issues with casting :/
+
+		#define AMD_FLOAT16
 	#endif
 
-	#if defined MC_GL_AMD_gpu_shader_int16 || (defined AMD_ASSUME_INT16 && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI || defined MC_GL_RENDERER_RADEON))
+	// Same as above
+	// Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_gpu_shader_int16
+	#if defined MC_GL_AMD_gpu_shader_int16 || (defined ASSUME_AMD_GPU_SHADER_INT16 && defined MC_GL_RENDERER_RADEON && defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
 		#extension GL_AMD_gpu_shader_int16 : require
 		#define INT16
 		#define PACK_INT16
+
+		#define AMD_INT16
 	#endif
 
-	#if (defined MC_GL_AMD_gpu_shader_half_float || (defined AMD_ASSUME_FLOAT16 && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI || defined MC_GL_RENDERER_RADEON))) && (defined MC_GL_AMD_gpu_shader_int16 || (defined AMD_ASSUME_INT16 && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI || defined MC_GL_RENDERER_RADEON)))
+	#if defined AMD_FLOAT16 && defined AMD_INT16
 		#define TRANSMUTE_AND_PACK_INT16
 	#endif
 
@@ -152,7 +177,7 @@
 
 	i16vec2 unpackInt2x16(int v) { return i16vec2(
 		v & 65535,
-		bitfieldExtract(v, 16, 16)
+		v >> 16
 	); }
 
 	/* waiting on Iris glsl-transformer update
@@ -163,7 +188,7 @@
 
 		u16vec2 unpackUint2x16(uint v) { return u16vec2(
 			v & 65535u,
-			bitfieldExtract(v, 16, 16);
+			v >> 16
 		); }
 	*/
 #endif

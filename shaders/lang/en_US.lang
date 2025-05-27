@@ -11,7 +11,7 @@ profile.comment=§c⌚§r §5§lScreenshot§r configures some options to values 
 
 option.VERSION=§6§oRender§d§oPearl
 	option.VERSION.comment=By Luracasmus\n§9https://modrinth.com/shader/renderpearl
-	suffix.VERSION=2.2.0
+	suffix.VERSION=2.2.0+dev
 
 screen.LIGHTING_AND_SHADOWS=§6◀§r Lighting & Shadows §6▶
 	option.ambientOcclusionLevel=§b⌚§r Ambient Occlusion
@@ -202,29 +202,40 @@ screen.COMPAT=§6◀§r Compatibility §6▶
 	option.CONST_IMMUT=§e⌚§r Immutable Constants
 		option.CONST_IMMUT.comment=Marks all shader variables that can be immutable as constant, possibly enabling better optimizations\n\n§c⚠§r May be incompatible with some non-NVIDIA/Geforce graphics drivers
 		value.CONST_IMMUT.0=§cOff
-		value.CONST_IMMUT.1=On NVIDIA/Geforce
-		value.CONST_IMMUT.2=§c⚠§r Always
+		value.CONST_IMMUT.1=§c⚠§r On (assume support based on device)
+		value.CONST_IMMUT.2=§c⚠§r On (always)
 
 	option.MINMAX_3=§e⌚§r Trinary Min./Max.
 		option.MINMAX_3.comment=Performs trinary minimum and maximum operations in singular function calls using the §oAMD_shader_trinary_minmax§r extension, which may allow generation of more optimal instruction sequences\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed
 		value.MINMAX_3.0=§cOff
-		value.MINMAX_3.1=With extension support declared
-		value.MINMAX_3.2=§c⚠§r Always on AMD/Radeon
-		value.MINMAX_3.3=§c⚠§r Always
+		value.MINMAX_3.1=On (check for support)
+		value.MINMAX_3.2=§c⚠§r On (assume support based on device)
+		value.MINMAX_3.3=§c⚠§r On (always)
 
 	option.MUL_32x16=§e⌚§r 32x16-Bit Multiplication
-		option.MUL_32x16.comment=Performs multiplication between 32-bit integers and integers in the 16-bit-representable range using special functions provided by the §oINTEL_shader_integer_functions2§r extension, that may be faster than regular 32-bit multiplication operators\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed
+		option.MUL_32x16.comment=Performs multiplication between 32-bit integers and integers in the 16-bit-representable range using special functions provided by the §oINTEL_shader_integer_functions2§r extension, which may be faster than regular 32-bit multiplication operators\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed
 		value.MUL_32x16.0=§cOff
-		value.MUL_32x16.1=With extension support declared
-		value.MUL_32x16.2=§c⚠§r Always on Mesa+Intel
-		value.MUL_32x16.3=§c⚠§r Always
+		value.MUL_32x16.1=On (check for support)
+		value.MUL_32x16.2=§c⚠§r On (assume support based on device)
+		value.MUL_32x16.3=§c⚠§r On (always)
+
+	option.SUBGROUP=§e⌚§r Subgroup Operations
+		option.SUBGROUP.comment=Enables operations and variables provided by the §oKHR_shader_subgroup§r extension, which allow fast sharing of data between shader invocations within a subgroup
+		value.SUBGROUP.0=§cOff
+		value.SUBGROUP.1=On (check for support)
+		value.SUBGROUP.2=§c⚠§r On (always)
 
 	option.SIZED_16_8=§6⌚§r 16/8-Bit Types
 		option.SIZED_16_8.comment=Uses extension-provided half- or quarter-sized data types to reduce register, LDS and VRAM usage\nPerformance impact varies depending on hardware and drivers, as conversion between types has a cost, but operations with smaller types can be faster\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed - See options below
 
-	option.NVIDIA_ASSUME_SHADER5=§6⌚ §c⚠§r Assume §oNV_gpu_shader5§r support on NVIDIA/Geforce
-	option.AMD_ASSUME_FLOAT16=§6⌚ §c⚠§r Assume §oAMD_gpu_shader_half_float§r support on AMD/Radeon
-	option.AMD_ASSUME_INT16=§6⌚ §c⚠§r Assume §oAMD_gpu_shader_int16§r support on AMD/Radeon
+	option.BUFFER_16_8=§e⌚ §6⚠§r 16/8-Bit Buffers
+		option.BUFFER_16_8.comment=Shrinks buffers, assuming complete support for all data types added by §l§6⌚§r§l 16/8-Bit Types§r\n\n§6⚠§r May cause issues if some extensions optionally enabled by §l§6⌚§r§l 16/8-Bit Types§r are disabled or unavailable
 
-	option.BUFFER_16_8=§6⌚ §c⚠§r 16/8-Bit Buffers
-		option.BUFFER_16_8.comment=Shrinks buffers, assuming complete support for all data types added by §l§6⌚§r§l 16/8-Bit Types§r\n\n§c⚠§r May cause issues if some extensions optionally enabled by §l§6⌚§r§l 16/8-Bit Types§r are disabled or unavailable
+	option.ASSUME_NV_GPU_SHADER5=§6⌚ §c⚠§r Assume §oNV_gpu_shader5§r support based on device
+		option.ASSUME_NV_GPU_SHADER5.comment=Assumes extension support based on device characteristics, even it's not advertised by Iris
+
+	option.ASSUME_AMD_GPU_SHADER_HALF_FLOAT=§6⌚ §c⚠§r Assume §oAMD_gpu_shader_half_float§r support based on device
+		option.ASSUME_AMD_GPU_SHADER_HALF_FLOAT.comment=Assumes extension support based on device characteristics, even it's not advertised by Iris
+
+	option.ASSUME_AMD_GPU_SHADER_INT16=§6⌚ §c⚠§r Assume §oAMD_gpu_shader_int16§r support based on device
+		option.ASSUME_AMD_GPU_SHADER_INT16.comment=Assumes extension support based on device characteristics, even it's not advertised by Iris

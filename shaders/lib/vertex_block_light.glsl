@@ -51,16 +51,15 @@ f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal) {
 				immut float16_t rcp_dist_light = inversesqrt(sq_dist_light);
 				immut float16_t face_n_dot_l = dot(w_face_normal, w_rel_light * rcp_dist_light);
 
-				immut float16_t falloff = bitfieldExtract(light_data, 31, 1) == 1u ? rcp_dist_light : float16_t(1.0) / sq_dist_light;
+				immut float16_t falloff = light_data >= 0x80000000u ? rcp_dist_light : float16_t(1.0) / sq_dist_light;
 				// use linear falloff instead of inverse square law when the "wide" flag is set
 
 				immut float16_t brightness = min(min(intensity - mhtn_dist, float16_t(1.0)) * intensity * falloff, float16_t(48.0));
 
-				immut uint light_color_u32 = uint(light_color);
 				immut f16vec3 illum = brightness * f16vec3(
-					bitfieldExtract(light_color_u32, 6, 5),
+					bitfieldExtract(uint(light_color), 6, 5),
 					light_color & uint16_t(63u),
-					bitfieldExtract(light_color_u32, 11, 5)
+					light_color >> uint16_t(11u)
 				);
 
 				immut float16_t light_diffuse = face_n_dot_l > float16_t(0.0) ? face_n_dot_l / float16_t(PI) : float16_t(IND_ILLUM + 0.04); // add IND_ILLUM for fake "GI", with additional (+0.04, just picked at random) term not found in the solid version, to also fake light spreading through the material

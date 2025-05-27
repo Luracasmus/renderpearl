@@ -200,13 +200,14 @@ void main() {
 							immut uint i = atomicAdd(index.queue, 1u);
 
 							immut uvec3 light_pe = uvec3(clamp(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + pe + cameraPositionFract), 0.0, 511.5)); // this feels slightly cursed but it works // somehow
-							index.data[i] = bitfieldInsert(
-								bitfieldInsert(
-									bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9), // color
-									emission, 27, 4 // intensity
-								),
-								uint(fluid), 31, 1 // "wide" flag (currently set for lava)
+
+							uint light_data = bitfieldInsert(
+								bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9), // color
+								emission, 27, 4 // intensity
 							);
+							if (fluid) light_data |= 0x80000000u; // set "wide" flag for lava
+
+							index.data[i] = light_data;
 
 							immut uvec3 col = uvec3(fma(linear(color * avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5)));
 							index.color[i] = uint16_t(bitfieldInsert(bitfieldInsert(col.g, col.r, 6, 5), col.b, 11, 5));

@@ -87,33 +87,26 @@ void main() {
 
 		nbh[nbh_pos.x][nbh_pos.y] = color;
 
-		// BORDER_OP(offset)
-		/*
-			border_offset = i8vec2(offset);
-
-			f16vec4 offset_a = f16vec4(
-				texelFetchOffset(blendWeightS, texel, 0, offset + ivec2(1, 0)).w,
-				texelFetchOffset(blendWeightS, texel, 0, offset + ivec2(0, 1)).y,
-				texelFetchOffset(blendWeightS, texel, 0, offset).zx
-			);
-
-			if (dot(vec4(offset_a), vec4(1.0)) < 1.0e-5) {
-				offset_color = f16vec3(texelFetchOffset(colortex1, texel, 0, offset).rgb);
-			} else {
-				vec4 blend_offset; f16vec2 blend_weight;
-				init_offset_weight(offset_a, blend_offset, blend_weight);
-
-				offset_color = blend_color(
-					blend_weight,
-					textureLodOffset(colortex1, fma(blend_offset.xy, texel_size, coord), 0.0, offset).rgb,
-					textureLodOffset(colortex1, fma(blend_offset.zw, -texel_size, coord), 0.0, offset).rgb
-				);
-			}
-		*/
-
 		i8vec2 border_offset;
 		f16vec3 offset_color = f16vec3(0.0);
-		#define BORDER_OP(offset) border_offset=i8vec2(offset);f16vec4 offset_a=f16vec4(texelFetchOffset(blendWeightS,texel,0,offset+ivec2(1,0)).w,texelFetchOffset(blendWeightS,texel,0,offset+ivec2(0,1)).y,texelFetchOffset(blendWeightS,texel,0,offset).zx);if(dot(vec4(offset_a),vec4(1.0))<1.0e-5){offset_color=f16vec3(texelFetchOffset(colortex1,texel,0,offset).rgb);}else{vec4 blend_offset;f16vec2 blend_weight;init_offset_weight(offset_a,blend_offset,blend_weight);offset_color=blend_color(blend_weight,textureLodOffset(colortex1,fma(blend_offset.xy, texel_size, coord),0.0,offset).rgb,textureLodOffset(colortex1,fma(blend_offset.zw,-texel_size,coord),0.0,offset).rgb);};
+		#define BORDER_OP(offset) \
+			border_offset = i8vec2(offset); \
+			f16vec4 offset_a = f16vec4( \
+				texelFetchOffset(blendWeightS, texel, 0, offset + ivec2(1, 0)).w, \
+				texelFetchOffset(blendWeightS, texel, 0, offset + ivec2(0, 1)).y, \
+				texelFetchOffset(blendWeightS, texel, 0, offset).zx \
+			); \
+			if (dot(vec4(offset_a), vec4(1.0)) < 1.0e-5) { \
+				offset_color = f16vec3(texelFetchOffset(colortex1, texel, 0, offset).rgb); \
+			} else { \
+				vec4 blend_offset; f16vec2 blend_weight; \
+				init_offset_weight(offset_a, blend_offset, blend_weight); \
+				offset_color = blend_color( \
+					blend_weight, \
+					textureLodOffset(colortex1, fma(blend_offset.xy, texel_size, coord), 0.0, offset).rgb, \
+					textureLodOffset(colortex1, fma(blend_offset.zw, -texel_size, coord), 0.0, offset).rgb \
+				); \
+			};
 		#define NON_BORDER_OP border_offset = i8vec2(0);
 		#include "/lib/nbh/border_cornered.glsl"
 

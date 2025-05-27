@@ -138,29 +138,34 @@ screen.UTIL=§6◀§r Verktyg §6▶
 screen.COMPAT=§6◀§r Kompatibilitet §6▶
 	option.CONST_IMMUT=§e⌚§r Invariabla Konstanter
 		option.CONST_IMMUT.comment=Markerar alla shadervariabler som kan vara invariabla som konstanta, vilket kan möjliggöra bättre optimeringar\n\n§c⚠§r Kan vara inkompatibelt med vissa icke-NVIDIA/Geforce-drivrutiner
-		value.CONST_IMMUT.1=På NVIDIA/Geforce
-		value.CONST_IMMUT.2=§c⚠§r Alltid
+		value.CONST_IMMUT.1=§c⚠§r På (anta stöd baserat på enhet)
+		value.CONST_IMMUT.2=§c⚠§r På (alltid)
 
 	option.MINMAX_3=§e⌚§r Trinära Min./Max.
 		option.MINMAX_3.comment=Utför trinära minimum- och maximumoperationer i enkla funktionsanrop med hjälp av §oAMD_shader_trinary_minmax§r-tillägget, vilket kan tillåta generering av mer optimala instruktionssekvenser\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas
 
 		value.MINMAX_3.1=När tilläggsstöd är deklarerat
-		value.MINMAX_3.2=§c⚠§r Alltid på AMD/Radeon
-		value.MINMAX_3.3=§c⚠§r Alltid
+		value.MINMAX_3.2=§c⚠§r På (anta stöd baserat på enhet)
+		value.MINMAX_3.3=§c⚠§r På (alltid)
 
 	option.MUL_32x16=§e⌚§r 32x16-Bit Multiplication
 		option.MUL_32x16.comment=Utför multiplikation mellan 32-bitars integers och integers i det av 16-bitar representerbara intervallet med hjälp av speciella funktioner tillhandahållna av §oINTEL_shader_integer_functions2§r-tillägget, som kan vara snabbare än vanliga 32-bitars multiplikationsoperatörer\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas
 
 		value.MUL_32x16.1=När tilläggsstöd är deklarerat
-		value.MUL_32x16.2=§c⚠§r Alltid på Mesa+Intel
-		value.MUL_32x16.3=§c⚠§r Alltid
+		value.MUL_32x16.2=§c⚠§r På (anta stöd baserat på enhet)
+		value.MUL_32x16.3=§c⚠§r På (alltid)
 
 	option.SIZED_16_8=§6⌚§r 16/8-Bitars Typer
 		option.SIZED_16_8.comment=Använder av tillägg försedda halv- och kvartsstora datatyper för att minska register-, LDS- och VRAM-användning\nPrestandapåverkan varierar beroende på hårdvara och drivrutiner, då konvertering mellan typer har en kostnad, men operationer med mindre typer kan vara snabbare\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas - Se inställningar nedan
 
-	option.NVIDIA_ASSUME_SHADER5=§6⌚ §c⚠§r Anta stöd av §oNV_gpu_shader5§r på NVIDIA/Geforce
-	option.AMD_ASSUME_FLOAT16=§6⌚ §c⚠§r Anta stöd av §oAMD_gpu_shader_half_float§r på AMD/Radeon
-	option.AMD_ASSUME_INT16=§6⌚ §c⚠§r Anta stöd av §oAMD_gpu_shader_int16§r på AMD/Radeon
+	option.ASSUME_NV_GPU_SHADER5=§6⌚ §c⚠§r Anta stöd av §oNV_gpu_shader5§r baserat på enhet
+		option.ASSUME_NV_GPU_SHADER5.comment=Antar stöd för tillägget baserat på enhetens egenskaper, även om det inte annonseras av Iris.
+
+	option.ASSUME_AMD_GPU_SHADER_HALF_FLOAT=§6⌚ §c⚠§r Anta stöd av §oAMD_gpu_shader_half_float§r baserat på enhet
+		option.ASSUME_AMD_GPU_SHADER_HALF_FLOAT.comment=Antar stöd för tillägget baserat på enhetens egenskaper, även om det inte annonseras av Iris.
+
+	option.ASSUME_AMD_GPU_SHADER_INT16=§6⌚ §c⚠§r Anta stöd av §oAMD_gpu_shader_int16§r baserat på enhe
+		option.ASSUME_AMD_GPU_SHADER_INT16.comment=Antar stöd för tillägget baserat på enhetens egenskaper, även om det inte annonseras av Iris.
 
 	option.BUFFER_16_8=§6⌚ §c⚠§r 16/8-Bitars Buffertar
 		option.BUFFER_16_8.comment=Krymper buffertar genom att anta fullständigt stöd för alla datatyper som läggs till av §l§6⌚§r§l 16/8-Bitars Typer§r\n\n§c⚠§r Kan orsaka problem om några av tilläggen som kan aktiveras av §l§6⌚§r§l 16/8-Bitars Typer§r är inaktiverade eller otillgängliga

@@ -8,9 +8,7 @@ uniform float frameTimeCounter;
 uniform vec3 cameraPosition, sunDirectionPlr;
 uniform mat4 gbufferModelViewInverse, gbufferProjectionInverse;
 
-in VertexData {
-	layout(location = 0, component = 0) flat uint tint;
-} v;
+in VertexData { layout(location = 0, component = 0) flat uint tint; } v;
 
 #include "/lib/view_size.glsl"
 #include "/lib/mmul.glsl"

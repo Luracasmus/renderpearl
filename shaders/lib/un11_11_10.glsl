@@ -2,8 +2,8 @@ f16vec3 unpack_un11_11_10(uint data) {
 	return f16vec3(
 		data & 2047u,
 		bitfieldExtract(data, 11, 11),
-		bitfieldExtract(data, 22, 10)
-	) / f16vec3(2047.0, 2047.0, 1023.0);
+		data >> 22u
+	) * f16vec3(1.0 / vec3(2047.0, 2047.0, 1023.0));
 }
 
 uint pack_un11_11_10(vec3 color) {

@@ -87,8 +87,6 @@ void main() {
 		immut bvec2 temp = greaterThanEqual(delta.xy, (max(delta_max.x, delta_max.y) / local_contrast_adaptation_factor).xx);
 		immut bvec2 result = bvec2(edges.x && temp.x, edges.y && temp.y); // gotta do this instead of result && temp on AMD :(
 
-		if (any(result)) imageStore(edge, texel, f16vec4(
-			result, 0.0, 0.0
-		));
+		if (any(result)) imageStore(edge, texel, f16vec4(result, 0.0, 0.0));
 	}
 }

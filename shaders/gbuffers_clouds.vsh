@@ -5,9 +5,7 @@ uniform mat4 modelViewMatrix, projectionMatrix;
 in vec3 vaPosition;
 in vec4 vaColor;
 
-out VertexData {
-	layout(location = 0, component = 0) flat uint tint;
-} v;
+out VertexData { layout(location = 0, component = 0) flat uint tint; } v;
 
 #include "/lib/mmul.glsl"
 #include "/lib/srgb.glsl"

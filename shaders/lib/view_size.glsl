@@ -1,11 +1,9 @@
 uniform int packedView;
 
-ivec2 view_size() {
-	return ivec2(
-		packedView & 65535,
-		bitfieldExtract(packedView, 16, 16)
-	);
-}
+ivec2 view_size() { return ivec2(
+	packedView & 65535,
+	packedView >> 16
+); }
 
 /*
 	u16vec2 view_size() {

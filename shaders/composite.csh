@@ -37,9 +37,9 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	#include "/lib/sm/distort.glsl"
 	#include "/lib/prng/ign.glsl"
 
-	shared uint16_t[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] nbh;
+	shared uint16_t[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] sh_nbh;
 
-	f16vec3 process(
+	f16vec3 get_vl_and_add_to_nbh(
 		bool geometry,
 		float depth,
 		i16vec2 texel,
@@ -72,13 +72,11 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 			}
 
 			immut uvec3 scaled_ray = uvec3(fma(ray, f16vec3(31.0, 63.0, 31.0), f16vec3(0.5)));
-			nbh[nbh_pos.x][nbh_pos.y] = uint16_t(bitfieldInsert(bitfieldInsert(scaled_ray.r, scaled_ray.g, 5, 6), scaled_ray.b, 11, 5));
-		} else nbh[nbh_pos.x][nbh_pos.y] = uint16_t(0u);
+			sh_nbh[nbh_pos.x][nbh_pos.y] = uint16_t(bitfieldInsert(bitfieldInsert(scaled_ray.r, scaled_ray.g, 5, 6), scaled_ray.b, 11, 5));
+		} else sh_nbh[nbh_pos.x][nbh_pos.y] = uint16_t(0u);
 
 		return ray;
 	}
-
-	shared bool sh_geometry;
 #endif
 
 void main() {
@@ -87,63 +85,47 @@ void main() {
 
 	#if VL && !defined NETHER
 		immut float depth = texelFetch(depthtex0, texel, 0).r;
+		immut vec2 texel_size = 1.0 / vec2(view_size());
 		immut bool geometry = depth < 1.0;
 
-		immut vec2 texel_size = 1.0 / vec2(view_size());
+		immut uvec2 nbh_pos = gl_LocalInvocationID.xy + 1u;
+		vec3 pe; f16vec3 ray = get_vl_and_add_to_nbh(geometry, depth, texel, texel_size, nbh_pos, pe);
 
-		vec3 pe;
-		f16vec3 ray = process(geometry, depth, texel, texel_size, gl_LocalInvocationID.xy + 1u, pe);
+		#define BORDER_OP(offset) \
+			immut float border_depth = texelFetchOffset(depthtex0, texel, 0, offset).r; \
+			vec3 _border_pe; \
+			get_vl_and_add_to_nbh( \
+				border_depth < 1.0, \
+				border_depth, \
+				texel + i16vec2(offset), \
+				texel_size, \
+				nbh_pos + offset, \
+				_border_pe \
+			);
 
-		float border_depth;
-		i16vec2 border_offset;
-
-		#define BORDER_OP(offset) border_depth = texelFetchOffset(depthtex0, texel, 0, offset).r; border_offset = i16vec2(offset);
-		#define NON_BORDER_OP border_offset = i16vec2(0);
+		#define NON_BORDER_OP
 		#include "/lib/nbh/border_cornered.glsl"
 
-		vec3 _offset_pe;
-		if (border_offset != i16vec2(0)) process(
-			depth < 1.0,
-			depth,
-			texel + border_offset,
-			texel_size,
-			uvec2(int16_t(1) + i16vec2(gl_LocalInvocationID.xy) + border_offset),
-			_offset_pe
-		);
+		#include "/lib/nbh/border_cornered.glsl"
 
 		barrier();
 
 		if (geometry) {
-			immut float dist = length(pe);
-			immut vec3 n_pe = pe / dist;
+			immut float16_t fog = saturate(edge_fog(pe) + pbr_fog(length(pe)));
 
-			#ifdef END
-				immut f16vec3 fog_col = sky(n_pe);
-			#else
-				immut float16_t height = float16_t(n_pe.y);
+			const uvec2[8] offsets = uvec2[8](
+				uvec2(0u, 0u), uvec2(1u, 0u), uvec2(2u, 0u), uvec2(2u, 1u), uvec2(2u, 2u), uvec2(1u, 2u), uvec2(0u, 2u), uvec2(0u, 1u)
+			);
 
-				immut float16_t sky_fog_val = sky_fog(height);
-				immut f16vec3 fog_col = sky(sky_fog(height), n_pe, sunDirectionPlr);
-			#endif
+			for (uint i = 0u; i < offsets.length(); ++i) {
+				immut uvec2 nbh_pos = gl_LocalInvocationID.xy + offsets[i];
+				immut uint16_t packed_ray = sh_nbh[nbh_pos.x][nbh_pos.y];
 
-			immut float16_t fog = saturate(edge_fog(pe) + pbr_fog(dist));
-
-			for (uint i = 0u; i <= 2u; ++i) {
-				for (uint j = 0u; j <= 2u; ++j) {
-					if (uvec2(i, j) != uvec2(1u)) { // don't sample yourself
-						immut uint packed_ray = uint(nbh[gl_LocalInvocationID.x + i][gl_LocalInvocationID.y + j]);
-
-						ray = fma(
-								f16vec3(
-									packed_ray & 31u,
-									bitfieldExtract(packed_ray, 5, 6),
-									bitfieldExtract(packed_ray, 11, 5)
-								),
-								f16vec3(1.0 / vec3(31.0, 63.0, 31.0)),
-								ray
-							);
-					}
-				}
+				ray = fma(f16vec3(
+					packed_ray & uint16_t(31u),
+					bitfieldExtract(uint(packed_ray), 5, 6),
+					packed_ray >> uint16_t(11u)
+				), f16vec3(1.0 / vec3(31.0, 63.0, 31.0)), ray);
 			}
 
 			ray *= float16_t(float(VL) * 0.001 / float(9 * VL_SAMPLES)) * (float16_t(1.0) - fog);
@@ -210,14 +192,14 @@ void main() {
 				N - < z > + S
 			*/
 
-			comp_color.r += max(dot(dir, vec2(0.0, -1.0)) - inv_comp_line, 0.0);
+			comp_color.r += max(dot(dir, vec2(0.0, -1.0)) - inv_comp_line, 0.0); // todo!() these dots could probably be done faster
 			comp_color.rg += max(dot(dir, vec2(1.0, 0.0)) - inv_comp_line, 0.0);
 			comp_color.rb += max(dot(dir, vec2(-1.0, 0.0)) - inv_comp_line, 0.0);
 			comp_color.gb += max(dot(dir, vec2(0.0, 1.0)) - inv_comp_line, 0.0);
 
 			comp_color = fma(comp_color, (1.0 / comp_line).xxx, vec3(max(0.1 - abs_dist.y, 0.0) * 10.0));
 
-			color = f16vec3(mix(color, comp_color, luminance(comp_color) * smoothstep(0.0, 0.1, 1.5 - abs_dist.x - abs_dist.y))); // todo make actually float16
+			color = f16vec3(mix(color, comp_color, luminance(comp_color) * smoothstep(0.0, 0.1, 1.5 - abs_dist.x - abs_dist.y))); // todo!() make actually float16_t
 		}
 	#endif
 

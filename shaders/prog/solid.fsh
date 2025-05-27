@@ -74,48 +74,62 @@ void main() {
 	immut f16vec3 tint = f16vec3(v.tint);
 	color.rgb *= tint;
 
-	#ifdef NO_NORMAL
-		immut vec3 normal = mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0);
-		immut vec3 tangent = mat3(gbufferModelViewInverse) * vec3(0.0, 1.0, 0.0);
-		immut mat3 tbn = mat3(tangent, cross(tangent, normal), normal);
-	#else
-		immut mat3 tbn = get_tbn();
-	#endif
-
 	#if (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)) || !(SM && defined MC_SPECULAR_MAP)
 		immut float16_t luma = luminance(color.rgb);
 	#endif
 
-	#if defined NO_NORMAL || NORMALS == 2
-		immut f16vec3 w_tex_normal = f16vec3(tbn[2]);
-	#elif NORMALS == 1 && defined MC_NORMAL_MAP
-		immut f16vec3 w_tex_normal = f16vec3(tbn * sample_normal(texture(normals, v.coord).rg));
+	#ifdef NO_NORMAL
+		immut vec3 face_normal = mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0);
+		immut f16vec2 octa_face_normal = octa_encode(f16vec3(mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0)));
 	#else
-		immut f16vec3 w_tex_normal = f16vec3(tbn * gen_normal(gtexture, tint, v.coord, v.mid_coord, v.face_tex_size, luma));
-
-		/*
-		immut ivec2 half_texels = ivec2(
-			v.face_tex_size & 65535u,
-			bitfieldExtract(v.face_tex_size, 16, 16)
-		) / 2 - 1;
-		immut vec2 atlas = vec2(textureSize(gtexture, 0));
-		immut vec2 atlas_texel = 1.0 / atlas;
-		immut vec2 half_size = vec2(half_texels) * atlas_texel;
-
-		immut vec2 local_coord = v.coord - unpackUnorm2x16(v.mid_coord);
-		color.rgb += vec4(
-			local_coord.x > -half_size.x,
-			local_coord.x < half_size.x,
-			local_coord.y > -half_size.y,
-			local_coord.y < half_size.y
-		).rgb;
-		*/
+		immut f16vec2 octa_face_normal = f16vec2(unpackHalf2x16(v_tbn.half2x16_octa_normal_and_tangent.x));
 	#endif
 
-	immut uint packed_normal = packSnorm4x8(f16vec4(
-		octa_encode(w_tex_normal),
-		octa_encode(f16vec3(tbn[2])) // todo!() just pass through octa normal when "Flat" normals are used
-	));
+	#if defined NO_NORMAL || NORMALS == 2
+		immut f16vec2 octa_tex_normal = octa_face_normal;
+	#else
+		#ifdef NO_NORMAL
+			immut vec3 face_tangent = mat3(gbufferModelViewInverse) * vec3(0.0, 1.0, 0.0);
+			immut mat3 tbn = mat3(face_tangent, cross(face_tangent, face_normal), face_normal);
+		#else
+			immut vec3 face_normal = vec3(normalize(octa_decode(octa_face_normal)));
+
+			immut f16vec2 octa_face_tangent = f16vec2(unpackHalf2x16(v_tbn.half2x16_octa_normal_and_tangent.y));
+			immut vec3 face_tangent = vec3(normalize(octa_decode(octa_face_tangent)));
+
+			immut float handedness = float(v_tbn.handedness_and_misc & 1u) - 0.5; // map least significant bit, [0, 1], to [-0.5, 0.5]
+
+			immut mat3 tbn = mat3(face_tangent, normalize(cross(face_tangent, face_normal) * handedness), face_normal);
+		#endif
+
+		#if NORMALS == 1 && defined MC_NORMAL_MAP
+			immut f16vec3 w_tex_normal = f16vec3(tbn * sample_normal(texture(normals, v.coord).rg));
+		#else
+			immut f16vec3 w_tex_normal = f16vec3(tbn * gen_normal(gtexture, tint, v.coord, v.mid_coord, v.face_tex_size, luma));
+
+			/*
+				immut ivec2 half_texels = ivec2(
+					v.face_tex_size & 65535u,
+					v.face_tex_size >> 16u
+				) / 2 - 1;
+				immut vec2 atlas = vec2(textureSize(gtexture, 0));
+				immut vec2 atlas_texel = 1.0 / atlas;
+				immut vec2 half_size = vec2(half_texels) * atlas_texel;
+
+				immut vec2 local_coord = v.coord - unpackUnorm2x16(v.mid_coord);
+				color.rgb += vec4(
+					local_coord.x > -half_size.x,
+					local_coord.x < half_size.x,
+					local_coord.y > -half_size.y,
+					local_coord.y < half_size.y
+				).rgb;
+			*/
+		#endif
+
+		immut f16vec2 octa_tex_normal = octa_encode(w_tex_normal);
+	#endif
+
+	immut uint packed_normal = packSnorm4x8(f16vec4(octa_tex_normal, octa_face_normal));
 
 	#ifdef TERRAIN
 		immut float16_t in_ao = float16_t(v.ao);
