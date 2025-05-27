@@ -106,8 +106,6 @@ void main() {
 		#define NON_BORDER_OP
 		#include "/lib/nbh/border_cornered.glsl"
 
-		#include "/lib/nbh/border_cornered.glsl"
-
 		barrier();
 
 		if (geometry) {
