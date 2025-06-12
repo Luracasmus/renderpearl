@@ -105,7 +105,7 @@ searchtex       : >-*-------------*--------------*---┘            *           
 ┌ colortex3 ┐
 |R |G |B | A|
 └16┴16┴16┴16┘
- |  |  |  |
+ |  |  |  └X
  └[biased shadow screen space position]
 ```
 
