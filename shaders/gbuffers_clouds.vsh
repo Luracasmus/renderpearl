@@ -1,5 +1,8 @@
 #include "/prelude/core.glsl"
 
+out gl_PerVertex { vec4 gl_Position; };
+
+uniform vec3 chunkOffset;
 uniform mat4 modelViewMatrix, projectionMatrix;
 
 in vec3 vaPosition;
@@ -14,7 +17,5 @@ out VertexData { layout(location = 0, component = 0) flat uint tint; } v;
 void main() {
 	v.tint = pack_un11_11_10(linear(vaColor.rgb));
 
-	immut vec3 view = rot_trans_mmul(modelViewMatrix, vaPosition);
-
-	gl_Position = proj_mmul(projectionMatrix, view);
+	gl_Position = proj_mmul(projectionMatrix, rot_trans_mmul(modelViewMatrix, vaPosition + chunkOffset));
 }

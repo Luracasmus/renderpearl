@@ -34,7 +34,7 @@
 	#define multiply32x16(v0, v1) (v0 * v1)
 #endif
 
-#if (SUBGROUP >= 1 && defined MC_GL_AMD_shader_trinary_minmax) || SUBGROUP >= 2
+#if (SUBGROUP >= 1 && defined GL_KHR_shader_subgroup) || (SUBGROUP >= 2 && defined MC_GL_VENDOR_NVIDIA) || SUBGROUP >= 3
 	#extension GL_KHR_shader_subgroup_basic : require
 	#extension GL_KHR_shader_subgroup_vote : require
 #else

@@ -1,14 +1,12 @@
 #include "/prelude/core.glsl"
 
-out gl_PerVertex {
-	vec4 gl_Position;
-};
+out gl_PerVertex { vec4 gl_Position; };
 
-#ifdef ENTITY_SHADOWS
+#ifdef SM_ENTITY
 #endif
-#ifdef PLAYER_SHADOWS
+#ifdef SM_PLR
 #endif
-#ifdef BLOCK_ENTITY_SHADOWS
+#ifdef SM_BLOCK_ENTITY
 #endif
 
 uniform mat4 modelViewMatrix;

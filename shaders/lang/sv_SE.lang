@@ -11,38 +11,38 @@ profile.comment=§c⌚§r §5§lSkärmdump§r konfigurerar vissa alternativ till
 
 option.VERSION.comment=Av Luracasmus\n§9https://modrinth.com/shader/renderpearl
 
-screen.LIGHTING_AND_SHADOWS=§6◀§r Ljus & Skuggor §6▶
+screen.SHADOW_MAP_LIGHTING=§6◀§r Ljus & Skuggor §6▶
 	option.ambientOcclusionLevel.comment=Gör hörn mellan block mörkare
 
 	option.shadowMapResolution=§c⌚§r Shadow Map-upplösning
 
-	option.SHADOW_DIST=§c⌚§r Skuggavstånd
-		option.SHADOW_DIST.comment=Avståndet inom vilket skuggor återges\nLägre värden gör också närmare skuggor skarpare\n\n§6⚠§r Det är rekommenderat att ställa in detta lägre än eller lika med inställningen för §lSynligt Avstånd§r för optimal prestanda och kvalitet
-		suffix.SHADOW_DIST=\ datablock
+	option.SM_DIST=§c⌚§r Skuggavstånd
+		option.SM_DIST.comment=Avståndet inom vilket skuggor återges\nLägre värden gör också närmare skuggor skarpare\n\n§6⚠§r Det är rekommenderat att ställa in detta lägre än eller lika med inställningen för §lSynligt Avstånd§r för optimal prestanda och kvalitet
+		suffix.SM_DIST=\ datablock
 
-	option.SUNLIGHT=§b⌚§r Solljus
+	option.DIR_SL=§b⌚§r Solljus
 
 	option.AMBIENT=§b⌚§r Omgivande Ljus
 
-	option.ENTITY_SHADOWS=§c⌚§r Entitetsskuggor
-	option.PLAYER_SHADOWS=§e⌚§r Spelarskuggor
-		option.PLAYER_SHADOWS.comment=§b🛈§r Alltid aktiva när §l§6⌚§r §lEntitetsskuggor§r är aktiverade
-	option.BLOCK_ENTITY_SHADOWS=§e⌚§r Blockentitetsskuggor
+	option.SM_ENTITY=§c⌚§r Entitetsskuggor
+	option.SM_PLR=§e⌚§r Spelarskuggor
+		option.SM_PLR.comment=§b🛈§r Alltid aktiva när §l§6⌚§r §lEntitetsskuggor§r är aktiverade
+	option.SM_BLOCK_ENTITY=§e⌚§r Blockentitetsskuggor
 
 	option.SSS.comment=Låter en del ljus skina genom tunna ytor\n\n§6⚠§r Detta avaktiverar vissa optimeringar för provtagning av shadow map:en
 
-	option.SHADOW_FADE_DIST=§b⌚§r Skuggblekningsavstånd
+	option.SM_FADE_DIST=§b⌚§r Skuggblekningsavstånd
 
-	option.SHADOW_BLUR=§c⌚§r Skuggutsuddning
-		value.SHADOW_BLUR.1=Linjär
-		value.SHADOW_BLUR.2=Gaussisk
+	option.SM_BLUR=§c⌚§r Skuggutsuddning
+		value.SM_BLUR.1=Linjär
+		value.SM_BLUR.2=Gaussisk
 
 screen.POST=§6◀§r Efterbearbetning §6▶
 	option.SATURATION=§b⌚§r Mättnad
 
-	option.RED_MUL=§b⌚ §cRöd
-	option.GREEN_MUL=§b⌚ §aGrön
-	option.BLUE_MUL=§b⌚ §9Blå
+	option.BALANCE_R=§b⌚ §cRöd
+	option.BALANCE_G=§b⌚ §aGrön
+	option.BALANCE_B=§b⌚ §9Blå
 
 	option.TONEMAP=§b⌚§r Tonemap-Operatör
 		option.TONEMAP.comment=Avgör metoden som används för att omvandla färger till ett intervall som displayen kan visa
@@ -78,11 +78,11 @@ screen.ATMOSPHERICS=§6◀§r Atmosfär §6▶
 	option.SUN_BLOOM=§b⌚§r Sol-Bloom
 	option.SKY_BLOOM=§b⌚§r Himmel-Bloom
 
-screen.BLOCK_LIGHT=§6◀§r Blockljus §6▶
-	screen.BLOCK_LIGHT.comment=Inte sådana man tänder då alltså
+screen.ENHANCED_VANILLA_LIGHTING=§6◀§r Blockljus §6▶
+	screen.ENHANCED_VANILLA_LIGHTING.comment=Inte sådana man tänder då alltså
 
-	option.INDEXED_BLOCK_LIGHT=§c⌚§r Indexerat Blockljus
-		option.INDEXED_BLOCK_LIGHT.comment=Ljusindexdriven färgad belysning
+	option.DIR_BL=§c⌚§r Indexerat Blockljus
+		option.DIR_BL.comment=Ljusindexdriven färgad belysning
 
 	option.HAND_LIGHT=§e⌚§r Handljus
 
@@ -91,17 +91,17 @@ screen.BLOCK_LIGHT=§6◀§r Blockljus §6▶
 	option.EMISSIVE_LAPIS_BLOCK=§e⌚§9 Emitterande Lapis lazuliblock
 
 	screen.LIGHT_INDEX=§6◀§r Ljusindex §6▶
-		option.IND_ILLUM=§b⌚§r Indirekt Belysning
+		option.IND_BL=§b⌚§r Indirekt Belysning
 
-		option.INDEX_DIST=§c⌚§r Indexavstånd
-			option.INDEX_DIST.comment=Chebyshev-avstånd inom vilket ljus indexeras\n\n§6⚠§r Att ändra detta kräver ibland modifiering av §l§c⌚§r§l Indexstorlek§r och/eller §l§6⌚§r§l LDS-förhållande§r för att undvika artefakter och bibehålla optimal prestanda - Det rekommenderas därför att använda Profil-inställningen istället
+		option.LL_DIST=§c⌚§r Indexavstånd
+			option.LL_DIST.comment=Chebyshev-avstånd inom vilket ljus indexeras\n\n§6⚠§r Att ändra detta kräver ibland modifiering av §l§c⌚§r§l Indexstorlek§r och/eller §l§6⌚§r§l LDS-förhållande§r för att undvika artefakter och bibehålla optimal prestanda - Det rekommenderas därför att använda Profil-inställningen istället
 
-		option.INDEX_SIZE=§c⌚§r Indexstorlek
-			option.INDEX_SIZE.comment=Styr antalet ljus §oföre utsortering§r som kan bli indexerade innan artifakter uppstår\n\n§c⚠§r Det maximala värdet som stöds beror på aktiv GPU, grafikdrivrutiner och läge och stöd av §l§6⌚§r §l16/8-Bitars Typer§r
+		option.LL_CAPACITY=§c⌚§r Indexstorlek
+			option.LL_CAPACITY.comment=Styr antalet ljus §oföre utsortering§r som kan bli indexerade innan artifakter uppstår\n\n§c⚠§r Det maximala värdet som stöds beror på aktiv GPU, grafikdrivrutiner och läge och stöd av §l§6⌚§r §l16/8-Bitars Typer§r
 
-		option.MIN_INDEX_LL=§6⌚§r Min. Ljusnivå
-		option.INDEX_RATE=§6⌚§r Indextakt
-			option.INDEX_RATE.comment=Fördröjning i bildrutor mellan varje gång ljusindexet byggs om\n\nHögre värden förbättrar prestandan men ökar latensen i ljusuppdateringar
+		option.MIN_LL_INTENSITY=§6⌚§r Min. Ljusnivå
+		option.LL_RATE=§6⌚§r Indextakt
+			option.LL_RATE.comment=Fördröjning i bildrutor mellan varje gång ljusindexet byggs om\n\nHögre värden förbättrar prestandan men ökar latensen i ljusuppdateringar
 
 		option.LOD_FALLOFF=§c⌚§r Detaljnivåavtagande
 			option.LOD_FALLOFF.comment=Multiplikator på minskning av kvalitet över avstånd

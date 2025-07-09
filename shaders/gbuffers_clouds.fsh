@@ -1,7 +1,7 @@
 #include "/prelude/core.glsl"
 
 /* RENDERTARGETS: 1 */
-layout(location = 0) out vec4 colortex1;
+layout(location = 0) out f16vec4 colortex1;
 layout(depth_unchanged) out float gl_FragDepth;
 
 uniform float frameTimeCounter;
@@ -65,7 +65,7 @@ void main() {
 
 	immut f16vec3 color = float16_t(0.25) * skylight() + float16_t(0.5) * unpack_un11_11_10(v.tint);
 
-	colortex1 = vec4(
+	colortex1 = f16vec4(
 		mix(mix(color, fog_col, float16_t(0.25)), fog_col, fog),
 		min(dist * float16_t(0.01), float16_t(0.75)) * (float16_t(1.0) - fog) * alpha
 	);

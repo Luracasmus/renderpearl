@@ -1,8 +1,6 @@
 #include "/prelude/core.glsl"
 
-out gl_PerVertex {
-	vec4 gl_Position;
-};
+out gl_PerVertex { vec4 gl_Position; };
 
 uniform mat4 modelViewMatrix, projectionMatrix;
 

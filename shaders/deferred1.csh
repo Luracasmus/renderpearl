@@ -8,7 +8,7 @@ readonly
 #include "/buf/indirect/control.glsl"
 
 readonly
-#include "/buf/index.glsl"
+#include "/buf/ll.glsl"
 
 #if HAND_LIGHT
 	readonly
@@ -49,7 +49,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	#include "/lib/llv.glsl"
 #endif
 
-const uint local_index_size = uint(float(index.data.length()) * LDS_RATIO);
+const uint local_index_size = uint(float(LL_CAPACITY) * LDS_RATIO);
 
 shared ivec3 sh_bb_pe_min;
 shared ivec3 sh_bb_pe_max;
@@ -96,8 +96,8 @@ void main() {
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
-	// check if block light (first 13 bits) isn't zero, and we're within INDEX_DIST
-	immut bool lit = (gbuffer_data.y & 8191u) != 0u && chebyshev_dist < float16_t(INDEX_DIST);
+	// check if block light (first 13 bits) isn't zero, and we're within LL_DIST
+	immut bool lit = (gbuffer_data.y & 8191u) != 0u && chebyshev_dist < float16_t(LL_DIST);
 
 	barrier();
 
@@ -149,14 +149,14 @@ void main() {
 	vec3 index_offset = vec3(-255.5);
 
 	if (all(greaterThanEqual(bb_pe_max, bb_pe_min))) { // make sure this tile isn't fully unlit, out of range or sky
-		index_offset += index.offset - cameraPositionFract - gbufferModelViewInverse[3].xyz;
+		index_offset += ll.offset - cameraPositionFract - gbufferModelViewInverse[3].xyz;
 
 		immut f16vec3 bb_view_min = f16vec3(sh_bb_view_min);
 		immut f16vec3 bb_view_max = f16vec3(sh_bb_view_max);
 
-		immut uint16_t global_len = uint16_t(index.len);
+		immut uint16_t global_len = uint16_t(ll.len);
 		for (uint16_t i = uint16_t(gl_LocalInvocationIndex); i < global_len; i += uint16_t(gl_WorkGroupSize.x * gl_WorkGroupSize.y)) {
-			immut uint light_data = index.data[i];
+			immut uint light_data = ll.data[i];
 
 			immut f16vec3 pe_light = f16vec3(
 				light_data & 511u,
@@ -178,7 +178,7 @@ void main() {
 				immut uint j = atomicAdd(sh_index_len, 1u);
 
 				sh_index_data[j] = light_data;
-				sh_index_color[j] = index.color[i];
+				sh_index_color[j] = ll.color[i];
 			}
 		}
 	}
@@ -204,7 +204,7 @@ void main() {
 		#ifdef LIGHT_LEVELS
 			f16vec3 block_light = f16vec3(visualize_ll(light.x));
 		#else
-			f16vec3 block_light = light.x*light.x * f16vec3(1.2, 1.2, 1.0);
+			f16vec3 block_light = light.x*light.x * f16vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B);
 		#endif
 
 		if (lit) {
@@ -238,11 +238,20 @@ void main() {
 					);
 
 					immut float16_t brightness = min(min(intensity - mhtn_dist, float16_t(1.0)) * intensity * falloff, float16_t(48.0));
+
 					immut f16vec3 illum = brightness * f16vec3(
-						bitfieldExtract(uint(light_color), 6, 5),
+						(light_color >> uint16_t(6u)) & uint16_t(5u),
 						light_color & uint16_t(63u),
-						light_color >> uint16_t(11u)
+						(light_color >> uint16_t(11u))
 					);
+
+					/*
+						immut f16vec3 illum = brightness * f16vec3(
+							bitfieldExtract(uint(light_color), 6, 5),
+							light_color & uint16_t(63u),
+							light_color >> uint16_t(11u)
+						);
+					*/
 
 					immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
 
@@ -252,12 +261,12 @@ void main() {
 						immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, color_roughness.a);
 						specular = fma(specular_diffuse.xxx, illum, specular);
 						light_diffuse = specular_diffuse.y;
-					} else light_diffuse = float16_t(IND_ILLUM); // very fake GI
+					} else light_diffuse = float16_t(IND_BL); // very fake GI
 
 					diffuse = fma(light_diffuse.xxx, illum, diffuse);
 
 					/*
-						float lighting = IND_ILLUM;
+						float lighting = IND_BL;
 
 						if (lit) {
 							bool visible = true;
@@ -362,7 +371,7 @@ void main() {
 
 							specular += colored_specular_aos[0] + colored_specular_aos[1];
 							diffuse_aos = specular_diffuse_soa[1];
-						} else diffuse_aos = f16vec2(IND_ILLUM); // very fake GI
+						} else diffuse_aos = f16vec2(IND_BL); // very fake GI
 
 						immut f16vec2[3] colored_diffuse_soa = f16vec2[3](
 							diffuse_aos * illum_soa[0],
@@ -382,13 +391,13 @@ void main() {
 
 			// Undo the multiplication from packing light color and brightness
 			const vec3 packing_scale = 15.0 * vec3(31.0, 63.0, 31.0);
-			immut f16vec3 new_light = f16vec3(float(INDEXED_BLOCK_LIGHT * 3) / packing_scale) * light.x * fma(specular, rcp_color, diffuse);
+			immut f16vec3 new_light = f16vec3(float(DIR_BL * 3) / packing_scale) * light.x * fma(specular, rcp_color, diffuse);
 
-			block_light = mix(new_light, block_light, smoothstep(float16_t(INDEX_DIST - 15), float16_t(INDEX_DIST), chebyshev_dist));
+			block_light = mix(new_light, block_light, smoothstep(float16_t(LL_DIST - 15), float16_t(LL_DIST), chebyshev_dist));
 		} // else block_light = f16vec3(1.0); // DEBUG `lit`
 
 		// Debug culling & LDS overflow
-		// block_light.gb += f16vec2(sh_index_len < index.len, sh_index_len == 0);
+		// block_light.gb += f16vec2(sh_index_len < ll.len, sh_index_len == 0);
 		// block_light.rgb += distance(max(float16_t(sh_bb_view_min), float16_t(0.0)), max(float16_t(sh_bb_view_max), float16_t(0.0))) * float16_t(0.01);
 		// if (sh_index_len > local_index_size) block_light *= 10;
 
@@ -421,7 +430,7 @@ void main() {
 
 		immut float16_t emission = float16_t(bitfieldExtract(gbuffer_data.y, 26, 4));
 		immut float16_t emi = fma(emission, float16_t(0.2), luminance(color_roughness.rgb));
-		f16vec3 final_light = sky_light * float16_t(0.375) + emi*emi*emi*emi * float16_t(0.005) + block_light;
+		f16vec3 final_light = sky_light * float16_t(0.5 * IND_SL) + emi*emi*emi*emi * float16_t(0.005) + block_light;
 
 		#ifdef NETHER
 			immut f16vec3 fog_col = linear(f16vec3(fogColor));
@@ -444,7 +453,7 @@ void main() {
 				if (chebyshev_dist < sm_dist) {
 					immut f16vec3 sm_light = sample_shadow(texelFetch(colortex3, texel, 0).rgb);
 
-					light *= mix(sm_light, f16vec3(1.0), smoothstep(float16_t(sm_dist * (1.0 - SHADOW_FADE_DIST)), sm_dist, chebyshev_dist));
+					light *= mix(sm_light, f16vec3(1.0), smoothstep(float16_t(sm_dist * (1.0 - SM_FADE_DIST)), sm_dist, chebyshev_dist));
 				}
 
 				final_light = fma(light, f16vec3(3.0), final_light);

@@ -4,9 +4,9 @@
 
 // work around compiler bug on Intel drivers (and I think Mesa and maybe elsewhere too)
 #if defined MC_GL_VENDOR_NVIDIA || defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI
-	layout(local_size_x = min(gl_MaxComputeWorkGroupSize.x, INDEX_SIZE), local_size_y = 1, local_size_z = 1) in;
-#elif INDEX_SIZE < 1024
-	layout(local_size_x = INDEX_SIZE, local_size_y = 1, local_size_z = 1) in;
+	layout(local_size_x = min(gl_MaxComputeWorkGroupSize.x, LL_CAPACITY), local_size_y = 1, local_size_z = 1) in;
+#elif LL_CAPACITY < 1024
+	layout(local_size_x = LL_CAPACITY, local_size_y = 1, local_size_z = 1) in;
 #else
 	// we assume GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS >= 1024 && GL_MAX_COMPUTE_WORK_GROUP_SIZE[0] >= 1024
 	layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
@@ -19,11 +19,11 @@ uniform vec3 cameraPositionFract, invCameraPositionDeltaInt;
 uniform mat4 gbufferModelViewInverse;
 
 coherent
-#include "/buf/index.glsl"
+#include "/buf/ll.glsl"
 
 shared uint sh_culled_len;
-shared uint[index.data.length()] sh_index_data;
-shared uint16_t[index.data.length()] sh_index_color;
+shared uint[ll.data.length()] sh_index_data;
+shared uint16_t[ll.data.length()] sh_index_color;
 
 void main() {
 	// maybe we could average all the light colors here for ambient light color
@@ -34,12 +34,12 @@ void main() {
 	if (rebuildIndex) {
 		if (local_invocation_i == uint16_t(0u)) sh_culled_len = 0u;
 
-		// if (index.queue > index.data.length()) { index.len = uint16_t(0u); return; }
+		// if (ll.queue > ll.data.length()) { ll.len = uint16_t(0u); return; }
 
-		immut uint16_t len = min(uint16_t(index.queue), uint16_t(index.data.length()));
+		immut uint16_t len = min(uint16_t(ll.queue), uint16_t(ll.data.length()));
 		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
-			sh_index_data[i] = index.data[i];
-			sh_index_color[i] = index.color[i];
+			sh_index_data[i] = ll.data[i];
+			sh_index_color[i] = ll.color[i];
 		}
 
 		barrier();
@@ -59,8 +59,8 @@ void main() {
 			// copy shared index to global
 			if (unique) {
 				immut uint i = atomicAdd(sh_culled_len, 1u);
-				index.data[i] = data;
-				index.color[i] = color;
+				ll.data[i] = data;
+				ll.color[i] = color;
 			}
 		}
 
@@ -70,8 +70,8 @@ void main() {
 		// copy back global index to shared
 		immut uint16_t culled_len = uint16_t(sh_culled_len);
 		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {
-			sh_index_data[i] = index.data[i];
-			sh_index_color[i] = index.color[i];
+			sh_index_data[i] = ll.data[i];
+			sh_index_color[i] = ll.color[i];
 		}
 
 		barrier();
@@ -101,14 +101,14 @@ void main() {
 				if (dot(other_pe, other_pe) < sq_dist) ++k;
 			}
 
-			index.data[k] = data;
-			index.color[k] = sh_index_color[i];
+			ll.data[k] = data;
+			ll.color[k] = sh_index_color[i];
 		}
 
 		if (local_invocation_i == uint16_t(0u)) {
-			index.queue = 0u;
-			index.offset = vec3(0.0);
-			index.len = culled_len;
+			ll.queue = 0u;
+			ll.offset = vec3(0.0);
+			ll.len = culled_len;
 		}
-	} else if (local_invocation_i == uint16_t(0u)) index.offset += invCameraPositionDeltaInt;
+	} else if (local_invocation_i == uint16_t(0u)) ll.offset += invCameraPositionDeltaInt;
 }

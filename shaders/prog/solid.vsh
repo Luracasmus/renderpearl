@@ -7,9 +7,7 @@
 #ifdef EMISSIVE_LAPIS_BLOCK
 #endif
 
-out gl_PerVertex {
-	vec4 gl_Position;
-};
+out gl_PerVertex { vec4 gl_Position; };
 
 uniform float day, farSquared;
 uniform vec3 cameraPositionFract;
@@ -36,7 +34,7 @@ uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, texture
 #endif
 
 #ifdef TERRAIN
-	#include "/buf/index.glsl"
+	#include "/buf/ll.glsl"
 
 	uniform bool rebuildIndex;
 	uniform vec3 cameraPosition, chunkOffset;
@@ -169,16 +167,16 @@ void main() {
 				immut uint emission = uint(fma(norm_emission, float16_t(15.0), float16_t(0.5))); // bring into 4-bit-representable range and round
 				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, emission, 1, 4);
 
-				if (rebuildIndex) { // only rebuild the index once every INDEX_RATE frames
+				if (rebuildIndex) { // only rebuild the index once every LL_RATE frames
 					immut f16vec3 view_f16 = f16vec3(view);
 
 					if (
 						// run once per face
 						(gl_VertexID & 3) == 1 && // gl_VertexID % 4 == 1
 						// cull too weak or non-lights
-						emission >= MIN_INDEX_LL &&
-						// cull outside INDEX_DIST using Chebyshev distance
-						chebyshev_dist < float16_t(INDEX_DIST) &&
+						emission >= MIN_LL_INTENSITY &&
+						// cull outside LL_DIST using Chebyshev distance
+						chebyshev_dist < float16_t(LL_DIST) &&
 						// cull behind camera outside of illumination range
 						(view_f16.z < float16_t(0.0) || dot(abs_pe, f16vec3(1.0)) <= float16_t(emission))
 					) {
@@ -189,7 +187,7 @@ void main() {
 						// increase times two each LOD
 						// the fact that the values resulting from higher LODs are divisible by the lower ones means that no lights will appear only further away
 						if (uint8_t(pcg(seed.x + pcg(seed.y + pcg(seed.z)))) % (uint8_t(1u) << uint8_t(min(7.0, fma(
-							(fluid ? float16_t(LAVA_LOD_BIAS) : float16_t(0.0)) + length(view_f16) / float16_t(INDEX_DIST),
+							(fluid ? float16_t(LAVA_LOD_BIAS) : float16_t(0.0)) + length(view_f16) / float16_t(LL_DIST),
 							float16_t(LOD_FALLOFF),
 							float16_t(0.5)
 						)))) == uint8_t(0u)) {
@@ -197,20 +195,28 @@ void main() {
 								immut f16vec3 avg_col = f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
 							#endif
 
-							immut uint i = atomicAdd(index.queue, 1u);
+							immut uint i = atomicAdd(ll.queue, 1u);
 
 							immut uvec3 light_pe = uvec3(clamp(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + pe + cameraPositionFract), 0.0, 511.5)); // this feels slightly cursed but it works // somehow
 
 							uint light_data = bitfieldInsert(
-								bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9), // color
+								bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9), // position
 								emission, 27, 4 // intensity
 							);
 							if (fluid) light_data |= 0x80000000u; // set "wide" flag for lava
 
-							index.data[i] = light_data;
+							ll.data[i] = light_data;
 
-							immut uvec3 col = uvec3(fma(linear(color * avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5)));
-							index.color[i] = uint16_t(bitfieldInsert(bitfieldInsert(col.g, col.r, 6, 5), col.b, 11, 5));
+							immut f16vec3 scaled_color = fma(
+								linear(color * avg_col),
+								f16vec3(31.0, 63.0, 31.0),
+								f16vec3(0.5)
+							);
+
+							ll.color[i] = uint16_t(scaled_color.g) | (uint16_t(scaled_color.r) << uint16_t(6u)) | (uint16_t(scaled_color.b) << uint16_t(11u));
+
+							// immut uvec3 col = uvec3(fma(linear(color * avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5)));
+							// ll.color[i] = uint16_t(bitfieldInsert(bitfieldInsert(col.g, col.r, 6, 5), col.b, 11, 5));
 						}
 					}
 				}

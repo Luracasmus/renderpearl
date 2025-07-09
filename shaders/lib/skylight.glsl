@@ -20,7 +20,7 @@
 
 		const f16vec3 col_overcast = f16vec3(0.17, 0.19, 0.25);
 
-		return float16_t(SUNLIGHT) * mix(
+		return float16_t(DIR_SL) * mix(
 			col_moonlight,
 			mix(
 				col_sunrise,

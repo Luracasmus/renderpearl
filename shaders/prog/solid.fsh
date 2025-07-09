@@ -1,7 +1,7 @@
 #include "/prelude/core.glsl"
 
 /* RENDERTARGETS: 1,2,3 */
-layout(location = 0) out vec4 colortex1; // layout(location = 0) out f16vec4 colortex1; // does this work outside of NVIDIA drivers?
+layout(location = 0) out f16vec4 colortex1; // does this work outside of NVIDIA drivers? (the f16*)
 layout(location = 1) out uvec2 colortex2;
 
 #ifndef NETHER
@@ -172,5 +172,5 @@ void main() {
 		float16_t roughness = gen_roughness(luma, avg_luma);
 	#endif
 
-	colortex1 = vec4(linear(color.rgb), roughness);
+	colortex1 = f16vec4(linear(color.rgb), roughness);
 }

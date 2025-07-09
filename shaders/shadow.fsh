@@ -8,7 +8,7 @@
 	in VertexData { layout(location = 0) noperspective vec2 coord; } v;
 
 	#ifdef TRANSLUCENT
-		layout(location = 0) out vec3 shadowcolor0;
+		layout(location = 0) out f16vec3 shadowcolor0;
 		layout(depth_unchanged) out float gl_FragDepth;
 
 		uniform sampler2D shadowtex1;

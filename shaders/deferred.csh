@@ -71,7 +71,7 @@ void main() {
 			immut f16vec3 fog_col = sky(n_pe);
 		#else
 			immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
-			immut f16vec3 fog_col = sky(sky_fog(float16_t(n_pe.y)), n_pe, sunDirectionPlr);
+			immut f16vec3 fog_col = sky(sky_fog_val, n_pe, sunDirectionPlr);
 		#endif
 
 		f16vec3 color;

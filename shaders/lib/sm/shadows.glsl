@@ -2,7 +2,7 @@
 #include "/lib/brdf.glsl"
 #include "/lib/sm/bias.glsl"
 
-#if SHADOW_BLUR == 2
+#if SM_BLUR == 2
 	// terrible generated versions of 'sample_sm' from '/lib/sm/sample.glsl' with offsets
 	// const parameters don't work here (probably since they're patched away by Iris)
 	// and using a non-const parameter causes compile failures on AMD :(
@@ -32,8 +32,8 @@
 #endif
 
 f16vec3 sample_shadow(vec3 s_scrn) {
-	#if SHADOW_BLUR < 2
-		#if !SHADOW_BLUR
+	#if SM_BLUR < 2
+		#if !SM_BLUR
 			/*
 				const bool shadowtex0Nearest = true;
 				const bool shadowtex1Nearest = true;

@@ -147,8 +147,8 @@ f16vec3 tonemap(f16vec3 color) {
 		color_f32 *= rgb_to_rrt;
 
 		// Apply RRT and ODT
-		immut vec3 a = color_f32 * (color_f32 + 0.0245786) - 0.000090537;
-		immut vec3 b = color_f32 * (0.983729 * color_f32 + 0.4329510) + 0.238081;
+		immut vec3 a = fma(color_f32, (color_f32 + 0.0245786), vec3(-0.000090537));
+		immut vec3 b = fma(color_f32, fma(color_f32, vec3(0.983729), vec3(0.4329510)), vec3(0.238081));
 		color_f32 = a / b;
 
 		return saturate(f16vec3(color_f32 * odt_to_rgb));
