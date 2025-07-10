@@ -53,7 +53,8 @@ out VertexData {
 
 #include "/lib/mmul.glsl"
 #include "/lib/sm/bias.glsl"
-#include "/lib/vertex_block_light.glsl"
+#include "/lib/luminance.glsl"
+// #include "/lib/vertex_block_light.glsl"
 #include "/lib/sm/distort.glsl"
 
 void main() {
@@ -84,7 +85,7 @@ void main() {
 		#endif
 
 		immut f16vec3 w_normal = f16vec3(mat3(gbufferModelViewInverse) * v_normal);
-		v.light = indexed_block_light(mat3(gbufferModelViewInverse) * view, w_normal);
+		// v.light = indexed_block_light(mat3(gbufferModelViewInverse) * view, w_normal);
 
 		#ifndef NETHER
 			immut float16_t n_dot_l = dot(w_normal, f16vec3(shadowLightDirectionPlr));

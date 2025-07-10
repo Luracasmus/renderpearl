@@ -7,6 +7,7 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 readonly
 #include "/buf/indirect/control.glsl"
 
+#define LL_LEN16
 readonly
 #include "/buf/ll.glsl"
 
@@ -154,9 +155,9 @@ void main() {
 		immut f16vec3 bb_view_min = f16vec3(sh_bb_view_min);
 		immut f16vec3 bb_view_max = f16vec3(sh_bb_view_max);
 
-		immut uint16_t global_len = uint16_t(ll.len);
+		immut uint16_t global_len = ll.len;
 		for (uint16_t i = uint16_t(gl_LocalInvocationIndex); i < global_len; i += uint16_t(gl_WorkGroupSize.x * gl_WorkGroupSize.y)) {
-			immut uint light_data = ll.data[i];
+			immut uint light_data = ll.active_data[i];
 
 			immut f16vec3 pe_light = f16vec3(
 				light_data & 511u,
@@ -178,7 +179,7 @@ void main() {
 				immut uint j = atomicAdd(sh_index_len, 1u);
 
 				sh_index_data[j] = light_data;
-				sh_index_color[j] = ll.color[i];
+				sh_index_color[j] = ll.active_color[i];
 			}
 		}
 	}
@@ -239,19 +240,12 @@ void main() {
 
 					immut float16_t brightness = min(min(intensity - mhtn_dist, float16_t(1.0)) * intensity * falloff, float16_t(48.0));
 
-					immut f16vec3 illum = brightness * f16vec3(
-						(light_color >> uint16_t(6u)) & uint16_t(5u),
-						light_color & uint16_t(63u),
-						(light_color >> uint16_t(11u))
-					);
-
-					/*
-						immut f16vec3 illum = brightness * f16vec3(
-							bitfieldExtract(uint(light_color), 6, 5),
-							light_color & uint16_t(63u),
-							light_color >> uint16_t(11u)
-						);
-					*/
+					immut f16vec3 color = f16vec3(
+						(light_color >> uint16_t(4u)) & uint16_t(7u),
+						light_color & uint16_t(15u),
+						(light_color >> uint16_t(7u)) & uint16_t(7u)
+					) * f16vec3(1.0 / vec3(7.0, 15.0, 7.0));
+					immut f16vec3 illum = brightness * color;
 
 					immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
 
@@ -390,8 +384,8 @@ void main() {
 			*/
 
 			// Undo the multiplication from packing light color and brightness
-			const vec3 packing_scale = 15.0 * vec3(31.0, 63.0, 31.0);
-			immut f16vec3 new_light = f16vec3(float(DIR_BL * 3) / packing_scale) * light.x * fma(specular, rcp_color, diffuse);
+			const float packing_scale = 15.0;
+			immut f16vec3 new_light = float16_t(float(DIR_BL * 3) / packing_scale) * light.x * fma(specular, rcp_color, diffuse);
 
 			block_light = mix(new_light, block_light, smoothstep(float16_t(LL_DIST - 15), float16_t(LL_DIST), chebyshev_dist));
 		} // else block_light = f16vec3(1.0); // DEBUG `lit`
@@ -430,7 +424,7 @@ void main() {
 
 		immut float16_t emission = float16_t(bitfieldExtract(gbuffer_data.y, 26, 4));
 		immut float16_t emi = fma(emission, float16_t(0.2), luminance(color_roughness.rgb));
-		f16vec3 final_light = sky_light * float16_t(0.5 * IND_SL) + emi*emi*emi*emi * float16_t(0.005) + block_light;
+		f16vec3 final_light = sky_light * float16_t(0.5 * IND_SL) + emi*emi*emi*emi * float16_t(0.01 * EMISSIVENESS) + block_light;
 
 		#ifdef NETHER
 			immut f16vec3 fog_col = linear(f16vec3(fogColor));
@@ -438,7 +432,6 @@ void main() {
 			#ifdef END
 				immut f16vec3 fog_col = sky(n_pe);
 			#else
-				immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
 				immut f16vec3 fog_col = sky(sky_fog(float16_t(n_pe.y)), n_pe, sunDirectionPlr);
 			#endif
 

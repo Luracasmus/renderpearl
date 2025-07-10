@@ -8,6 +8,10 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 writeonly
 #include "/buf/indirect/dispatch.glsl"
 
+#define LL_LEN16
+writeonly
+#include "/buf/ll.glsl"
+
 #if HAND_LIGHT
 	writeonly
 	#include "/buf/hand_light.glsl"
@@ -22,6 +26,8 @@ writeonly
 
 void main() {
 	indirect_dispatch.work_groups.x = 0u;
+
+	ll.len = uint16_t(0u);
 
 	#if HAND_LIGHT
 		hand_light.data = uvec4(0u);

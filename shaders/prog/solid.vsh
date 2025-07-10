@@ -36,7 +36,7 @@ uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, texture
 #ifdef TERRAIN
 	#include "/buf/ll.glsl"
 
-	uniform bool rebuildIndex;
+	uniform int llCycle;
 	uniform vec3 cameraPosition, chunkOffset;
 
 	in vec2 mc_Entity;
@@ -167,8 +167,18 @@ void main() {
 				immut uint emission = uint(fma(norm_emission, float16_t(15.0), float16_t(0.5))); // bring into 4-bit-representable range and round
 				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, emission, 1, 4);
 
-				if (rebuildIndex) { // only rebuild the index once every LL_RATE frames
+				immut uint16_t ll_cycle = uint16_t(llCycle);
+				if (ll_cycle < uint16_t(6u)) {
 					immut f16vec3 view_f16 = f16vec3(view);
+
+					f16vec3 ll_face; switch (ll_cycle) {
+						case uint16_t(0u): ll_face = f16vec3(0.0, 0.0, 1.0);
+						case uint16_t(1u): ll_face = f16vec3(0.0, 1.0, 0.0);
+						case uint16_t(2u): ll_face = f16vec3(1.0, 0.0, 0.0);
+						case uint16_t(3u): ll_face = f16vec3(0.0, 0.0, -1.0);
+						case uint16_t(4u): ll_face = f16vec3(0.0, -1.0, 0.0);
+						case uint16_t(5u): ll_face = f16vec3(-1.0, 0.0, 0.0);
+					};
 
 					if (
 						// run once per face
@@ -178,7 +188,9 @@ void main() {
 						// cull outside LL_DIST using Chebyshev distance
 						chebyshev_dist < float16_t(LL_DIST) &&
 						// cull behind camera outside of illumination range
-						(view_f16.z < float16_t(0.0) || dot(abs_pe, f16vec3(1.0)) <= float16_t(emission))
+						(view_f16.z < float16_t(0.0) || dot(abs_pe, f16vec3(1.0)) <= float16_t(emission)) &&
+						// run only for the currently queued face
+						dot(w_normal, ll_face) > float16_t(0.0) && dot(at_midBlock.xyz, ll_face) < float16_t(0.0)
 					) {
 						immut bool fluid = mc_Entity.y == 1.0;
 						immut uvec3 seed = uvec3(ivec3(0.5 + cameraPosition + pe));
@@ -195,9 +207,10 @@ void main() {
 								immut f16vec3 avg_col = f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
 							#endif
 
-							immut uint i = atomicAdd(ll.queue, 1u);
+							immut uint i = atomicAdd(ll.len, 1u);
 
-							immut uvec3 light_pe = uvec3(clamp(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + pe + cameraPositionFract), 0.0, 511.5)); // this feels slightly cursed but it works // somehow
+							immut vec3 index_offset = -255.5 - cameraPositionFract - gbufferModelViewInverse[3].xyz;
+							immut uvec3 light_pe = uvec3(clamp(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + pe - index_offset), 0.0, 511.5)); // this feels slightly cursed but it works // somehow
 
 							uint light_data = bitfieldInsert(
 								bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9), // position
@@ -205,7 +218,7 @@ void main() {
 							);
 							if (fluid) light_data |= 0x80000000u; // set "wide" flag for lava
 
-							ll.data[i] = light_data;
+							ll.queue_data[i] = light_data;
 
 							immut f16vec3 scaled_color = fma(
 								linear(color * avg_col),
@@ -213,10 +226,7 @@ void main() {
 								f16vec3(0.5)
 							);
 
-							ll.color[i] = uint16_t(scaled_color.g) | (uint16_t(scaled_color.r) << uint16_t(6u)) | (uint16_t(scaled_color.b) << uint16_t(11u));
-
-							// immut uvec3 col = uvec3(fma(linear(color * avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5)));
-							// ll.color[i] = uint16_t(bitfieldInsert(bitfieldInsert(col.g, col.r, 6, 5), col.b, 11, 5));
+							ll.queue_color[i] = uint16_t(scaled_color.g) | (uint16_t(scaled_color.r) << uint16_t(6u)) | (uint16_t(scaled_color.b) << uint16_t(11u));
 						}
 					}
 				}

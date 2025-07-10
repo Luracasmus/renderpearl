@@ -1,4 +1,4 @@
-layout(std430, binding = 4) restrict buffer indirectControl {
+layout(std430, binding = 5) restrict buffer indirectControl {
 	#ifdef INT16
 		i16vec2 coords[];
 	#else
