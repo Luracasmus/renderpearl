@@ -91,14 +91,16 @@ searchtex       : >-*-------------*--------------*---┘            *           
 ```
 
 ```
-┌ colortex2 ┐
-|---  R  ---|
-└13 13 4 1 1┘
- |  |  | | └["hand" flag]
- |  |  | └["pure light" flag]
- |  |  └[emission]
- |  └[sky light]
- └[block light]
+┌ colortex2 ------┐
+|R     |G         |
+└16 16┴13 13 4 1 1┘
+ |  |  |  |  | | └["hand" flag]
+ |  |  |  |  | └["pure light" flag]
+ |  |  |  |  └[emission]
+ |  |  |  └[sky light]
+ |  |  └[block light]
+ |  └[octahedron encoded face normal]
+ └[octahedron encoded texture normal]
 ```
 
 ```
@@ -110,8 +112,8 @@ searchtex       : >-*-------------*--------------*---┘            *           
 ```
 
 ```
-┌--- lightIndex ----┐
-|- data  -|- color -|
+┌ lightIndex -------┐
+| data    | color   |
 └9 9 9 4 1┴ 6  5  5 ┘
  | | | | |  |  |  |
  | | | | |  └[color (GRB)]

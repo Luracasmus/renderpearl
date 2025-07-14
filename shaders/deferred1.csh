@@ -187,6 +187,7 @@ void main() {
 
 	if (geometry && bitfieldExtract(gbuffer_data.y, 30, 1) == 0u) { // exit on "pure light" flag
 		immut f16vec4 color_roughness = f16vec4(imageLoad(colorimg1, texel));
+		immut f16vec3 skylight_color = skylight();
 
 		immut f16vec3 n_pe = f16vec3(normalize(pe));
 
@@ -226,7 +227,7 @@ void main() {
 				immut float16_t intensity = float16_t(bitfieldExtract(light_data.x, 27, 4));
 				immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
 
-				if (mhtn_dist <= intensity) {
+				if (mhtn_dist < intensity) {
 					immut uint16_t light_color = sh_index_color[i];
 
 					immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
@@ -237,7 +238,11 @@ void main() {
 						light_data >= 0x80000000u ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
 					);
 
-					immut float16_t brightness = min(min(intensity - mhtn_dist, float16_t(1.0)) * intensity * falloff, float16_t(48.0));
+					immut float16_t light_level = intensity - mhtn_dist;
+					float16_t brightness = intensity * falloff;
+					brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
+					brightness /= min(light_level + float16_t(0.5), float16_t(15.0)) * float16_t(1.0/15.0); // compensate for multiplication with light.x later on, in order to make the falloff follow the inverse square law as much as possible
+					brightness = min(brightness, float16_t(48.0)); // prevent float16_t overflow later on
 
 					immut f16vec3 illum = brightness * f16vec3(
 						(light_color >> uint16_t(6u)) & uint16_t(5u),
@@ -409,7 +414,7 @@ void main() {
 			#elif defined END
 				const f16vec3 sky_light = f16vec3(0.15, 0.075, 0.2);
 			#else
-				immut float16_t sky_light = float16_t(1.0) - sqrt(float16_t(1.0) - light.y);
+				immut float16_t sky_light = (float16_t(1.0) - sqrt(float16_t(1.0) - light.y)) * luminance(skylight_color) / float16_t(DIR_SL);
 			#endif
 		#endif
 
@@ -449,7 +454,7 @@ void main() {
 				const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
 				immut f16vec2 specular_diffuse = brdf(tex_n_dot_shadow_l, w_tex_normal, n_pe, n_w_shadow_light, color_roughness.a);
 
-				f16vec3 light = skylight() * fma(specular_diffuse.xxx, rcp_color, specular_diffuse.yyy);
+				f16vec3 light = skylight_color * fma(specular_diffuse.xxx, rcp_color, specular_diffuse.yyy);
 				if (chebyshev_dist < sm_dist) {
 					immut f16vec3 sm_light = sample_shadow(texelFetch(colortex3, texel, 0).rgb);
 

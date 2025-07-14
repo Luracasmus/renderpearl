@@ -9,7 +9,7 @@
 
 out gl_PerVertex { vec4 gl_Position; };
 
-uniform float day, farSquared;
+uniform float farSquared;
 uniform vec3 cameraPositionFract;
 uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, textureMatrix;
 

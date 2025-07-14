@@ -13,6 +13,7 @@
 		const float16_t morning = float16_t(0.3);
 		const float16_t zenith = float16_t(1.0);
 
+		// todo!() check scales at: https://www.wikiwand.com/en/articles/Daylight#Intensity_in_different_conditions
 		immut f16vec3 col_moonlight = f16vec3(0.69, 0.76, 0.99) * float16_t(0.01) * sky_state.z;
 		const f16vec3 col_sunrise = f16vec3(0.89, 0.78, 0.31) * float16_t(0.25);
 		const f16vec3 col_morning = f16vec3(0.92, 0.93, 0.55);

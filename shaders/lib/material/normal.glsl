@@ -1,8 +1,9 @@
 #if NORMALS == 1 && defined MC_NORMAL_MAP
 	uniform sampler2D normals;
 
-	vec3 sample_normal(vec2 nm) {
-		return normalize(fma(vec3(nm.xy, sqrt(1.0 - dot(nm.xy, nm.xy))), vec3(2.0), vec3(-1.0)));
+	vec3 sample_normal(vec2 nm) { // todo!() f16
+		nm = fma(nm, vec3(2.0), vec3(-1.0));
+		return vec3(nm, sqrt(1.0 - dot(nm, nm)));
 	}
 #elif NORMALS != 2
 	// Alpha-checked sRGB -> luma conversion that falls back to zero
