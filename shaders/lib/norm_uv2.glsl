@@ -12,5 +12,5 @@ f16vec2 norm_uv2() {
 
 	// return fma(f16vec2(vaUV2), f16vec2(1.0/240.0), f16vec2(-1.0/30.0));
 
-	return fma(f16vec2(vaUV2), f16vec2(1.0/232.0), f16vec2(-1.0/29.0));
+	return saturate(fma(f16vec2(vaUV2), f16vec2(1.0/232.0), f16vec2(-1.0/29.0))); // saturate for safety (seems to be required in some cases)
 }

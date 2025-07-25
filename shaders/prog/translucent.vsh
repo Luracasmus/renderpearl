@@ -84,7 +84,8 @@ void main() {
 		#endif
 
 		immut f16vec3 w_normal = f16vec3(mat3(gbufferModelViewInverse) * v_normal);
-		v.light = indexed_block_light(mat3(gbufferModelViewInverse) * view, w_normal);
+		immut f16vec4 color = f16vec4(vaColor);
+		v.light = indexed_block_light(mat3(gbufferModelViewInverse) * view, w_normal, color.a);
 
 		#ifndef NETHER
 			immut float16_t n_dot_l = dot(w_normal, f16vec3(shadowLightDirectionPlr));
@@ -114,16 +115,16 @@ void main() {
 			v.light.x = min(fma(emission, float16_t(0.3), max(v.light.x, emission)), float16_t(1.0));
 
 			#if !(SM && defined MC_SPECULAR_MAP)
-				float16_t avg_luma = luminance(f16vec3(vaColor.rgb) * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb));
+				float16_t avg_luma = luminance(color.rgb * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb));
 
 				if (fluid) avg_luma -= float16_t(0.75);
 
-				immut uint half2x16_avg_luma_and_zero = packHalf2x16(f16vec2(avg_luma, 0.0));
+				immut uint half2x16_avg_luma_and_zero = packFloat2x16(f16vec2(avg_luma, 0.0));
 				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, half2x16_avg_luma_and_zero, 1, 16);
 			#endif
 		#endif
 
-		v.tint = vaColor.rgb;
+		v.tint = vec3(color.rgb);
 		#ifdef ENTITY_COLOR
 			v.tint = mix(v.tint, entityColor.rgb, entityColor.a);
 		#endif

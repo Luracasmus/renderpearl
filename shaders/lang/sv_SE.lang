@@ -1,17 +1,26 @@
-profile.LOWEST=§4Lägst
-profile.LOWER=§cLägre
-profile.LOW=§6Låg
-profile.MEDIUM=§eMedium
-profile.HIGH=§bHög
-profile.HIGHER=§9Högre
-profile.ULTRA=§dUltra
-profile.EXTREME=§5Extrem
+profile.COPPER=§cKoppar
+profile.WOOD=§8Trä
+profile.STONE=§7Sten
+profile.IRON=§3Järn
+profile.GOLD=§6Guld
+profile.DIAMOND=§bDiamant
+profile.NETHERITE=§5Netherit
 profile.SCREENSHOT=§c⌚§r §5§lSkärmdump
-profile.comment=§c⌚§r §5§lSkärmdump§r konfigurerar vissa alternativ till värden som normalt inte är tillgängliga, och som allvarligt kan påverka prestandan
+profile.comment=§c⌚§r §5§lSkärmdump§r konfigurerar vissa alternativ till värden som normalt inte är tillgängliga, och som kan påverka prestandan kraftigt
 
 option.VERSION.comment=Av Luracasmus\n§9https://modrinth.com/shader/renderpearl
 
-screen.SHADOW_MAP_LIGHTING=§6◀§r Ljus & Skuggor §6▶
+screen.LIGHTING=§6◀§r Ljus §6▶
+	option.DIR_SL=§b⌚§r Direkt Solljus
+	option.DIR_BL=§b⌚§r Direkt Blockljus
+	option.IND_SL=§b⌚§r Indirekt Solljus
+	option.IND_BL=§b⌚§r Indirekt Blockljus
+	option.AMBIENT=§b⌚§r Omgivande Ljus
+
+	option.HAND_LIGHT=§e⌚§r Handljus
+
+	option.SSS.comment=Låter en del ljus skina genom tunna ytor\n\n§6⚠§r Detta avaktiverar vissa optimeringar för provtagning av shadow map:en
+
 	option.ambientOcclusionLevel.comment=Gör hörn mellan block mörkare
 
 	option.shadowMapResolution=§c⌚§r Shadow Map-upplösning
@@ -20,29 +29,58 @@ screen.SHADOW_MAP_LIGHTING=§6◀§r Ljus & Skuggor §6▶
 		option.SM_DIST.comment=Avståndet inom vilket skuggor återges\nLägre värden gör också närmare skuggor skarpare\n\n§6⚠§r Det är rekommenderat att ställa in detta lägre än eller lika med inställningen för §lSynligt Avstånd§r för optimal prestanda och kvalitet
 		suffix.SM_DIST=\ datablock
 
-	option.DIR_SL=§b⌚§r Solljus
+	option.SM_BLUR=§c⌚§r Skuggutsuddning
+		value.SM_BLUR.1=Linjär
+		value.SM_BLUR.2=Gaussisk
 
-	option.AMBIENT=§b⌚§r Omgivande Ljus
+	option.SM_FADE_DIST=§b⌚§r Skuggblekningsavstånd
 
 	option.SM_ENTITY=§c⌚§r Entitetsskuggor
 	option.SM_PLR=§e⌚§r Spelarskuggor
 		option.SM_PLR.comment=§b🛈§r Alltid aktiva när §l§6⌚§r §lEntitetsskuggor§r är aktiverade
 	option.SM_BLOCK_ENTITY=§e⌚§r Blockentitetsskuggor
 
-	option.SSS.comment=Låter en del ljus skina genom tunna ytor\n\n§6⚠§r Detta avaktiverar vissa optimeringar för provtagning av shadow map:en
+	screen.LIGHT_LIST=§6◀§r Ljuslista §6▶
+		option.LL_DIST=§c⌚§r Avstånd
+			option.LL_DIST.comment=Chebyshev-avstånd inom vilket ljus läggs till i ljuslistan\n\n§6⚠§r Att ändra detta kräver ibland modifiering av §l§c⌚§r§l Kapacitet§r och/eller §l§6⌚§r§l LDS-förhållande§r för att undvika artefakter och bibehålla optimal prestanda - Det rekommenderas därför att använda Profil-inställningen istället
 
-	option.SM_FADE_DIST=§b⌚§r Skuggblekningsavstånd
+		option.LL_CAPACITY=§c⌚§r Kapacitet
+			option.LL_CAPACITY.comment=Styr antalet ljus §oföre utsortering§r som kan bli registrerade innan artifakter uppstår\n\n§c⚠§r Det maximala värdet som stöds beror på aktiv GPU, grafikdrivrutiner och läge och stöd av §l§6⌚§r §l16/8-Bitars Typer§r
 
-	option.SM_BLUR=§c⌚§r Skuggutsuddning
-		value.SM_BLUR.1=Linjär
-		value.SM_BLUR.2=Gaussisk
+		option.MIN_LL_INTENSITY=§6⌚§r Min. Ljusnivå
+
+		option.LL_FALLOFF_MARGIN=§b⌚§r Falloff-Marginal
+
+		option.LL_RATE=§6⌚§r Uppdateringsfrekvens
+			option.LL_RATE.comment=Fördröjning i bildrutor mellan varje gång ljuslistan byggs om\n\nHögre värden förbättrar prestandan men ökar latensen i ljusuppdateringar
+
+		option.LOD_FALLOFF=§c⌚§r Detaljnivåavtagande
+			option.LOD_FALLOFF.comment=Multiplikator på minskning av kvalitet över avstånd
+
+		option.LAVA_LOD_BIAS=§6⌚§r Detaljnivå-Bias på Lava
+			option.LAVA_LOD_BIAS.comment=Ytterligare Detaljnivå-bias som adderas till lava för att minska dess annars ofta överväldigande antal ljuskällor
+
+		option.LDS_RATIO=§6⌚§r LDS-förhållande
+			option.LDS_RATIO.comment=Mängden Local Data Share-minne som allokeras per ruta (work group) som en andel av §l§c⌚§r§l Kapacitet§r\n\nDetta påverkar den maximala mängden ljus som kan bearbetas §oefter utsortering§r innan artifakter uppstår
+
+	screen.FALLBACK_BLOCK=§6◀§r Reserv-Blockljus §6▶
+		screen.FALLBACK_BLOCK.comment=Reserv-blockljusfärg för ljus utanför ljuslistans avstånd
+
+		option.BL_FALLBACK_R=Röd Intensitet
+		option.BL_FALLBACK_G=Grön Intensitet
+		option.BL_FALLBACK_B=Blå Intensitet
+
+	screen.CUSTOM_EMISSIVE_BLOCKS=§6◀§r Extra Emitterande Block §6▶
+		option.EMISSIVE_REDSTONE_BLOCK=§e⌚§c Emitterande Redstoneblock
+		option.EMISSIVE_EMERALD_BLOCK=§e⌚§a Emitterande Smaragdblock
+		option.EMISSIVE_LAPIS_BLOCK=§e⌚§9 Emitterande Lapis lazuliblock
 
 screen.POST=§6◀§r Efterbearbetning §6▶
 	option.SATURATION=§b⌚§r Mättnad
 
-	option.BALANCE_R=§b⌚ §cRöd
-	option.BALANCE_G=§b⌚ §aGrön
-	option.BALANCE_B=§b⌚ §9Blå
+	option.RED_MUL=§b⌚ §cRöd
+	option.GREEN_MUL=§b⌚ §aGrön
+	option.BLUE_MUL=§b⌚ §9Blå
 
 	option.TONEMAP=§b⌚§r Tonemap-Operatör
 		option.TONEMAP.comment=Avgör metoden som används för att omvandla färger till ett intervall som displayen kan visa
@@ -81,36 +119,6 @@ screen.ATMOSPHERICS=§6◀§r Atmosfär §6▶
 screen.ENHANCED_VANILLA_LIGHTING=§6◀§r Blockljus §6▶
 	screen.ENHANCED_VANILLA_LIGHTING.comment=Inte sådana man tänder då alltså
 
-	option.DIR_BL=§c⌚§r Indexerat Blockljus
-		option.DIR_BL.comment=Ljusindexdriven färgad belysning
-
-	option.HAND_LIGHT=§e⌚§r Handljus
-
-	option.EMISSIVE_REDSTONE_BLOCK=§e⌚§c Emitterande Redstoneblock
-	option.EMISSIVE_EMERALD_BLOCK=§e⌚§a Emitterande Smaragdblock
-	option.EMISSIVE_LAPIS_BLOCK=§e⌚§9 Emitterande Lapis lazuliblock
-
-	screen.LIGHT_INDEX=§6◀§r Ljusindex §6▶
-		option.IND_BL=§b⌚§r Indirekt Belysning
-
-		option.LL_DIST=§c⌚§r Indexavstånd
-			option.LL_DIST.comment=Chebyshev-avstånd inom vilket ljus indexeras\n\n§6⚠§r Att ändra detta kräver ibland modifiering av §l§c⌚§r§l Indexstorlek§r och/eller §l§6⌚§r§l LDS-förhållande§r för att undvika artefakter och bibehålla optimal prestanda - Det rekommenderas därför att använda Profil-inställningen istället
-
-		option.LL_CAPACITY=§c⌚§r Indexstorlek
-			option.LL_CAPACITY.comment=Styr antalet ljus §oföre utsortering§r som kan bli indexerade innan artifakter uppstår\n\n§c⚠§r Det maximala värdet som stöds beror på aktiv GPU, grafikdrivrutiner och läge och stöd av §l§6⌚§r §l16/8-Bitars Typer§r
-
-		option.MIN_LL_INTENSITY=§6⌚§r Min. Ljusnivå
-		option.LL_RATE=§6⌚§r Indextakt
-			option.LL_RATE.comment=Fördröjning i bildrutor mellan varje gång ljusindexet byggs om\n\nHögre värden förbättrar prestandan men ökar latensen i ljusuppdateringar
-
-		option.LOD_FALLOFF=§c⌚§r Detaljnivåavtagande
-			option.LOD_FALLOFF.comment=Multiplikator på minskning av kvalitet över avstånd
-
-		option.LAVA_LOD_BIAS=§6⌚§r Detaljnivå-Bias på Lava
-			option.LAVA_LOD_BIAS.comment=Ytterligare Detaljnivå-bias som adderas till lava för att minska dess annars ofta överväldigande antal ljuskällor
-
-		option.LDS_RATIO=§6⌚§r LDS-förhållande
-			option.LDS_RATIO.comment=Mängden Local Data Share-minne som allokeras per ruta (work group) som en andel av §l§c⌚§r§l Indexstorlek§r\n\nDetta påverkar den maximala mängden ljus som kan bearbetas §oefter utsortering§r innan artifakter uppstår
 screen.SURFACE=§6◀§r Yta §6▶
 	option.WATER_OPACITY=§b⌚§r Vattenopacitet
 
@@ -164,7 +172,7 @@ screen.COMPAT=§6◀§r Kompatibilitet §6▶
 	option.ASSUME_AMD_GPU_SHADER_HALF_FLOAT=§6⌚ §c⚠§r Anta stöd av §oAMD_gpu_shader_half_float§r baserat på enhet
 		option.ASSUME_AMD_GPU_SHADER_HALF_FLOAT.comment=Antar stöd för tillägget baserat på enhetens egenskaper, även om det inte annonseras av Iris.
 
-	option.ASSUME_AMD_GPU_SHADER_INT16=§6⌚ §c⚠§r Anta stöd av §oAMD_gpu_shader_int16§r baserat på enhe
+	option.ASSUME_AMD_GPU_SHADER_INT16=§6⌚ §c⚠§r Anta stöd av §oAMD_gpu_shader_int16§r baserat på enhet
 		option.ASSUME_AMD_GPU_SHADER_INT16.comment=Antar stöd för tillägget baserat på enhetens egenskaper, även om det inte annonseras av Iris.
 
 	option.BUFFER_16_8=§6⌚ §c⚠§r 16/8-Bitars Buffertar

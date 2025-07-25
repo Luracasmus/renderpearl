@@ -26,7 +26,7 @@
 	#define max3(v0, v1, v2) max(v0, max(v1, v2))
 #endif
 
-// It seems like this is always on Mesa drivers for Intel GPUs (excluding some mobile or very old GPUs)
+// It seems like this is always supported on Mesa drivers for Intel GPUs (excluding some mobile or very old GPUs)
 // Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_INTEL_shader_integer_functions2
 #if (MUL_32x16 >= 1 && defined MC_GL_INTEL_shader_integer_functions2) || (MUL_32x16 >= 2 && defined MC_GL_VENDOR_MESA && defined MC_GL_RENDERER_INTEL) || MUL_32x16 >= 3
 	#extension GL_INTEL_shader_integer_functions2 : require
@@ -111,11 +111,11 @@
 #endif
 
 #ifdef BUFFER_16_8
-	// Only used in shaders.properties to allow for smaller buffers. Required since Iris' .properties pre-processor doesn't handle non-option macros, so we can't check for actual support :(
+	// Only used in shaders.properties to allow for smaller buffers. Required since Iris' .properties pre-processor doesn't handle non-option macros, so we can't check for actual support
 	// https://discord.com/channels/774352792659820594/774354522361299006/1360611068812198001 (The Iris Project)
 #endif
 
-// fallback definitions
+// Fallback definitions
 // WARN: possibly don't cover everything!
 
 #ifndef INT16
@@ -129,7 +129,8 @@
 	#define u16vec3 uvec3
 	#define u16vec4 uvec4
 
-	// work around Iris bug https://discord.com/channels/774352792659820594/774354522361299006/1360611068812198001 (The Iris Project)
+	// Work around Iris bug
+	// https://discord.com/channels/774352792659820594/774354522361299006/1360611068812198001 (The Iris Project)
 	#undef INT16
 #endif
 
@@ -151,8 +152,8 @@
 	#define f16vec3 vec3
 	#define f16vec4 vec4
 
-	#define packFloat2x16 packHalf2x16
-	#define unpackFloat2x16 unpackHalf2x16
+	uint packFloat2x16(vec2 v) { return packHalf2x16(v); }
+	vec2 unpackFloat2x16(uint v) { return unpackHalf2x16(v); }
 #endif
 
 #ifndef MAT16
@@ -176,8 +177,12 @@
 	}
 
 	i16vec2 unpackInt2x16(int v) { return i16vec2(
-		v & 65535,
-		v >> 16
+		#ifdef INT16
+			v // mask should happen automatically with the cast afaik
+		#else
+			v & 65535
+		#endif
+		, v >> 16
 	); }
 
 	/* waiting on Iris glsl-transformer update
@@ -187,8 +192,12 @@
 		}
 
 		u16vec2 unpackUint2x16(uint v) { return u16vec2(
-			v & 65535u,
-			v >> 16
+			#ifdef INT16
+				v
+			#else
+				v & 65535u
+			#endif
+			, v >> 16u
 		); }
 	*/
 #endif

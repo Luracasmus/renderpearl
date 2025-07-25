@@ -26,7 +26,13 @@ float16_t sky_fog(float16_t height) {
 #ifndef NETHER
 	#ifdef END
 		f16vec3 sky(vec3 n_pe) {
-			return mix(f16vec3(rand(fma(trunc(gl_GlobalInvocationID.xy * 0.25), vec2(4.0), frameTimeCounter.xx))), f16vec3(rand(floor(n_pe.xz * 1024.0 + frameTimeCounter * 1))) * f16vec3(0.05, 0.0, 0.05) * (float16_t(1.25) - float16_t(n_pe.y)), float16_t(0.99));
+			#ifdef SKY_FSH
+				immut vec2 texel_pos = gl_FragCoord.xy;
+			#else
+				immut uvec2 texel_pos = gl_GlobalInvocationID.xy;
+			#endif
+
+			return mix(f16vec3(rand(fma(trunc(texel_pos * 0.25), vec2(4.0), frameTimeCounter.xx))), f16vec3(rand(floor(n_pe.xz * 1024.0 + frameTimeCounter * 1))) * f16vec3(0.05, 0.0, 0.05) * (float16_t(1.25) - float16_t(n_pe.y)), float16_t(0.99));
 		}
 	#else
 		f16vec3 sky(float16_t sky_fog, vec3 n_pe, vec3 sun_dir) {

@@ -1,7 +1,7 @@
 #define PI 3.14159265358979323846264338327950288
 #define LOG2_E 1.44269504088896340735992468100189214
 
-// because we use orthographic projection with constant parameters we can use this instead of shadowProjection
+// because we use orthographic projection with constant parameters we can use this instead of ´shadowProjection´
 const vec3 shadow_proj_scale = vec3(vec2(1.0 / shadowDistance), -2.0 / (shadowFarPlane - shadowNearPlane));
 
 // Functions to simplify use of instruction arguments that make clamping essentially free:
@@ -50,10 +50,10 @@ uvec4 saturate(uvec4 v) { return clamp(v, 0u, 0xFFFFFFFFu); }
 	i8vec3 saturate(i8vec3 v) { return clamp(v, int8_t(-0x80), int8_t(0x7F)); }
 	i8vec4 saturate(i8vec4 v) { return clamp(v, int8_t(-0x80), int8_t(0x7F)); }
 
-	/* // waiting on Iris bug fix
-	uint8_t saturate(uint8_t v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
-	u8vec2 saturate(u8vec2 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
-	u8vec3 saturate(u8vec3 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
-	u8vec4 saturate(u8vec4 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
+	/* waiting on Iris glsl-transformer update
+		uint8_t saturate(uint8_t v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
+		u8vec2 saturate(u8vec2 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
+		u8vec3 saturate(u8vec3 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
+		u8vec4 saturate(u8vec4 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
 	*/
 #endif

@@ -40,7 +40,7 @@ void main() {
 				colortex2 = 0x40000000u;
 			#endif
 		#else
-			colortex1 = f16vec3(texture(gtexture, v.coord).rgb);
+			colortex1 = linear(f16vec3(texture(gtexture, v.coord).rgb));
 			colortex2 = 0x40000000u;
 		#endif
 	#else // has to be TINTED

@@ -13,71 +13,6 @@ option.VERSION=§6§oRender§d§oPearl
 	suffix.VERSION=2.2.0+dev
 
 screen.LIGHTING=§6◀§r Lighting §6▶
-	screen.SHADOW_MAP=§6◀§r Shadow Map §6▶
-		option.shadowMapResolution=§c⌚§r Shadow Map Resolution
-			suffix.shadowMapResolution=\ px
-		option.SM_DIST=§c⌚§r Shadow Distance
-			option.SM_DIST.comment=Half the side of the square within which shadows are rendered\nLower values make closer shadows sharper\n\n§6⚠§r It's recommended to set this lower than or equal to your §lRender Distance§r for optimal performance and quality
-			suffix.SM_DIST=\ chunks
-
-		option.SM_BLUR=§c⌚§r Shadow Blur
-			value.SM_BLUR.0=§cOff
-			value.SM_BLUR.1=Linear
-			value.SM_BLUR.2=Gaussian
-
-		option.SM_FADE_DIST=§b⌚§r Shadow Fade Distance
-
-		option.SM_ENTITY=§c⌚§r Entity Shadows
-		option.SM_PLR=§e⌚§r Player Shadows
-			option.SM_PLR.comment=§b🛈§r Always active when §l§6⌚§r §lEntity Shadows§r are enabled
-		option.SM_BLOCK_ENTITY=§e⌚§r Block Entity Shadows
-	screen.LIGHT_LIST=§6◀§r Light List §6▶
-		option.LL_DIST=§c⌚§r Distance
-			option.LL_DIST.comment=Chebychev distance within which lights are added to the light list\n\n§6⚠§r Changing this sometimes requires modifying §l§c⌚§r§l Index Size§r and/or §l§6⌚§r§l LDS Ratio§r to avoid artifacts and maintain optimal performance - It is therefore recommended to use the Profile option instead
-			suffix.LL_DIST=\ blocks
-
-		option.LL_CAPACITY=§c⌚§r Capacity
-			option.LL_CAPACITY.comment=Controls the amount of lights §obefore culling§r that can be listed before artifacts occur\n\n§c⚠§r The maximum supported value depends on active GPU, graphics drivers and §l§6⌚§r§l 16/8-Bit Types§r status and support
-			value.LL_CAPACITY.6144=§c⚠§r 6144 lights
-			value.LL_CAPACITY.7168=§c⚠§r 7168 lights
-			value.LL_CAPACITY.8192=§c⚠§r 8192 lights
-			value.LL_CAPACITY.9216=§c⚠§r 9216 lights
-			value.LL_CAPACITY.10240=§c⚠§r 10240 lights
-			value.LL_CAPACITY.11264=§c⚠§r 11264 lights
-			value.LL_CAPACITY.12288=§c⚠§r 12288 lights
-			value.LL_CAPACITY.13312=§c⚠§r 13312 lights
-			value.LL_CAPACITY.14336=§c⚠§r 14336 lights
-			value.LL_CAPACITY.15360=§c⚠§r 15360 lights
-			value.LL_CAPACITY.16384=§c⚠§r 16384 lights
-			suffix.LL_CAPACITY=\ lights
-
-		option.MIN_LL_INTENSITY=§6⌚§r Min. Light Intensity
-		option.LL_RATE=§6⌚§r Refresh Rate
-			option.LL_RATE.comment=Delay in frames between each time the Light Index is rebuilt\n\nHigher values improve performance but increase latency in light updates
-			prefix.LL_RATE=1/
-
-		option.LOD_FALLOFF=§c⌚§r LOD Falloff
-			option.LOD_FALLOFF.comment=Multiplier on reduction in quality over distance
-
-		option.LAVA_LOD_BIAS=§6⌚§r Lava LOD Bias
-			option.LAVA_LOD_BIAS.comment=Additional LOD bias added to lava to reduce it's otherwise often overwhelming amount of light sources
-			value.LAVA_LOD_BIAS.0.0=§cOff
-
-		option.LDS_RATIO=§6⌚§r LDS Ratio
-			option.LDS_RATIO.comment=The amount of Local Data Share memory allocated per tile (work group) as a ratio of §l§c⌚§r§l Index Size§r\n\nThis affects the maximum amount of lights that can be processed §oafter culling§r before artifacts occur
-
-	screen.FALLBACK_BLOCK=§6◀§r Fallback Block Light §6▶
-		screen.FALLBACK_BLOCK.comment=Fallback block light color for lights outside the range of the light list
-
-		option.BL_FALLBACK_R=Red Intensity
-		option.BL_FALLBACK_G=Green Intensity
-		option.BL_FALLBACK_B=Blue Intensity
-
-	screen.CUSTOM_EMISSIVE_BLOCKS=§6◀§r Custom Emissive Blocks §6▶
-		option.EMISSIVE_REDSTONE_BLOCK=§e⌚§c Emissive Redstone Block
-		option.EMISSIVE_EMERALD_BLOCK=§e⌚§a Emissive Emerald Block
-		option.EMISSIVE_LAPIS_BLOCK=§e⌚§9 Emissive Lapis Block
-
 	option.DIR_SL=§b⌚§r Direct Sky Light
 	option.DIR_BL=§b⌚§r Direct Block Light
 	option.IND_SL=§b⌚§r Indirect Sky Light
@@ -106,16 +41,85 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 		value.ambientOcclusionLevel.0.9=90%
 		value.ambientOcclusionLevel.1.0=100%
 
+	screen.SHADOW_MAP=§6◀§r Shadow Map §6▶
+		option.shadowMapResolution=§c⌚§r Shadow Map Resolution
+			suffix.shadowMapResolution=\ px
+		option.SM_DIST=§c⌚§r Shadow Distance
+			option.SM_DIST.comment=Half the side of the square within which shadows are rendered\nLower values make closer shadows sharper\n\n§6⚠§r It's recommended to set this lower than or equal to your §lRender Distance§r for optimal performance and quality
+			suffix.SM_DIST=\ chunks
+
+		option.SM_BLUR=§c⌚§r Shadow Blur
+			value.SM_BLUR.0=§cOff
+			value.SM_BLUR.1=Linear
+			value.SM_BLUR.2=Gaussian
+
+		option.SM_FADE_DIST=§b⌚§r Shadow Fade Distance
+
+		option.SM_ENTITY=§c⌚§r Entity Shadows
+		option.SM_PLR=§e⌚§r Player Shadows
+			option.SM_PLR.comment=§b🛈§r Always active when §l§6⌚§r §lEntity Shadows§r are enabled
+		option.SM_BLOCK_ENTITY=§e⌚§r Block Entity Shadows
+
+	screen.LIGHT_LIST=§6◀§r Light List §6▶
+		option.LL_DIST=§c⌚§r Distance
+			option.LL_DIST.comment=Chebychev distance within which lights are added to the light list\n\n§6⚠§r Changing this sometimes requires modifying §l§c⌚§r§l Index Size§r and/or §l§6⌚§r§l LDS Ratio§r to avoid artifacts and maintain optimal performance - It is therefore recommended to use the Profile option instead
+			suffix.LL_DIST=\ blocks
+
+		option.LL_CAPACITY=§c⌚§r Capacity
+			option.LL_CAPACITY.comment=Controls the amount of lights §obefore culling§r that can be registered before artifacts occur\n\n§c⚠§r The maximum supported value depends on active GPU, graphics drivers and §l§6⌚§r§l 16/8-Bit Types§r status and support
+			value.LL_CAPACITY.6144=§c⚠§r 6144 lights
+			value.LL_CAPACITY.7168=§c⚠§r 7168 lights
+			value.LL_CAPACITY.8192=§c⚠§r 8192 lights
+			value.LL_CAPACITY.9216=§c⚠§r 9216 lights
+			value.LL_CAPACITY.10240=§c⚠§r 10240 lights
+			value.LL_CAPACITY.11264=§c⚠§r 11264 lights
+			value.LL_CAPACITY.12288=§c⚠§r 12288 lights
+			value.LL_CAPACITY.13312=§c⚠§r 13312 lights
+			value.LL_CAPACITY.14336=§c⚠§r 14336 lights
+			value.LL_CAPACITY.15360=§c⚠§r 15360 lights
+			value.LL_CAPACITY.16384=§c⚠§r 16384 lights
+			suffix.LL_CAPACITY=\ lights
+
+		option.MIN_LL_INTENSITY=§6⌚§r Min. Light Intensity
+
+		option.LL_FALLOFF_MARGIN=§b⌚§r Falloff Margin
+
+		option.LL_RATE=§6⌚§r Refresh Rate
+			option.LL_RATE.comment=Delay in frames between each time the Light Index is rebuilt\n\nHigher values improve performance but increase latency in light updates
+			prefix.LL_RATE=1/
+
+		option.LOD_FALLOFF=§c⌚§r LOD Falloff
+			option.LOD_FALLOFF.comment=Multiplier on reduction in quality over distance
+
+		option.LAVA_LOD_BIAS=§6⌚§r Lava LOD Bias
+			option.LAVA_LOD_BIAS.comment=Additional LOD bias added to lava to reduce it's otherwise often overwhelming amount of light sources
+			value.LAVA_LOD_BIAS.0.0=§cOff
+
+		option.LDS_RATIO=§6⌚§r LDS Ratio
+			option.LDS_RATIO.comment=The amount of Local Data Share memory allocated per tile (work group) as a ratio of §l§c⌚§r§l Index Size§r\n\nThis affects the maximum amount of lights that can be processed §oafter culling§r before artifacts occur
+
+	screen.FALLBACK_BLOCK=§6◀§r Fallback Block Light §6▶
+		screen.FALLBACK_BLOCK.comment=Fallback block light color for lights outside the range of the light list
+
+		option.BL_FALLBACK_R=Red Intensity
+		option.BL_FALLBACK_G=Green Intensity
+		option.BL_FALLBACK_B=Blue Intensity
+
+	screen.CUSTOM_EMISSIVE_BLOCKS=§6◀§r Custom Emissive Blocks §6▶
+		option.EMISSIVE_REDSTONE_BLOCK=§e⌚§c Emissive Redstone Block
+		option.EMISSIVE_EMERALD_BLOCK=§e⌚§a Emissive Emerald Block
+		option.EMISSIVE_LAPIS_BLOCK=§e⌚§9 Emissive Lapis Block
+
 screen.POST=§6◀§r Post Processing §6▶
 	option.SATURATION=§b⌚§r Saturation
 		suffix.SATURATION=%
 
-	option.BALANCE_R=§b⌚ §cRed
-		suffix.BALANCE_R=%
-	option.BALANCE_G=§b⌚ §aGreen
-		suffix.BALANCE_G=%
-	option.BALANCE_B=§b⌚ §9Blue
-		suffix.BALANCE_B=%
+	option.RED_MUL=§b⌚ §cRed
+		suffix.RED_MUL=%
+	option.GREEN_MUL=§b⌚ §aGreen
+		suffix.GREEN_MUL=%
+	option.BLUE_MUL=§b⌚ §9Blue
+		suffix.BLUE_MUL=%
 
 	option.TONEMAP=§b⌚§r Tonemap Operator
 		option.TONEMAP.comment=Determines the method used to transform colors into a range that the display can show

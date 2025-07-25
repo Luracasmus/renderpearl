@@ -5,11 +5,11 @@ ivec2 view_size() { return ivec2(
 	packedView >> 16
 ); }
 
-/*
+/* waiting on Iris glsl-transformer update
 	u16vec2 view_size() {
 		return u16vec2(
 			packedView, // should be truncated for free by the cast, i think
-			bitfieldExtract(packedView, 16, 16)
+			packedView >> 16
 		);
 	}
 */

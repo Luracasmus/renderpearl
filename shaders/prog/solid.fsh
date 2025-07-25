@@ -1,11 +1,12 @@
 #include "/prelude/core.glsl"
 
-/* RENDERTARGETS: 1,2,3 */
+/* RENDERTARGETS: 1,2 */
 layout(location = 0) out f16vec4 colortex1; // does this work outside of NVIDIA drivers? (the f16*)
-layout(location = 1) out uvec2 colortex2;
 
-#ifndef NETHER
-	layout(location = 2) out vec3 colortex3;
+#ifdef NETHER
+	layout(location = 1) out uvec3 colortex2;
+#else
+	layout(location = 1) out uvec4 colortex2;
 #endif
 
 #ifdef ALPHA_CHECK
@@ -67,10 +68,6 @@ void main() {
 		f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
 	#endif
 
-	#ifndef NETHER
-		colortex3 = v.s_screen;
-	#endif
-
 	immut f16vec3 tint = f16vec3(v.tint);
 	color.rgb *= tint;
 
@@ -82,7 +79,7 @@ void main() {
 		immut vec3 face_normal = mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0);
 		immut f16vec2 octa_face_normal = octa_encode(f16vec3(mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0)));
 	#else
-		immut f16vec2 octa_face_normal = f16vec2(unpackHalf2x16(v_tbn.half2x16_octa_normal_and_tangent.x));
+		immut f16vec2 octa_face_normal = unpackFloat2x16(v_tbn.half2x16_octa_normal_and_tangent.x);
 	#endif
 
 	#if defined NO_NORMAL || NORMALS == 2
@@ -94,7 +91,7 @@ void main() {
 		#else
 			immut vec3 face_normal = vec3(normalize(octa_decode(octa_face_normal)));
 
-			immut f16vec2 octa_face_tangent = f16vec2(unpackHalf2x16(v_tbn.half2x16_octa_normal_and_tangent.y));
+			immut f16vec2 octa_face_tangent = unpackFloat2x16(v_tbn.half2x16_octa_normal_and_tangent.y);
 			immut vec3 face_tangent = vec3(normalize(octa_decode(octa_face_tangent)));
 
 			immut float handedness = float(v_tbn.handedness_and_misc & 1u) - 0.5; // map least significant bit, [0, 1], to [-0.5, 0.5]
@@ -129,7 +126,60 @@ void main() {
 		immut f16vec2 octa_tex_normal = octa_encode(w_tex_normal);
 	#endif
 
-	immut uint packed_normal = packSnorm4x8(f16vec4(octa_tex_normal, octa_face_normal));
+	color.rgb = linear(color.rgb);
+
+	colortex2.r = packSnorm4x8(f16vec4(octa_tex_normal, octa_face_normal));
+
+	{
+		// we have to min() after conversion here because of float16_t precision at these high values
+		immut uvec2 scaled_light = min(uvec2(fma(f16vec2(v.light), f16vec2(32767.0), f16vec2(0.5))), 32767u);
+		uint data = bitfieldInsert(scaled_light.x, scaled_light.y, 15, 15);
+
+		#if defined TERRAIN || defined HAND
+			immut uint emission = bitfieldExtract(v_tbn.handedness_and_misc, 1, 4); // todo!() should be 8 bits // todo!() labPBR emission map support
+			color *= fma(float16_t(emission), float16_t(4.0/15.0), float16_t(1.0));
+
+			#ifdef HAND
+				data |= 0x80000000u; // set most significant bit to 1
+			#endif
+		#endif
+
+		colortex2.g = data;
+	}
+
+	{
+		#if SM && defined MC_SPECULAR_MAP
+			float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
+		#else
+			#ifdef TERRAIN
+				immut float16_t avg_luma = float16_t(bitfieldExtract(v_tbn.handedness_and_misc, 5, 13)) * float16_t(1.0/8191.0);
+			#else
+				const float16_t avg_luma = float16_t(0.8);
+			#endif
+
+			float16_t roughness = gen_roughness(luma, avg_luma);
+		#endif
+
+		const float16_t sss = float16_t(0.0); // todo!() labPBR SSS map support
+
+		uint data = packUnorm4x8(f16vec4(roughness, sss, 0.0, 0.0));
+
+		#ifndef NETHER
+			data = bitfieldInsert(
+				data,
+				packUnorm2x16(f16vec2(v.s_screen.x, 0.0)),
+				16, 16
+			);
+		#endif
+
+		colortex2.b = data;
+	}
+
+	#ifndef NETHER
+		colortex2.a = packUnorm2x16(v.s_screen.yz);
+	#endif
+
+	// todo!() labPBR AO map support
 
 	#ifdef TERRAIN
 		immut float16_t in_ao = float16_t(v.ao);
@@ -138,39 +188,10 @@ void main() {
 			float16_t(1.0),
 			float16_t(0.25)
 		) * mix(in_ao, float16_t(1.0), float16_t(0.75));
+		colortex1 = f16vec4(color.rgb, ao);
 
-		f16vec2 light = ao * f16vec2(v.light.x, fma(in_ao, float16_t(AMBIENT), float16_t(v.light.y)));
+		// colortex1 = f16vec4(color.rgb, float16_t(v.ao));
 	#else
-		f16vec2 light = f16vec2(v.light.x, v.light.y + AMBIENT);
+		colortex1 = f16vec4(color.rgb, float16_t(0.9));
 	#endif
-
-	// we have to min() after conversion here because of float16_t precision at these high values
-	immut uvec2 scaled_light = min(uvec2(fma(light, f16vec2(8191.0), f16vec2(0.5))), 8191u);
-
-	uint packed_light_and_emission_and_hand = bitfieldInsert(scaled_light.x, scaled_light.y, 13, 13);
-
-	#if defined TERRAIN || defined HAND
-		immut uint emission = bitfieldExtract(v_tbn.handedness_and_misc, 1, 4);
-		packed_light_and_emission_and_hand = bitfieldInsert(packed_light_and_emission_and_hand, emission, 26, 4);
-
-		#ifdef HAND
-			packed_light_and_emission_and_hand |= 0x80000000u; // set most significant bit to 1
-		#endif
-	#endif
-
-	colortex2 = uvec2(packed_normal, packed_light_and_emission_and_hand);
-
-	#if SM && defined MC_SPECULAR_MAP
-		float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
-	#else
-		#ifdef TERRAIN
-			immut float16_t avg_luma = float16_t(bitfieldExtract(v_tbn.handedness_and_misc, 5, 13)) * float16_t(1.0/8191.0);
-		#else
-			const float16_t avg_luma = float16_t(0.8);
-		#endif
-
-		float16_t roughness = gen_roughness(luma, avg_luma);
-	#endif
-
-	colortex1 = f16vec4(linear(color.rgb), roughness);
 }

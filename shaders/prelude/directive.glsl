@@ -3,7 +3,6 @@
 #define CHUNKS_FADE_IN_NO_INJECT
 
 /*
-	const float ambientOcclusionLevel = 1.0; // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 	const float shadowIntervalSize = 0.0;
 
 	const bool shadowHardwareFiltering0 = true;
@@ -25,11 +24,7 @@
 	const int colortex1Format = RGBA16F;
 
 	const bool colortex2Clear = false;
-	const int colortex2Format = RG32UI;
-
-	// todo!() maybe we could use the last component here for something else, or just manually pack the shadow position in 64 bits
-	const bool colortex3Clear = false;
-	const int colortex3Format = RGB16;
+	const int colortex2Format = RGBA32UI;
 */
 
 const float shadowDistanceRenderMul = 0.85;

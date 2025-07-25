@@ -86,17 +86,20 @@ searchtex       : >-*-------------*--------------*---┘            *           
 ┌ colortex1 ┐
 |R |G |B | A|
 └16┴16┴16┴16┘
- |  |  |  └[roughness]
+ |  |  |  └[AO]
  └[color (RGB)]
 ```
 
 ```
-┌ colortex2 ------┐
-|R     |G         |
-└16 16┴13 13 4 1 1┘
- |  |  |  |  | | └["hand" flag]
- |  |  |  |  | └["pure light" flag]
- |  |  |  |  └[emission]
+┌ colortex2 -----------------┐
+|R    |G        |B     |A    |
+└16 16┴15 15 1 1┴8 8 16┴16 16┘
+ |  |  |  |  | | | | |  |  |
+ |  |  |  |  | | | | └[biased shadow screen space position]
+ |  |  |  |  | | | └[subsurface scattering]
+ |  |  |  |  | | └[roughness]
+ |  |  |  |  | └["hand" flag]
+ |  |  |  |  └["pure light" flag]
  |  |  |  └[sky light]
  |  |  └[block light]
  |  └[octahedron encoded face normal]
@@ -104,19 +107,11 @@ searchtex       : >-*-------------*--------------*---┘            *           
 ```
 
 ```
-┌ colortex3 ┐
-|R |G |B | A|
-└16┴16┴16┴16┘
- |  |  |  └X
- └[biased shadow screen space position]
-```
-
-```
-┌ lightIndex -------┐
-| data    | color   |
-└9 9 9 4 1┴ 6  5  5 ┘
- | | | | |  |  |  |
- | | | | |  └[color (GRB)]
+┌ lightIndex -----┐
+| data    | color |
+└9 9 9 4 1┴6  5  5┘
+ | | | | | |  |  |
+ | | | | | └[color (GRB)]
  | | | | └["wide" flag]
  | | | └[intensity]
  └[player feet space position]

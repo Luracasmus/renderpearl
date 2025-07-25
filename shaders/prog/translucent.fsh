@@ -52,6 +52,7 @@ in VertexData {
 #include "/lib/mmul.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/srgb.glsl"
+#define SKY_FSH
 #include "/lib/fog.glsl"
 #include "/lib/material/specular.glsl"
 
@@ -80,7 +81,7 @@ void main() {
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
 		#ifdef TERRAIN
-			immut float16_t avg_luma = float16_t(unpackHalf2x16(v_tbn.handedness_and_misc >> 1u).x);
+			immut float16_t avg_luma = unpackFloat2x16(v_tbn.handedness_and_misc >> 1u).x;
 		#else
 			const float16_t avg_luma = float16_t(0.8);
 		#endif
