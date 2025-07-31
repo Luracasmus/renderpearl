@@ -12,7 +12,7 @@ gtexture  : >-*--┴-------*-gbuffers(solid) *
 specular  : >-*----------*--┘|      ||||   *
 normals   : >-*----------*---┘      ||||   *
 colortex1 :   *          *          |||└X--*->
-colortex3 :   *          *          ||└X---*->
+colortex2 :   *          *          ||└X---*->
 lightIndex: >-*----------*----------┼X-----*->
 handLight : >-*----------*----------X------*->
 [Barriers]: [ X          X                 X ]
