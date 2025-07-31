@@ -9,10 +9,9 @@
 ```
 shadow*   : >-*-shadow-X-*--┬--------------*->
 gtexture  : >-*--┴-------*-gbuffers(solid) *
-specular  : >-*----------*--┘|      |||||  *
-normals   : >-*----------*---┘      |||||  *
-colortex1 :   *          *          ||||└X-*->
-colortex2 :   *          *          |||└X--*->
+specular  : >-*----------*--┘|      ||||   *
+normals   : >-*----------*---┘      ||||   *
+colortex1 :   *          *          |||└X--*->
 colortex3 :   *          *          ||└X---*->
 lightIndex: >-*----------*----------┼X-----*->
 handLight : >-*----------*----------X------*->
@@ -27,10 +26,9 @@ handLight : >-*----------*----------X------*->
 indirectDispatch: >-*------┬-----X-*---┬---------------*->
 indirectControl :   *      |┌----X-*--┐|               *
 colortex1       : >-*-deferred---X-*-deferred1-------X-*->
-lightIndex      : >-*-deferred_a-X-*--┘|||             *
-handLight       : >-*--------------*---┘||             *
-colortex2       : >-*--------------*----┘|             *
-colortex3       : >-*--------------*-----┘             *
+lightIndex      : >-*-deferred_a-X-*--┘||              *
+handLight       : >-*--------------*---┘|              *
+colortex2       : >-*--------------*----┘              *
 [Barriers]      : [ X              X                   X ]
                     |              └> Deferred lighting
                     └> Indirect dispatch setup, light index deduplication, and sky
@@ -108,7 +106,7 @@ searchtex       : >-*-------------*--------------*---┘            *           
 
 ```
 ┌ lightIndex -----┐
-| data    | color |
+|data     |color  |
 └9 9 9 4 1┴6  5  5┘
  | | | | | |  |  |
  | | | | | └[color (GRB)]
