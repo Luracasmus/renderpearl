@@ -76,33 +76,32 @@ void main() {
 	#endif
 
 	#ifdef NO_NORMAL
-		immut vec3 face_normal = mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0);
-		immut f16vec2 octa_face_normal = octa_encode(f16vec3(mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0)));
+		immut vec3 w_face_normal = mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0);
+		immut f16vec2 octa_w_face_normal = octa_encode(f16vec3(mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0)));
 	#else
-		immut f16vec2 octa_face_normal = unpackFloat2x16(v_tbn.half2x16_octa_normal_and_tangent.x);
+		immut f16vec2 octa_w_face_normal = unpackFloat2x16(v_tbn.half2x16_octa_normal);
 	#endif
 
 	#if defined NO_NORMAL || NORMALS == 2
-		immut f16vec2 octa_tex_normal = octa_face_normal;
+		immut f16vec2 octa_w_tex_normal = octa_w_face_normal;
 	#else
 		#ifdef NO_NORMAL
-			immut vec3 face_tangent = mat3(gbufferModelViewInverse) * vec3(0.0, 1.0, 0.0);
-			immut mat3 tbn = mat3(face_tangent, cross(face_tangent, face_normal), face_normal);
+			immut vec3 w_face_tangent = mat3(gbufferModelViewInverse) * vec3(0.0, 1.0, 0.0);
+			immut mat3 w_tbn = mat3(w_face_tangent, cross(w_face_tangent, w_face_normal), w_face_normal);
 		#else
-			immut vec3 face_normal = vec3(normalize(octa_decode(octa_face_normal)));
+			immut f16vec2 octa_w_face_tangent = unpackFloat2x16(v_tbn.half2x16_octa_tangent);
+			immut vec3 w_face_tangent = vec3(normalize(octa_decode(octa_w_face_tangent)));
+			immut vec3 w_face_normal = vec3(normalize(octa_decode(octa_w_face_normal)));
 
-			immut f16vec2 octa_face_tangent = unpackFloat2x16(v_tbn.half2x16_octa_normal_and_tangent.y);
-			immut vec3 face_tangent = vec3(normalize(octa_decode(octa_face_tangent)));
+			immut float handedness = fma(float(v_tbn.handedness_and_misc & 1u), 2.0, -1.0); // map least significant bit, [0u, 1u], to [-1.0, 1.0]
 
-			immut float handedness = float(v_tbn.handedness_and_misc & 1u) - 0.5; // map least significant bit, [0, 1], to [-0.5, 0.5]
-
-			immut mat3 tbn = mat3(face_tangent, normalize(cross(face_tangent, face_normal) * handedness), face_normal);
+			immut mat3 w_tbn = mat3(w_face_tangent, cross(w_face_tangent, w_face_normal) * handedness, w_face_normal);
 		#endif
 
 		#if NORMALS == 1 && defined MC_NORMAL_MAP
-			immut f16vec3 w_tex_normal = f16vec3(tbn * sample_normal(texture(normals, v.coord).rg));
+			immut f16vec3 w_tex_normal = f16vec3(w_tbn * sample_normal(texture(normals, v.coord).rg));
 		#else
-			immut f16vec3 w_tex_normal = f16vec3(tbn * gen_normal(gtexture, tint, v.coord, v.mid_coord, v.face_tex_size, luma));
+			immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, v.mid_coord, v.face_tex_size, luma));
 
 			/*
 				immut ivec2 half_texels = ivec2(
@@ -123,12 +122,12 @@ void main() {
 			*/
 		#endif
 
-		immut f16vec2 octa_tex_normal = octa_encode(w_tex_normal);
+		immut f16vec2 octa_w_tex_normal = octa_encode(w_tex_normal);
 	#endif
 
 	color.rgb = linear(color.rgb);
 
-	colortex2.r = packSnorm4x8(f16vec4(octa_tex_normal, octa_face_normal));
+	colortex2.r = packSnorm4x8(f16vec4(octa_w_tex_normal, octa_w_face_normal));
 
 	{
 		// we have to min() after conversion here because of float16_t precision at these high values
@@ -147,16 +146,16 @@ void main() {
 		colortex2.g = data;
 	}
 
+	#ifdef TERRAIN
+		immut float16_t avg_luma = float16_t(bitfieldExtract(v_tbn.handedness_and_misc, 5, 13)) * float16_t(1.0/8191.0);
+	#else
+		const float16_t avg_luma = float16_t(0.8);
+	#endif
+
 	{
 		#if SM && defined MC_SPECULAR_MAP
 			float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 		#else
-			#ifdef TERRAIN
-				immut float16_t avg_luma = float16_t(bitfieldExtract(v_tbn.handedness_and_misc, 5, 13)) * float16_t(1.0/8191.0);
-			#else
-				const float16_t avg_luma = float16_t(0.8);
-			#endif
-
 			float16_t roughness = gen_roughness(luma, avg_luma);
 		#endif
 
@@ -179,19 +178,21 @@ void main() {
 		colortex2.a = packUnorm2x16(v.s_screen.yz);
 	#endif
 
-	// todo!() labPBR AO map support
-
 	#ifdef TERRAIN
 		immut float16_t in_ao = float16_t(v.ao);
-		immut float16_t ao = mix(
+
+		float16_t ao = mix(
 			smoothstep(float16_t(0.05), float16_t(0.8), in_ao),
 			float16_t(1.0),
 			float16_t(0.25)
 		) * mix(in_ao, float16_t(1.0), float16_t(0.75));
-		colortex1 = f16vec4(color.rgb, ao);
-
-		// colortex1 = f16vec4(color.rgb, float16_t(v.ao));
 	#else
-		colortex1 = f16vec4(color.rgb, float16_t(0.9));
+		float16_t ao = float16_t(0.9);
 	#endif
+
+	ao = saturate(fma(luma - avg_luma, float16_t(0.5), ao)); // todo!() make the multiplier here a configurable value
+
+	// todo!() labPBR AO map support
+
+	colortex1 = f16vec4(color.rgb, float16_t(ao));
 }

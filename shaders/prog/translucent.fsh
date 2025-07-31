@@ -92,14 +92,22 @@ void main() {
 	#if defined NO_NORMAL
 		immut f16vec3 v_tex_normal = f16vec3(vec3(0.0, 0.0, 1.0));
 	#else
-		immut mat3 tbn = get_tbn();
+		immut f16vec2 octa_v_face_normal = f16vec2(unpackFloat2x16(v_tbn.half2x16_octa_normal));
+		immut f16vec2 octa_v_face_tangent = f16vec2(unpackFloat2x16(v_tbn.half2x16_octa_tangent));
+
+		immut vec3 v_face_normal = vec3(normalize(octa_decode(octa_v_face_normal)));
+		immut vec3 v_face_tangent = vec3(normalize(octa_decode(octa_v_face_tangent)));
+
+		immut float handedness = fma(float(v_tbn.handedness_and_misc & 1u), 2.0, -1.0); // map least significant bit, [0u, 1u], to [-1.0, 1.0]
+
+		immut mat3 v_tbn = mat3(v_face_tangent, cross(v_face_tangent, v_face_normal) * handedness, v_face_normal);
 
 		#if NORMALS == 1 && defined MC_NORMAL_MAP
-			immut f16vec3 v_tex_normal = f16vec3(tbn * sample_normal(texture(normals, v.coord).rg));
+			immut f16vec3 v_tex_normal = f16vec3(v_tbn * sample_normal(texture(normals, v.coord).rg));
 		#elif NORMALS == 2
-			immut f16vec3 v_tex_normal = f16vec3(tbn[2]);
+			immut f16vec3 v_tex_normal = f16vec3(v_tbn[2]);
 		#else
-			immut f16vec3 v_tex_normal = f16vec3(tbn * gen_normal(gtexture, tint, v.coord, v.mid_coord, v.face_tex_size, luminance(color.rgb)));
+			immut f16vec3 v_tex_normal = f16vec3(v_tbn * gen_normal(gtexture, tint, v.coord, v.mid_coord, v.face_tex_size, luminance(color.rgb)));
 		#endif
 	#endif
 
@@ -118,7 +126,7 @@ void main() {
 			const float16_t face_n_dot_l = float16_t(1.0);
 			const float16_t tex_n_dot_l = float16_t(1.0);
 		#else
-			immut float16_t face_n_dot_l = dot(f16vec3(tbn[2]), shadow_light_dir);
+			immut float16_t face_n_dot_l = dot(f16vec3(v_tbn[2]), shadow_light_dir);
 			immut float16_t tex_n_dot_l = dot(v_tex_normal, shadow_light_dir);
 		#endif
 

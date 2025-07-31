@@ -150,18 +150,24 @@ screen.COMPAT=§6◀§r Kompatibilitet §6▶
 		value.CONST_IMMUT.2=§c⚠§r På (alltid)
 
 	option.MINMAX_3=§e⌚§r Trinära Min./Max.
-		option.MINMAX_3.comment=Utför trinära minimum- och maximumoperationer i enkla funktionsanrop med hjälp av §oAMD_shader_trinary_minmax§r-tillägget, vilket kan tillåta generering av mer optimala instruktionssekvenser\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas
+		option.MINMAX_3.comment=Utför trinära minimum- och maximumoperationer i enkla funktionsanrop med hjälp av §oAMD_shader_trinary_minmax§r-tillägget\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas
 
-		value.MINMAX_3.1=När tilläggsstöd är deklarerat
+		value.MINMAX_3.1=På (kontrollera stöd)
 		value.MINMAX_3.2=§c⚠§r På (anta stöd baserat på enhet)
 		value.MINMAX_3.3=§c⚠§r På (alltid)
 
 	option.MUL_32x16=§e⌚§r 32x16-Bit Multiplication
 		option.MUL_32x16.comment=Utför multiplikation mellan 32-bitars integers och integers i det av 16-bitar representerbara intervallet med hjälp av speciella funktioner tillhandahållna av §oINTEL_shader_integer_functions2§r-tillägget, som kan vara snabbare än vanliga 32-bitars multiplikationsoperatörer\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas
 
-		value.MUL_32x16.1=När tilläggsstöd är deklarerat
+		value.MUL_32x16.1=På (kontrollera stöd)
 		value.MUL_32x16.2=§c⚠§r På (anta stöd baserat på enhet)
 		value.MUL_32x16.3=§c⚠§r På (alltid)
+
+	option.SUBGROUP=§e⌚§r Subgroup-operationer
+		option.SUBGROUP.comment=Aktiverar operationer och variabler från §oKHR_shader_subgroup§r-tillägget, vilka tillåter snabb delning av data mellan shader-anrop inom en subgroup\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas
+		value.SUBGROUP.1=På (kontrollera stöd)
+		value.SUBGROUP.2=§c⚠§r På (anta stöd baserat på enhet)
+		value.SUBGROUP.3=§c⚠§r På (alltid)
 
 	option.SIZED_16_8=§6⌚§r 16/8-Bitars Typer
 		option.SIZED_16_8.comment=Använder av tillägg försedda halv- och kvartsstora datatyper för att minska register-, LDS- och VRAM-användning\nPrestandapåverkan varierar beroende på hårdvara och drivrutiner, då konvertering mellan typer har en kostnad, men operationer med mindre typer kan vara snabbare\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas - Se inställningar nedan

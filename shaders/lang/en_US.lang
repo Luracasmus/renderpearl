@@ -216,7 +216,7 @@ screen.COMPAT=§6◀§r Compatibility §6▶
 		value.CONST_IMMUT.2=§c⚠§r On (always)
 
 	option.MINMAX_3=§e⌚§r Trinary Min./Max.
-		option.MINMAX_3.comment=Performs trinary minimum and maximum operations in singular function calls using the §oAMD_shader_trinary_minmax§r extension, which may allow generation of more optimal instruction sequences\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed
+		option.MINMAX_3.comment=Performs trinary minimum and maximum operations in singular function calls using the §oAMD_shader_trinary_minmax§r extension\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed
 		value.MINMAX_3.0=§cOff
 		value.MINMAX_3.1=On (check for support)
 		value.MINMAX_3.2=§c⚠§r On (assume support based on device)
@@ -230,7 +230,7 @@ screen.COMPAT=§6◀§r Compatibility §6▶
 		value.MUL_32x16.3=§c⚠§r On (always)
 
 	option.SUBGROUP=§e⌚§r Subgroup Operations
-		option.SUBGROUP.comment=Enables operations and variables provided by the §oKHR_shader_subgroup§r extension, which allow fast sharing of data between shader invocations within a subgroup
+		option.SUBGROUP.comment=Enables operations and variables provided by the §oKHR_shader_subgroup§r extension, which allow fast sharing of data between shader invocations within a subgroup\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed
 		value.SUBGROUP.0=§cOff
 		value.SUBGROUP.1=On (check for support)
 		value.SUBGROUP.2=§c⚠§r On (assume support based on device)

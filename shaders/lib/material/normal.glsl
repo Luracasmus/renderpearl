@@ -2,7 +2,7 @@
 	uniform sampler2D normals;
 
 	vec3 sample_normal(vec2 nm) { // todo!() f16
-		nm = fma(nm, vec3(2.0), vec3(-1.0));
+		nm = fma(nm, vec2(2.0), vec2(-1.0));
 		return vec3(nm, sqrt(1.0 - dot(nm, nm)));
 	}
 #elif NORMALS != 2

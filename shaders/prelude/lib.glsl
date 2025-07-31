@@ -1,6 +1,11 @@
 #define PI 3.14159265358979323846264338327950288
 #define LOG2_E 1.44269504088896340735992468100189214
 
+//#ifdef
+//	#define EMISSIVE_MAP
+//#endif
+
+
 // because we use orthographic projection with constant parameters we can use this instead of ´shadowProjection´
 const vec3 shadow_proj_scale = vec3(vec2(1.0 / shadowDistance), -2.0 / (shadowFarPlane - shadowNearPlane));
 

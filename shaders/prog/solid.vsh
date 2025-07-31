@@ -21,9 +21,9 @@ uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, texture
 	#include "/lib/sm/bias.glsl"
 #endif
 
-#if defined TERRAIN || (HAND_LIGHT && defined HAND) || (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
+//#if defined TERRAIN || (HAND_LIGHT && defined HAND) || (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
 	uniform sampler2D gtexture;
-#endif
+//#endif // todo!()
 
 #ifdef HAND
 	uniform int handLightLevel;
@@ -155,11 +155,11 @@ void main() {
 			#elif defined TERRAIN
 				v.ao = vaColor.a;
 
-				#if !(SM && defined MC_SPECULAR_MAP)
+				//#if !(SM && defined MC_SPECULAR_MAP)
 					immut f16vec3 avg_col = color * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
 					immut uint scaled_avg_luma = uint(fma(luminance(avg_col), float16_t(8191.0), float16_t(0.5)));
 					v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, scaled_avg_luma, 5, 13);
-				#endif
+				//#endif
 
 				float16_t norm_emission = min((max(float16_t(mc_Entity.x), float16_t(0.0)) + float16_t(at_midBlock.w)) / float16_t(15.0), float16_t(1.0));
 				v.light.x = min(fma(float16_t(norm_emission), float16_t(0.3), max(v.light.x, norm_emission)), float16_t(1.0));
