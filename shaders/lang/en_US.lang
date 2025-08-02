@@ -10,7 +10,7 @@ profile.comment=§c⌚§r §d§lScreenshot§r configures some options to values 
 
 option.VERSION=§6§oRender§d§oPearl
 	option.VERSION.comment=By Luracasmus\n§9https://modrinth.com/shader/renderpearl
-	suffix.VERSION=2.3.0-beta.0
+	suffix.VERSION=2.3.0-beta.1
 
 screen.LIGHTING=§6◀§r Lighting §6▶
 	option.DIR_SL=§b⌚§r Direct Sky Light
