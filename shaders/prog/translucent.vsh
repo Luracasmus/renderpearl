@@ -27,10 +27,10 @@ uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, shadowM
 	uniform vec4 entityColor;
 #endif
 
-#if (defined TERRAIN && !(SM && defined MC_SPECULAR_MAP)) || (!defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
+// #if (defined TERRAIN && !(SM && defined MC_SPECULAR_MAP)) || (!defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
 	uniform sampler2D gtexture;
 	in vec2 mc_midTexCoord;
-#endif
+// #endif
 
 in vec2 vaUV0;
 in vec3 vaPosition;

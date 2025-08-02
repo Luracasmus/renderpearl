@@ -1,6 +1,6 @@
 uniform float wetness;
 
-#if SM && defined MC_SPECULAR_MAP
+#if defined SM && defined MC_SPECULAR_MAP
 	uniform sampler2D specular;
 
 	float16_t map_roughness(float16_t map) {
@@ -16,7 +16,7 @@ uniform float wetness;
 		#endif
 
 		return clamp(
-			fma(roughness, float16_t(SM), float16_t(-0.25) * float16_t(wetness)),
+			fma(float16_t(wetness), float16_t(-0.25), roughness),
 			float16_t(0.089),
 			float16_t(1.0)
 		);

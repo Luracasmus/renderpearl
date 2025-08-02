@@ -53,9 +53,9 @@ uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, texture
 	uniform vec4 entityColor;
 #endif
 
-#if defined TERRAIN || (HAND_LIGHT && defined HAND) || (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
+// #if defined TERRAIN || (HAND_LIGHT && defined HAND) || (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
 	in vec2 mc_midTexCoord;
-#endif
+// #endif
 
 in vec2 vaUV0;
 in vec3 vaPosition;
@@ -155,7 +155,7 @@ void main() {
 			#elif defined TERRAIN
 				v.ao = vaColor.a;
 
-				//#if !(SM && defined MC_SPECULAR_MAP)
+				//#if !(defined SM && defined MC_SPECULAR_MAP)
 					immut f16vec3 avg_col = color * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
 					immut uint scaled_avg_luma = uint(fma(luminance(avg_col), float16_t(8191.0), float16_t(0.5)));
 					v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, scaled_avg_luma, 5, 13);
@@ -191,8 +191,10 @@ void main() {
 							float16_t(LOD_FALLOFF),
 							float16_t(0.5)
 						)))) == uint8_t(0u)) {
-							#if SM && defined MC_SPECULAR_MAP
-								immut f16vec3 avg_col = f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
+							#ifdef SM
+								#ifdef MC_SPECULAR_MAP
+									immut f16vec3 avg_col = f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
+								#endif
 							#endif
 
 							immut uint i = atomicAdd(ll.queue, 1u);

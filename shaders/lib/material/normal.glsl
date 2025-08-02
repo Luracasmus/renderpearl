@@ -18,39 +18,28 @@
 	vec3 gen_normal(sampler2D source, f16vec3 tint, vec2 coord, uint mid_coord, uint face_tex_size, float16_t srgb_luma) {
 		const float scale = 0.55;
 		const float16_t texel_bump = float16_t(0.5);
-		const float16_t subtexel_bump = float16_t(0.5);
+		const float16_t subtexel_bump = float16_t(0.0);
 		const float subtexel_scale = 0.075;
 
 		immut vec2 local_coord = coord - unpackUnorm2x16(mid_coord);
 
 		immut ivec2 half_texels = ivec2(
-			face_tex_size & 65535u,
-			face_tex_size >> 16u
-		) / (2 << int(textureQueryLod(source, coord).x + 0.5)) - 1;
+			uvec2(
+				face_tex_size & 65535u,
+				face_tex_size >> 16u
+			) / (2u << uint(textureQueryLod(source, coord).x + 0.5)) - 1u
+		);
 
 		f16vec4 bump = srgb_luma.xxxx;
 
 		immut vec2 atlas = vec2(textureSize(source, 0));
 		immut ivec2 local_texel = ivec2(local_coord * atlas);
 
-		const ivec2[4] offsets = ivec2[4](
-			ivec2(-1, 0),
-			ivec2(1, 0),
-			ivec2(0, -1),
-			ivec2(0, 1)
-		);
-		immut vec2 offset_coord = coord + 0.5/atlas; // this is necessary because... it doesn't work otherwise ¯\_(ツ)_/¯
-		immut mat4 nbh = transpose(mat4(
-			textureGatherOffsets(source, offset_coord, offsets, 0),
-			textureGatherOffsets(source, offset_coord, offsets, 1),
-			textureGatherOffsets(source, offset_coord, offsets, 2),
-			textureGatherOffsets(source, offset_coord, offsets, 3)
-		));
 		bump = mix(bump, f16vec4(
-			srgbl_a_ck(f16vec4(nbh[0]), tint),
-			srgbl_a_ck(f16vec4(nbh[1]), tint),
-			srgbl_a_ck(f16vec4(nbh[2]), tint),
-			srgbl_a_ck(f16vec4(nbh[3]), tint)
+			srgbl_a_ck(f16vec4(textureOffset(source, coord, ivec2(-1, 0))), tint),
+			srgbl_a_ck(f16vec4(textureOffset(source, coord, ivec2(1, 0))), tint),
+			srgbl_a_ck(f16vec4(textureOffset(source, coord, ivec2(0, -1))), tint),
+			srgbl_a_ck(f16vec4(textureOffset(source, coord, ivec2(0, 1))), tint)
 		), texel_bump * f16vec4(
 			local_texel.x > -half_texels.x,
 			local_texel.x < half_texels.x,

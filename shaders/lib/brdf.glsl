@@ -22,31 +22,31 @@
 	SOFTWARE.
 */
 
-// float16 adaptation from https://google.github.io/filament/Filament.html#listing_speculardfp16
+// fp16 adaptation from https://google.github.io/filament/Filament.html#listing_speculardfp16
 float16_t d_ggx(float16_t roughness, float16_t n_dot_h, f16vec3 normal, f16vec3 half_dir) {
-	f16vec3 n_x_h = cross(normal, half_dir);
-	float16_t a = n_dot_h * roughness;
-	float16_t k = roughness / fma(a, a, dot(n_x_h, n_x_h));
-	float16_t d = k * k * float16_t(1.0 / PI);
+	immut f16vec3 n_x_h = cross(normal, half_dir);
+	immut float16_t a = n_dot_h * roughness;
+	immut float16_t k = roughness / fma(a, a, dot(n_x_h, n_x_h));
+	immut float16_t d = k * k * float16_t(1.0/PI);
 	return min(d, float16_t(65504.0));
 }
 
-float16_t v_smith_ggx_correlated(float16_t n_dot_v, float16_t n_dot_l, float16_t roughness) {
+float16_t v_smith_ggx_correlated(float16_t roughness, float16_t n_dot_v, float16_t n_dot_l) {
 	immut float16_t a_2 = roughness * roughness;
 
 	immut float16_t ggx_v_l_sum = dot(f16vec2(n_dot_l, n_dot_v), sqrt(f16vec2(n_dot_v, n_dot_l) * f16vec2(n_dot_v, n_dot_l) * (float16_t(1.0) - a_2) + a_2));
 	return float16_t(0.5) / ggx_v_l_sum;
 }
 
-float16_t f_schlick(float16_t u, float16_t f0, float16_t f90) {
+float16_t f_schlick(float16_t f0, float16_t f90, float16_t u) {
 	return fma(pow(float16_t(1.0) - u, float16_t(5.0)), f90 - f0, f0);
 }
 
 // Diffuse BRDF
 float16_t fd_burley(float16_t roughness, float16_t n_dot_v, float16_t n_dot_l, float16_t l_dot_h) {
-	float16_t f90 = float16_t(0.5) + float16_t(2.0) * roughness * l_dot_h * l_dot_h;
-	float16_t scatter_l = f_schlick(n_dot_l, float16_t(1.0), f90);
-	float16_t scatter_v = f_schlick(n_dot_v, float16_t(1.0), f90);
+	immut float16_t f90 = float16_t(0.5) + float16_t(2.0) * roughness * l_dot_h * l_dot_h;
+	immut float16_t scatter_l = f_schlick(float16_t(1.0), f90, n_dot_l);
+	immut float16_t scatter_v = f_schlick(float16_t(1.0), f90, n_dot_v);
 	return scatter_l * scatter_v * float16_t(1.0/PI);
 }
 
@@ -76,13 +76,14 @@ f16vec2 brdf(
 	immut float16_t l_dot_h = saturate(dot(light_dir, half_dir));
 
 	immut float16_t d = d_ggx(roughness, n_dot_h, normal, half_dir);
-	immut float16_t f = f_schlick(l_dot_h, f0, float16_t(1.0));
-	immut float16_t v = v_smith_ggx_correlated(n_dot_v, n_dot_l, roughness);
+	immut float16_t v = v_smith_ggx_correlated(roughness, n_dot_v, n_dot_l);
+	const float16_t f90 = float16_t(1.0); // saturate(float16_t(50.0) * f0);
+	immut float16_t f = f_schlick(f0, f90, l_dot_h);
 
 	immut float16_t specular = (d * v) * f;
 
 	return n_dot_l * f16vec2(
-		specular * (float16_t(1.0) + (f0 / env_brdf_approx_ab_x(roughness, n_dot_v) - f0)) * float16_t(0.06 * SPECULAR), // todo!() is this constant multiplication correct/okay to do?
+		specular * (float16_t(1.0) + (f0 / env_brdf_approx_ab_x(roughness, n_dot_v) - f0)),
 		fd_burley(roughness, n_dot_v, float16_t(n_dot_l), l_dot_h)
 	);
 }

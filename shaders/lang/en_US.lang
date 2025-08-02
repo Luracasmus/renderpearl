@@ -183,10 +183,8 @@ screen.SURFACE=§6◀§r Surface §6▶
 	option.WAVES=§b⌚§r Waves
 		value.WAVES.0=§fOff
 
-	option.SPECULAR=§b⌚§r Specular Intensity
 	option.SM=§e⌚§r RP Specular Map Roughness
 		option.SM.comment=Enables sampling PBR resource packs' specular maps for surface roughness\nWhen disabled, roughness values are auto-generated
-		value.SM.0=§fOff
 	option.SM_CH=§b⌚§r Channel
 		value.SM_CH.r=R
 		value.SM_CH.g=G

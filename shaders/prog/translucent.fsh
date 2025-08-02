@@ -77,7 +77,7 @@ void main() {
 		color.rgb *= tint;
 	#endif
 
-	#if SM && defined MC_SPECULAR_MAP
+	#if defined SM && defined MC_SPECULAR_MAP
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
 		#ifdef TERRAIN

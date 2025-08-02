@@ -71,9 +71,9 @@ void main() {
 	immut f16vec3 tint = f16vec3(v.tint);
 	color.rgb *= tint;
 
-	#if (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)) || !(SM && defined MC_SPECULAR_MAP)
+	// #if (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)) || !(defined SM && defined MC_SPECULAR_MAP)
 		immut float16_t luma = luminance(color.rgb);
-	#endif
+	// #endif
 
 	#ifdef NO_NORMAL
 		immut vec3 w_face_normal = mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0);
@@ -153,7 +153,7 @@ void main() {
 	#endif
 
 	{
-		#if SM && defined MC_SPECULAR_MAP
+		#if defined SM && defined MC_SPECULAR_MAP
 			float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 		#else
 			float16_t roughness = gen_roughness(luma, avg_luma);

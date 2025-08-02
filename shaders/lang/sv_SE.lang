@@ -125,7 +125,6 @@ screen.SURFACE=§6◀§r Yta §6▶
 	option.WAVE_SPEED=§b⌚§r Våghastighet
 	option.WAVES=§b⌚§r Vågor
 
-	option.SPECULAR=§b⌚§r Speglande Intensitet
 	option.SM.comment=Aktiverar provtagning av PBR-resurspakets specular maps för ojämnhet av ytor\nNär detta är inaktivt genereras ojämnhetsvärden automatiskt
 	option.SM_CH=§b⌚§r Kanal
 	option.SM_TYPE=§b⌚§r Typ
