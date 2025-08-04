@@ -165,7 +165,7 @@ void main() {
 				bitfieldExtract(light_data, 18, 9)
 			) + f16vec3(index_offset);
 
-			// add 0.5 to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting
+			// add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting
 			immut float16_t offset_intensity = float16_t(bitfieldExtract(light_data.x, 27, 4)) + float16_t(0.5);
 
 			// distance between light and closest point on bounding box
@@ -247,7 +247,7 @@ void main() {
 					immut float16_t light_level = intensity - mhtn_dist + float16_t(0.5);
 					float16_t brightness = intensity * falloff;
 					brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
-					brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // compensate for multiplication with light.x later on, in order to make the falloff follow the inverse square law as much as possible
+					brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible
 					brightness = min(brightness, float16_t(48.0)); // prevent float16_t overflow later on
 
 					immut f16vec3 illum = brightness * f16vec3(
@@ -290,12 +290,6 @@ void main() {
 			#elif defined END
 				const f16vec3 ind_sky = f16vec3(0.15, 0.075, 0.2);
 			#else
-				// immut float16_t ind_sky = (float16_t(1.0) - sqrt(float16_t(1.0) - light.y)) * luminance(skylight_color) / float16_t(DIR_SL);
-				// immut float16_t negative_x = light.y - float16_t(1.0);
-				// float16_t falloff = saturate(float16_t(1.0/225.0) / (negative_x*negative_x));
-				// falloff *= smoothstep(float16_t(0.0), float16_t(float(LL_FALLOFF_MARGIN) / 15.0), light.y);
-				// immut float16_t ind_sky = falloff * luminance(skylight_color) / float16_t(DIR_SL);
-
 				immut float16_t ind_sky = luminance(skylight_color) / float16_t(DIR_SL) * smoothstep(float16_t(0.0), float16_t(1.0), light.y);
 			#endif
 		#endif

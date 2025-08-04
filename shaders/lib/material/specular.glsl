@@ -44,16 +44,7 @@ uniform float wetness;
 	}
 
 	float16_t gen_roughness(float16_t luminance, float16_t avg_luma) {
-		// immut float16_t roughness = fma((avg_luma - luminance) * float16_t(4.0), float16_t(0.4), float16_t(0.6));
-
 		immut float16_t diff = avg_luma - luminance;
-		// immut float16_t roughness = sqrt(fma(diff*diff*diff, float16_t(0.5), float16_t(0.5)));
-		// immut float16_t roughness = pow(fma(pow(diff, float16_t(1.0/3.0)), float16_t(0.5), float16_t(0.5)), float16_t(0.1));
-		// immut float16_t roughness = sqrt(fma(
-		// 	inversesqrt(inversesqrt(smootherstep(float16_t(0.0), float16_t(1.0), diff))),
-		// 	float16_t(1.0 - 0.089),
-		// 	float16_t(0.089)
-		// ));
 		immut float16_t roughness = fma(
 			smoothererstep(float16_t(0.0), float16_t(1.0), smoothererstep(float16_t(-1.0), float16_t(1.0), diff)),
 			float16_t(1.0 - 0.089),
