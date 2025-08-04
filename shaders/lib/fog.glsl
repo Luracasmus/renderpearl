@@ -36,7 +36,7 @@ float16_t sky_fog(float16_t height) {
 		}
 	#else
 		f16vec3 sky(float16_t sky_fog, vec3 n_pe, vec3 sun_dir) {
-			f16vec3 color = mix(f16vec3(skyColorLinear), linear(f16vec3(fogColor)), sky_fog);
+			f16vec3 color = mix(f16vec3(skyColorLinear), linear(f16vec3(fogColor)) * float16_t(2.0), sky_fog);
 
 			#if SUN_BLOOM || SKY_BLOOM
 				if (isEyeInWater == 0) {

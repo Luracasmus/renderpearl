@@ -290,7 +290,13 @@ void main() {
 			#elif defined END
 				const f16vec3 ind_sky = f16vec3(0.15, 0.075, 0.2);
 			#else
-				immut float16_t ind_sky = (float16_t(1.0) - sqrt(float16_t(1.0) - light.y)) * luminance(skylight_color) / float16_t(DIR_SL);
+				// immut float16_t ind_sky = (float16_t(1.0) - sqrt(float16_t(1.0) - light.y)) * luminance(skylight_color) / float16_t(DIR_SL);
+				// immut float16_t negative_x = light.y - float16_t(1.0);
+				// float16_t falloff = saturate(float16_t(1.0/225.0) / (negative_x*negative_x));
+				// falloff *= smoothstep(float16_t(0.0), float16_t(float(LL_FALLOFF_MARGIN) / 15.0), light.y);
+				// immut float16_t ind_sky = falloff * luminance(skylight_color) / float16_t(DIR_SL);
+
+				immut float16_t ind_sky = luminance(skylight_color) / float16_t(DIR_SL) * smoothstep(float16_t(0.0), float16_t(1.0), light.y);
 			#endif
 		#endif
 
@@ -312,7 +318,7 @@ void main() {
 		f16vec3 final_light = fma(
 			fma(
 				f16vec3(ind_sky),
-				f16vec3(0.5 * IND_SL),
+				f16vec3(IND_SL),
 				f16vec3(AMBIENT * 0.1)
 			),
 			color_ao.aaa,
