@@ -15,46 +15,24 @@ uniform float wetness;
 			roughness = perceptual_roughness * perceptual_roughness;
 		#endif
 
-		return clamp(
+		return max(
 			fma(float16_t(wetness), float16_t(-0.25), roughness),
-			float16_t(0.089),
-			float16_t(1.0)
+			float16_t(0.089)
 		);
 	}
 #else
-	// https://www.wikiwand.com/en/articles/Smoothstep
-	/*
-		float16_t smootherstep(float16_t edge0, float16_t edge1, float16_t x) {
-			x = saturate((x - edge0) / (edge1 - edge0));
-
-			return x*x*x * fma(fma(x, float16_t(6.0), float16_t(-15.0)), x, float16_t(10.0));
-		}
-	*/
-
-	float16_t smoothererstep(float16_t edge0, float16_t edge1, float16_t x) {
-		x = saturate((x - edge0) / (edge1 - edge0));
-
-		return x*x*x*x * fma(
-			fma(
-				fma(x, float16_t(-20.0), float16_t(70.0)),
-				x, float16_t(-84.0)
-			),
-			x, float16_t(35.0)
-		);
-	}
-
 	float16_t gen_roughness(float16_t luminance, float16_t avg_luma) {
-		immut float16_t diff = avg_luma - luminance;
-		immut float16_t roughness = fma(
-			smoothererstep(float16_t(0.0), float16_t(1.0), smoothererstep(float16_t(-1.0), float16_t(1.0), diff)),
-			float16_t(1.0 - 0.089),
-			float16_t(0.089)
-		); // magnifikt
+		const float16_t contrast = float16_t(-14.0); // todo!() make this configurable
 
-		return clamp(
+		immut float16_t diff = avg_luma - luminance;
+
+		// Thanks to Builderb0y (https://github.com/Builderb0y) for converting this to a logistic function
+		// https://discord.com/channels/237199950235041794/1401709875171688528/1401981189954342982 (shaderLABS)
+		immut float16_t roughness = float16_t(0.911) / (exp2(contrast * diff) + float16_t(1.0)) + float16_t(0.089); // magnifikt
+
+		return max(
 			fma(float16_t(wetness), float16_t(-0.25), roughness),
-			float16_t(0.089),
-			float16_t(1.0)
+			float16_t(0.089)
 		);
 	}
 #endif

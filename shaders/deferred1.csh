@@ -95,7 +95,7 @@ void main() {
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
-	// check if block light (first 13 bits) isn't zero, and we're within LL_DIST
+	// check if block light (first 15 bits) isn't zero, and we're within LL_DIST
 	immut bool lit = (gbuf.y & 32767u) != 0u && chebyshev_dist < float16_t(LL_DIST);
 
 	barrier();
