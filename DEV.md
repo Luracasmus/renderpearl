@@ -114,3 +114,37 @@ searchtex       : >-*-------------*--------------*---┘            *           
  | | | └[intensity]
  └[player feet space position]
 ```
+
+### Proposed
+
+```
+┌ colortex2 --------------┐
+|R    |G    |B      |A    |
+└16 16┴16 16┴8 8 8 8┴31 1 ┘
+ |  |  |  |  | | | | |  └["hand" flag]
+ |  |  |  |  | | | | └[biased shadow screen space position Z]
+ |  |  |  |  | | | └[f0/flag enum]
+ |  |  |  |  | | └[emissiveness]
+ |  |  |  |  | └[subsurface scattering]
+ |  |  |  |  └[roughness]
+ |  |  |  └[sky light]
+ |  |  └[block light]
+ |  └[octahedron encoded face normal]
+ └[octahedron encoded texture normal]
+```
+
+```
+┌ f0/flag enum ┐
+[0, 229] - f0
+230      - "pure light" flag
+231      - "metal" flag
+232      - "water" flag
+```
+
+```
+┌ colortex3 ┐
+|R |G       |
+└16┴16------┘
+ |  |
+ └[biased shadow screen space position XY]
+```

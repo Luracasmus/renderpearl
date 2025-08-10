@@ -136,7 +136,7 @@ void main() {
 
 		#if defined TERRAIN || defined HAND
 			immut uint emission = bitfieldExtract(v_tbn.handedness_and_misc, 1, 4); // todo!() should be 8 bits // todo!() labPBR emission map support
-			color *= fma(float16_t(emission), float16_t(4.0/15.0), float16_t(1.0));
+			color *= fma(float16_t(emission), float16_t(2.0/15.0), float16_t(1.0)); // todo!() we should just add to the lighting in deferred instead of multiplying the color
 
 			#ifdef HAND
 				data |= 0x80000000u; // set most significant bit to 1

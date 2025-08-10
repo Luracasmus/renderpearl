@@ -112,7 +112,7 @@ void main() {
 			if (fluid) v_tbn.handedness_and_misc |= 0x80000000u; // "fluid" flag // set most significant bit to 1
 
 			immut float16_t emission = min((max(float16_t(mc_Entity.x), float16_t(0.0)) + float16_t(at_midBlock.w)) / float16_t(15.0), float16_t(1.0));
-			v.light.x = min(fma(emission, float16_t(0.3), max(v.light.x, emission)), float16_t(1.0));
+			v.light.x = min(fma(emission, float16_t(0.3), max(v.light.x, emission)), float16_t(1.0)); // todo!() check this
 
 			#if !(SM && defined MC_SPECULAR_MAP)
 				float16_t avg_luma = luminance(color.rgb * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb));
