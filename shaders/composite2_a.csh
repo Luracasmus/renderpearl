@@ -5,9 +5,6 @@
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 const ivec3 workGroups = ivec3(1, 1, 1);
 
-writeonly
-#include "/buf/indirect/dispatch.glsl"
-
 #if HAND_LIGHT
 	writeonly
 	#include "/buf/hand_light.glsl"
@@ -21,8 +18,6 @@ writeonly
 #endif
 
 void main() {
-	indirect_dispatch.work_groups.x = 0u;
-
 	#if HAND_LIGHT
 		hand_light.data = uvec4(0u);
 	#endif

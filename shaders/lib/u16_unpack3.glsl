@@ -1,6 +1,6 @@
 #ifdef INT16
 	// Functions for packing and unpacking three values from a uint16_t, optimized to execute in just 4 and 2 instructions respectively on RDNA4
-	// todo!() use when Iris updates glsl-transformer to 2.0.2
+	// TODO: use when Iris updates glsl-transformer to 2.0.2
 
 	u16vec3 u16_unpack3(
 		uint16_t data,
@@ -41,5 +41,5 @@
 		return masked_01.x | shifted_12.x | shifted_12.y;
 	}
 #else
-	// todo!() add fallbacks using BFI/BFE
+	// TODO: add fallbacks using BFI/BFE
 #endif

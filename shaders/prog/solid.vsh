@@ -231,7 +231,7 @@ void main() {
 					immut f16vec3 w_normal = f16vec3(mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0));
 				#endif
 
-				// todo!() this bias is better than before but it would probably be best to do it in shadow screen space and offset a scaled amount of texels
+				// TODO: this bias is better than before but it would probably be best to do it in shadow screen space and offset a scaled amount of texels
 				immut f16vec2 bias = shadow_bias(dot(w_normal, f16vec3(shadowLightDirectionPlr)));
 
 				vec3 s_ndc = shadow_proj_scale * (mat3(shadowModelView) * rot_trans_mmul(gbufferModelViewInverse, view));

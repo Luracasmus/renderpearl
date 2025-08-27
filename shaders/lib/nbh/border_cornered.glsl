@@ -2,7 +2,7 @@
 // `offset` is the offset from the thread's location in the work group to the location of the border pixel it's processing
 
 {
-	// todo!() make u8vec2 once it works in Iris
+	// TODO: make u8vec2 once it works in Iris
 	immut i8vec2 local = i8vec2(gl_LocalInvocationID.xy);
 	immut bool up = local.y == int8_t(gl_WorkGroupSize.y - 1u);
 

@@ -22,7 +22,7 @@ uniform float wetness;
 	}
 #else
 	float16_t gen_roughness(float16_t luminance, float16_t avg_luma) {
-		const float16_t contrast = float16_t(-14.0); // todo!() make this configurable
+		const float16_t contrast = float16_t(-14.0); // TODO: make this configurable
 
 		immut float16_t diff = avg_luma - luminance;
 

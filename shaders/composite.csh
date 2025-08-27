@@ -146,7 +146,7 @@ void main() {
 
 	#if RED_MUL != 100 || GREEN_MUL != 100 || BLUE_MUL != 100
 		color *= f16vec3(0.01 * vec3(RED_MUL, GREEN_MUL, BLUE_MUL));
-		// todo!() fix negative muls so that they actually invert the color
+		// TODO: fix negative muls so that they actually invert the color
 	#endif
 
 	#if SATURATION != 100 || AUTO_EXP
@@ -190,14 +190,14 @@ void main() {
 				N - < z > + S
 			*/
 
-			comp_color.r += max(dot(dir, vec2(0.0, -1.0)) - inv_comp_line, 0.0); // todo!() these dots could probably be done faster
+			comp_color.r += max(dot(dir, vec2(0.0, -1.0)) - inv_comp_line, 0.0); // TODO: these dots could probably be done faster
 			comp_color.rg += max(dot(dir, vec2(1.0, 0.0)) - inv_comp_line, 0.0);
 			comp_color.rb += max(dot(dir, vec2(-1.0, 0.0)) - inv_comp_line, 0.0);
 			comp_color.gb += max(dot(dir, vec2(0.0, 1.0)) - inv_comp_line, 0.0);
 
 			comp_color = fma(comp_color, (1.0 / comp_line).xxx, vec3(max(0.1 - abs_dist.y, 0.0) * 10.0));
 
-			color = f16vec3(mix(color, comp_color, luminance(comp_color) * smoothstep(0.0, 0.1, 1.5 - abs_dist.x - abs_dist.y))); // todo!() make actually float16_t
+			color = f16vec3(mix(color, comp_color, luminance(comp_color) * step(0.0, 1.5 - abs_dist.x - abs_dist.y))); // TODO: make actually float16_t
 		}
 	#endif
 

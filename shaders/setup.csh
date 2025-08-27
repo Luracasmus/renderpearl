@@ -22,9 +22,6 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 writeonly
-#include "/buf/indirect/dispatch.glsl"
-
-writeonly
 #include "/buf/ll.glsl"
 
 #if AUTO_EXP
@@ -38,8 +35,6 @@ writeonly
 #endif
 
 void main() {
-	indirect_dispatch.work_groups = uvec3(0u, 1u, 1u);
-
 	#if AUTO_EXP
 		auto_exp.sum_log_luma = 0;
 		auto_exp.exposure = float16_t(1.0);

@@ -1,7 +1,7 @@
 #if NORMALS == 1 && defined MC_NORMAL_MAP
 	uniform sampler2D normals;
 
-	vec3 sample_normal(vec2 nm) { // todo!() f16
+	vec3 sample_normal(vec2 nm) { // TODO: f16
 		nm = fma(nm, vec2(2.0), vec2(-1.0));
 		return vec3(nm, sqrt(1.0 - dot(nm, nm)));
 	}
@@ -16,7 +16,7 @@
 	}
 
 	vec3 gen_normal(sampler2D source, f16vec3 tint, vec2 coord, uint mid_coord, uint face_tex_size, float16_t srgb_luma) {
-		const float16_t scale = float16_t(1.1); // todo!() make this configurable
+		const float16_t scale = float16_t(1.1); // TODO: make this configurable
 
 		immut vec2 local_coord = coord - unpackUnorm2x16(mid_coord);
 		immut ivec2 local_texel = ivec2(local_coord * vec2(textureSize(source, 0)));
