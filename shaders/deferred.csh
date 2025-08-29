@@ -14,7 +14,7 @@
 
 const ivec3 workGroups = ivec3(1, 1, 1);
 
-uniform bool rebuildIndex;
+uniform bool rebuildLL;
 uniform vec3 cameraPositionFract, invCameraPositionDeltaInt;
 uniform mat4 gbufferModelViewInverse;
 
@@ -31,7 +31,7 @@ void main() {
 	immut uint16_t local_invocation_i = uint16_t(gl_LocalInvocationIndex);
 	const uint16_t wg_size = uint16_t(gl_WorkGroupSize.x);
 
-	if (rebuildIndex) {
+	if (rebuildLL) {
 		if (local_invocation_i == uint16_t(0u)) sh_culled_len = 0u;
 
 		// if (ll.queue > ll.data.length()) { ll.len = uint16_t(0u); return; }

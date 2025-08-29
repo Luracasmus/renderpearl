@@ -62,7 +62,7 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 
 	screen.LIGHT_LIST=§6◀§r Light List §6▶
 		option.LL_DIST=§c⌚§r Distance
-			option.LL_DIST.comment=Chebychev distance within which lights are added to the light list\n\n§6⚠§r Changing this sometimes requires modifying §l§c⌚§r§l Index Size§r and/or §l§6⌚§r§l LDS Ratio§r to avoid artifacts and maintain optimal performance - It is therefore recommended to use the Profile option instead
+			option.LL_DIST.comment=Chebychev distance within which lights are added to the light list\n\n§6⚠§r Changing this sometimes requires modifying §l§c⌚§r§l Capacity§r and/or §l§6⌚§r§l LDS Ratio§r to avoid artifacts and maintain optimal performance - It is therefore recommended to use the Profile option instead
 			suffix.LL_DIST=\ blocks
 
 		option.LL_CAPACITY=§c⌚§r Capacity
@@ -85,7 +85,7 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 		option.LL_FALLOFF_MARGIN=§b⌚§r Falloff Margin
 
 		option.LL_RATE=§6⌚§r Refresh Rate
-			option.LL_RATE.comment=Delay in frames between each time the Light Index is rebuilt\n\nHigher values improve performance but increase latency in light updates
+			option.LL_RATE.comment=Delay in frames between each time the light list is rebuilt\n\nHigher values improve performance but increase latency in light updates
 			prefix.LL_RATE=1/
 
 		option.LOD_FALLOFF=§c⌚§r LOD Falloff
@@ -96,7 +96,7 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 			value.LAVA_LOD_BIAS.0.0=§cOff
 
 		option.LDS_RATIO=§6⌚§r LDS Ratio
-			option.LDS_RATIO.comment=The amount of Local Data Share memory allocated per tile (work group) as a ratio of §l§c⌚§r§l Index Size§r\n\nThis affects the maximum amount of lights that can be processed §oafter culling§r before artifacts occur
+			option.LDS_RATIO.comment=The amount of Local Data Share memory allocated per tile (work group) as a ratio of §l§c⌚§r§l Capacity§r\n\nThis affects the maximum amount of lights that can be processed §oafter culling§r before artifacts occur
 
 	screen.FALLBACK_BLOCK=§6◀§r Fallback Block Light §6▶
 		screen.FALLBACK_BLOCK.comment=Fallback block light color for lights outside the range of the light list

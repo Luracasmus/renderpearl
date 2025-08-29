@@ -36,7 +36,7 @@ uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, texture
 #ifdef TERRAIN
 	#include "/buf/ll.glsl"
 
-	uniform bool rebuildIndex;
+	uniform bool rebuildLL;
 	uniform vec3 cameraPosition, chunkOffset;
 
 	in vec2 mc_Entity;
@@ -167,7 +167,7 @@ void main() {
 				immut uint emission = uint(fma(norm_emission, float16_t(15.0), float16_t(0.5))); // bring into 4-bit-representable range and round
 				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, emission, 1, 4);
 
-				if (rebuildIndex) { // only rebuild the index once every LL_RATE frames
+				if (rebuildLL) { // only rebuild the index once every LL_RATE frames
 					immut f16vec3 view_f16 = f16vec3(view);
 
 					if (
