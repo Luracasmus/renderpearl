@@ -13,7 +13,7 @@ specular  : >-*----------*--┘|      ||||   *
 normals   : >-*----------*---┘      ||||   *
 colortex1 :   *          *          |||└X--*->
 colortex2 :   *          *          ||└X---*->
-lightIndex: >-*----------*----------┼X-----*->
+lightList : >-*----------*----------┼X-----*->
 handLight : >-*----------*----------X------*->
 [Barriers]: [ X          X                 X ]
               |          └> Solid geometry
@@ -23,22 +23,21 @@ handLight : >-*----------*----------X------*->
 ### Deferred Processing
 
 ```
-indirectDispatch: >-*------┬-----X-*---┬---------------*->
-indirectControl :   *      |┌----X-*--┐|               *
-colortex1       : >-*-deferred---X-*-deferred1-------X-*->
-lightIndex      : >-*-deferred_a-X-*--┘||              *
-handLight       : >-*--------------*---┘|              *
-colortex2       : >-*--------------*----┘              *
-[Barriers]      : [ X              X                   X ]
-                    |              └> Deferred lighting
-                    └> Indirect dispatch setup, light index deduplication, and sky
+lightList : >-*-deferred-X-*--┬----------*->
+colortex1 : >-*------------*-deferred1-X-*->
+colortex2 : >-*------------*--┘||        *
+handLight : >-*------------*---┘|        *
+shadow*   : >-*------------*----┘        *
+[Barriers]: [ X            X             X ]
+              |            └> Deferred lighting, and sky
+              └> Light list deduplication
 ```
 
 ### Translucent Geometry
 
 ```
 handLight : >-*----┐                    *
-lightIndex: >-*---┐|                    *
+lightList : >-*---┐|                    *
 shadow*   : >-*--┐||                    *
 colortex1 : >-*-gbuffers(translucent)-X-*->
 gtexture  : >-*--┘||                    *
@@ -52,7 +51,6 @@ normals   : >-*----┘                    *
 
 ```
 handLight       :   *             *              *  ┌-----------X-*--------------*->
-indirectDispatch:   *             *              *  |┌----------X-*--------------*->
 autoExp         : >-*---┬-------X-*--------------*-composite2_a-X-*--------------*->
 depthtex0       : >-*--┐|         *              *                *              *
 colortex0       :   *  ||         *              *                * composite3-X-*->
@@ -82,7 +80,7 @@ searchtex       : >-*-------------*--------------*---┘            *           
 
 ```
 ┌ colortex1 ┐
-|R |G |B | A|
+|R |G |B |A |
 └16┴16┴16┴16┘
  |  |  |  └[AO]
  └[color (RGB)]
@@ -105,10 +103,10 @@ searchtex       : >-*-------------*--------------*---┘            *           
 ```
 
 ```
-┌ lightIndex -----┐
-|data     |color  |
-└9 9 9 4 1┴6  5  5┘
- | | | | | |  |  |
+┌ lightList ----┐
+|data     |color|
+└9 9 9 4 1┴6 5 5┘
+ | | | | | | | |
  | | | | | └[color (GRB)]
  | | | | └["wide" flag]
  | | | └[intensity]
