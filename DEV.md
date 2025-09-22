@@ -151,7 +151,7 @@ searchtex       : >-*-------------*--------------*---┘            *           
 ```
 ┌ colortex3 ┐
 |R |G       |
-└16┴16------┘
+└32┴32------┘
  |  |
- └[biased shadow screen space position XY] (unorm)
+ └[biased shadow screen space position XY] (float)
 ```
