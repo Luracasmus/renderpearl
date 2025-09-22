@@ -75,15 +75,15 @@ searchtex       : >-*-------------*--------------*---┘            *           
 |R |G |B |A |
 └8 ┴8 ┴8 ┴8 ┘
  |  |  |  └X
- └[normalized color (RGB)]
+ └[color (RGB)] (unorm)
 ```
 
 ```
 ┌ colortex1 ┐
 |R |G |B |A |
 └16┴16┴16┴16┘
- |  |  |  └[AO]
- └[color (RGB)]
+ |  |  |  └[AO] (float)
+ └[color (RGB)] (float)
 ```
 
 ```
@@ -91,15 +91,15 @@ searchtex       : >-*-------------*--------------*---┘            *           
 |R    |G        |B     |A    |
 └16 16┴15 15 1 1┴8 8 16┴16 16┘
  |  |  |  |  | | | | |  |  |
- |  |  |  |  | | | | └[biased shadow screen space position]
- |  |  |  |  | | | └[subsurface scattering]
- |  |  |  |  | | └[roughness]
- |  |  |  |  | └["hand" flag]
- |  |  |  |  └["pure light" flag]
- |  |  |  └[sky light]
- |  |  └[block light]
- |  └[octahedron encoded face normal]
- └[octahedron encoded texture normal]
+ |  |  |  |  | | | | └[biased shadow screen space position] (unorm)
+ |  |  |  |  | | | └[subsurface scattering] (unorm)
+ |  |  |  |  | | └[roughness] (unorm)
+ |  |  |  |  | └["hand" flag] (bool)
+ |  |  |  |  └["pure light" flag] (bool)
+ |  |  |  └[sky light] (unorm)
+ |  |  └[block light] (unorm)
+ |  └[octahedron encoded face normal] (float)
+ └[octahedron encoded texture normal] (float)
 ```
 
 ```
@@ -107,28 +107,37 @@ searchtex       : >-*-------------*--------------*---┘            *           
 |data     |color|
 └9 9 9 4 1┴6 5 5┘
  | | | | | | | |
- | | | | | └[color (GRB)]
- | | | | └["wide" flag]
- | | | └[intensity]
- └[player feet space position]
+ | | | | | └[color (GRB)] (unorm)
+ | | | | └["wide" flag] (bool)
+ | | | └[intensity] (uint)
+ └[player feet space position] (uint)
 ```
 
 ### Proposed
 
 ```
-┌ colortex2 --------------┐
-|R    |G    |B      |A    |
-└16 16┴16 16┴8 8 8 8┴31 1 ┘
- |  |  |  |  | | | | |  └["hand" flag]
- |  |  |  |  | | | | └[biased shadow screen space position Z]
- |  |  |  |  | | | └[f0/flag enum]
- |  |  |  |  | | └[emissiveness]
- |  |  |  |  | └[subsurface scattering]
- |  |  |  |  └[roughness]
- |  |  |  └[sky light]
- |  |  └[block light]
- |  └[octahedron encoded face normal]
- └[octahedron encoded texture normal]
+┌ colortex1 ┐
+|R |G |B |A |
+└16┴16┴16┴16┘
+ |  |  |  └[block light] (float)
+ └[color (RGB)] (float)
+```
+
+```
+┌ colortex2 ----------------┐
+|R    |G      |B      |A    |
+└16 16┴16 13 3┴8 8 8 8┴31 1 ┘
+ |  |  |  |  | | | | | |  └["hand" flag] (bool)
+ |  |  |  |  | | | | | └[biased shadow screen space position Z] (unsigned float)
+ |  |  |  |  | | | | └[f0/flag enum] (uint)
+ |  |  |  |  | | | └[emissiveness] (unorm)
+ |  |  |  |  | | └[subsurface scattering] (unorm)
+ |  |  |  |  | └[roughness] (unorm)
+ |  |  |  |  └[AO direction) (uint)
+ |  |  |  └[AO] (unorm)
+ |  |  └[sky light] (float)
+ |  └[octahedron encoded face normal] (float)
+ └[octahedron encoded texture normal] (float)
 ```
 
 ```
@@ -144,5 +153,5 @@ searchtex       : >-*-------------*--------------*---┘            *           
 |R |G       |
 └16┴16------┘
  |  |
- └[biased shadow screen space position XY]
+ └[biased shadow screen space position XY] (unorm)
 ```
