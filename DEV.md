@@ -133,7 +133,7 @@ searchtex       : >-*-------------*--------------*---┘            *           
  |  |  |  |  | | | └[emissiveness] (unorm)
  |  |  |  |  | | └[subsurface scattering] (unorm)
  |  |  |  |  | └[roughness] (unorm)
- |  |  |  |  └[AO direction) (uint)
+ |  |  |  |  └[AO direction in 2D across the face) (uint)
  |  |  |  └[AO] (unorm)
  |  |  └[sky light] (float)
  |  └[octahedron encoded face normal] (float)
