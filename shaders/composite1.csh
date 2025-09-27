@@ -17,7 +17,7 @@ uniform layout(rg8) restrict writeonly image2D edge;
 	Copyright (C) 2013 Belen Masia (bmasia@unizar.es)
 	Copyright (C) 2013 Fernando Navarro (fernandn@microsoft.com)
 	Copyright (C) 2013 Diego Gutierrez (diegog@unizar.es)
-	Copyright (C) 2024 Luracasmus
+	Copyright (C) 2024-2025 Luracasmus
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	this software and associated documentation files (the "Software"), to deal in
