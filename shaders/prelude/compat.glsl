@@ -19,7 +19,7 @@
 
 // It seems like this is always supported on non-NVIDIA drivers
 // Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_shader_trinary_minmax
-#if (MINMAX_3 >= 1 && defined MC_GL_AMD_shader_trinary_minmax) || (MINMAX_3 >= 2 && !defined MC_GL_VENDOR_NVIDIA) || MINMAX_3 >= 3
+#if (MINMAX_3 >= 1 && defined MC_GL_AMD_shader_trinary_minmax) || (MINMAX_3 >= 2 && !defined MC_GL_VENDOR_NVIDIA && !(defined MC_GL_VENDOR_INTEL && defined MC_OS_WINDOWS)) || MINMAX_3 >= 3
 	#extension GL_AMD_shader_trinary_minmax : require
 #else
 	#define min3(v0, v1, v2) min(v0, min(v1, v2))
