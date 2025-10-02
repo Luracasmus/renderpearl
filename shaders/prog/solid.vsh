@@ -134,8 +134,8 @@ void main() {
 			init_tbn(w_normal, w_tangent); // this must run before writing to `v_tbn.handedness_and_misc`
 
 			#if NORMALS != 2 && !(NORMALS == 1 && defined MC_NORMAL_MAP)
-				immut uvec2 texels = uvec2(fma(abs(v.coord - mc_midTexCoord), vec2(2 * textureSize(gtexture, 0)), vec2(0.5)));
-				v.face_tex_size = bitfieldInsert(texels.x, texels.y, 16, 16);
+				immut u16vec2 texels = u16vec2(fma(abs(v.coord - mc_midTexCoord), vec2(2 * textureSize(gtexture, 0)), vec2(0.5)));
+				v.face_tex_size = packUint2x16(texels);
 				v.mid_coord = packUnorm2x16(mc_midTexCoord);
 			#endif
 

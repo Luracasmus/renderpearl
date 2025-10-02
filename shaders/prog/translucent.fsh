@@ -113,7 +113,7 @@ void main() {
 
 	color.rgb = linear(color.rgb);
 
-	immut vec3 ndc = fma(vec3(gl_FragCoord.xy / view_size(), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
+	immut vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size()), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
 	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
 
 	f16vec3 lighting = f16vec3(v.light);
@@ -159,7 +159,7 @@ void main() {
 		immut float solid_depth = texelFetch(depthtex1, ivec2(gl_FragCoord.xy), 0).r;
 
 		if (solid_depth < 1.0) {
-			immut vec3 solid_ndc = fma(vec3(gl_FragCoord.xy / view_size(), solid_depth), vec3(2.0), vec3(-1.0));
+			immut vec3 solid_ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size()), solid_depth), vec3(2.0), vec3(-1.0));
 			immut vec3 solid_pe = mat3(gbufferModelViewInverse) * proj_inv(gbufferProjectionInverse, solid_ndc);
 			immut float16_t fog = min(fog(solid_pe) + float16_t(1.0 - exp(-0.0125 / fogState.y * length(solid_pe))), float16_t(1.0)); // TODO: make this less cursed
 
