@@ -225,7 +225,7 @@ void main() {
 	bvec2 e = greaterThanEqual(texelFetch(edgeS, texel, 0).rg, vec2(0.5));
 
 	if (any(e)) {
-		immut vec2 view_size = view_size();
+		immut vec2 view_size = vec2(view_size());
 		immut vec2 texel_size = 1.0 / view_size;
 
 		immut vec2 texel_coord = vec2(texel) + 0.5;

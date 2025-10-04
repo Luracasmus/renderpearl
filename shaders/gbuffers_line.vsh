@@ -28,7 +28,7 @@ void main() {
 	vec3 start_ndc = start_clip.xyz / start_clip.w;
 	immut vec3 end_ndc = end_clip.xyz / end_clip.w;
 
-	immut vec2 view_size = view_size();
+	immut vec2 view_size = vec2(view_size());
 	immut vec2 dir_screen = normalize((end_ndc.xy - start_ndc.xy) * view_size);
 	vec2 offset_ndc = float(LINE_WIDTH) / view_size * vec2(-dir_screen.y, dir_screen.x);
 

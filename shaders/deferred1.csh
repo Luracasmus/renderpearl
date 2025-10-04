@@ -41,6 +41,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #include "/lib/sm/shadows.glsl"
 #include "/lib/srgb.glsl"
 #include "/lib/fog.glsl"
+// #include "/lib/u16_unpack3.glsl"
 
 #ifdef LIGHT_LEVELS
 	#include "/lib/llv.glsl"
@@ -232,7 +233,7 @@ void main() {
 					immut f16vec3 w_rel_light = f16vec3(vec3(
 						light_data & 511u,
 						bitfieldExtract(light_data, 9, 9),
-															 bitfieldExtract(light_data, 18, 9)
+						bitfieldExtract(light_data, 18, 9)
 					) + offset);
 
 					immut float16_t intensity = float16_t(bitfieldExtract(light_data.x, 27, 4));
@@ -257,9 +258,15 @@ void main() {
 
 						immut f16vec3 illum = brightness * f16vec3(
 							(light_color >> uint16_t(6u)) & uint16_t(31u),
-																   light_color & uint16_t(63u),
-																   (light_color >> uint16_t(11u))
+							light_color & uint16_t(63u),
+							(light_color >> uint16_t(11u))
 						);
+
+						/*
+							immut f16vec3 illum = brightness * f16vec3(
+								u16_unpack3(light_color, u16vec2(6, 5)).grb
+							);
+						*/
 
 						immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
 
