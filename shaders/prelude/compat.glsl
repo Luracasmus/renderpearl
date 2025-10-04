@@ -176,14 +176,30 @@
 		return bitfieldInsert(v_i32.x, v_i32.y, 16, 16);
 	}
 
-	i16vec2 unpackInt2x16(int v) { return i16vec2(v & 65535, v >> 16); }
+	i16vec2 unpackInt2x16(int v) { return i16vec2(
+		#ifdef INT16
+			v // mask should happen automatically with the cast afaik
+		#else
+			v & 65535
+		#endif
+		, v >> 16
+	); }
 
-	uint packUint2x16(u16vec2 v) {
-		immut uvec2 v_u32 = uvec2(v);
-		return bitfieldInsert(v_u32.x, v_u32.y, 16, 16);
-	}
+	/* waiting on Iris glsl-transformer update
+		uint packUint2x16(u16vec2 v) {
+			immut uvec2 v_u32 = uvec2(v);
+			return bitfieldInsert(v_u32.x, v_u32.y, 16, 16);
+		}
 
-	u16vec2 unpackUint2x16(uint v) { return u16vec2(v & 65535u, v >> 16u); }
+		u16vec2 unpackUint2x16(uint v) { return u16vec2(
+			#ifdef INT16
+				v
+			#else
+				v & 65535u
+			#endif
+			, v >> 16u
+		); }
+	*/
 #endif
 
 #ifndef TRANSMUTE_AND_PACK_INT16
@@ -200,13 +216,15 @@
 	uint16_t float16BitsToUint16(float16_t v) { return uint16_t(packFloat2x16(f16vec2(v, 0.0))); }
 	float16_t uint16BitsToFloat16(uint16_t v) { return unpackFloat2x16(uint(v)).x; }
 
-	u16vec2 float16BitsToUint16(f16vec2 v) { return unpackUint2x16(packFloat2x16(v)); }
-	u16vec3 float16BitsToUint16(f16vec3 v) { return u16vec3(float16BitsToUint16(v.xy), float16BitsToUint16(v.z)); }
-	u16vec4 float16BitsToUint16(f16vec4 v) { return u16vec4(float16BitsToUint16(v.xy), float16BitsToUint16(v.zw)); }
+	/* waiting on Iris glsl-transformer update
+		u16vec2 float16BitsToUint16(f16vec2 v) { return unpackUint2x16(packFloat2x16(v)); }
+		u16vec3 float16BitsToUint16(f16vec3 v) { return u16vec3(float16BitsToUint16(v.xy), float16BitsToUint16(v.z)); }
+		u16vec4 float16BitsToUint16(f16vec4 v) { return u16vec4(float16BitsToUint16(v.xy), float16BitsToUint16(v.zw)); }
 
-	f16vec2 uint16BitsToFloat16(u16vec2 v) { return unpackFloat2x16(packUint2x16(v)); }
-	f16vec3 uint16BitsToFloat16(u16vec3 v) { return f16vec3(uint16BitsToFloat16(v.xy), uint16BitsToFloat16(v.z)); }
-	f16vec4 uint16BitsToFloat16(u16vec4 v) { return f16vec4(uint16BitsToFloat16(v.xy), uint16BitsToFloat16(v.zw)); }
+		f16vec2 uint16BitsToFloat16(u16vec2 v) { return unpackFloat2x16(packUint2x16(v)); }
+		f16vec3 uint16BitsToFloat16(u16vec3 v) { return f16vec3(uint16BitsToFloat16(v.xy), uint16BitsToFloat16(v.z)); }
+		f16vec4 uint16BitsToFloat16(u16vec4 v) { return f16vec4(uint16BitsToFloat16(v.xy), uint16BitsToFloat16(v.zw)); }
+	*/
 #endif
 
 // #extension GL_EXT_shader_integer_mix : require

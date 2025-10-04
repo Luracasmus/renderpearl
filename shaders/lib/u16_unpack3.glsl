@@ -1,5 +1,6 @@
 #ifdef INT16
 	// Functions for packing and unpacking three values from a uint16_t, optimized to execute in just 4 and 2 instructions respectively on RDNA4
+	// TODO: use when Iris updates glsl-transformer to 2.0.2
 
 	u16vec3 u16_unpack3(
 		uint16_t data,
@@ -14,7 +15,7 @@
 		// V_PK_MIN_U16
 		immut u16vec2 masked_01 = min(
 			u16vec2(data, shifted_12.x),
-			(uint16_t(1u) << size_01) - uint16_t(1u) // this can be calculated at compile time if `size_01` is constant
+			uint16_t(1u) << size_01 // this can be calculated at compile time if `size_01` is constant
 		);
 
 		return u16vec3(masked_01, shifted_12.y);
@@ -27,7 +28,7 @@
 		// V_PK_MIN_U16
 		immut u16vec2 masked_01 = min(
 			u16vec2(data.x, data.y),
-			(uint16_t(1u) << size_01) - uint16_t(1u) // this can be calculated at compile time if `size_01` is constant
+			uint16_t(1u) << size_01 // this can be calculated at compile time if `size_01` is constant
 		);
 
 		// V_PK_LSHLREV_B16

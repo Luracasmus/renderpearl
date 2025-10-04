@@ -23,7 +23,10 @@
 
 		immut float lod = textureQueryLod(source, coord).x;
 		immut ivec2 half_texels = ivec2(
-			unpackUint2x16(face_tex_size) / (uint16_t(2u) << uint16_t(ceil(lod))) - uint16_t(1u)
+			uvec2(
+				face_tex_size & 65535u,
+				face_tex_size >> 16u
+			) / (2u << uint(ceil(lod))) - 1u
 		);
 
 		immut f16vec4 bump = f16vec4(

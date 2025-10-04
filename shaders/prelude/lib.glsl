@@ -41,10 +41,12 @@ uvec4 saturate(uvec4 v) { return clamp(v, 0u, 0xFFFFFFFFu); }
 	i16vec3 saturate(i16vec3 v) { return clamp(v, int16_t(-0x8000), int16_t(0x7FFF)); }
 	i16vec4 saturate(i16vec4 v) { return clamp(v, int16_t(-0x8000), int16_t(0x7FFF)); }
 
+	/* // waiting on Iris bug fix
 	uint16_t saturate(uint16_t v) { return clamp(v, uint16_t(0u), uint16_t(0xFFFFu)); }
 	u16vec2 saturate(u16vec2 v) { return clamp(v, uint16_t(0u), uint16_t(0xFFFFu)); }
 	u16vec3 saturate(u16vec3 v) { return clamp(v, uint16_t(0u), uint16_t(0xFFFFu)); }
 	u16vec4 saturate(u16vec4 v) { return clamp(v, uint16_t(0u), uint16_t(0xFFFFu)); }
+	*/
 #endif
 
 #ifdef INT8
@@ -53,8 +55,10 @@ uvec4 saturate(uvec4 v) { return clamp(v, 0u, 0xFFFFFFFFu); }
 	i8vec3 saturate(i8vec3 v) { return clamp(v, int8_t(-0x80), int8_t(0x7F)); }
 	i8vec4 saturate(i8vec4 v) { return clamp(v, int8_t(-0x80), int8_t(0x7F)); }
 
-	uint8_t saturate(uint8_t v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
-	u8vec2 saturate(u8vec2 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
-	u8vec3 saturate(u8vec3 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
-	u8vec4 saturate(u8vec4 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
+	/* waiting on Iris glsl-transformer update
+		uint8_t saturate(uint8_t v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
+		u8vec2 saturate(u8vec2 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
+		u8vec3 saturate(u8vec3 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
+		u8vec4 saturate(u8vec4 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
+	*/
 #endif

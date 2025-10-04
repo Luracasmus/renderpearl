@@ -29,7 +29,7 @@ f16vec3 blend_color(f16vec2 blend_weight, vec3 color_0, vec3 color_1) {
 
 void main() {
 	immut i16vec2 texel = i16vec2(gl_GlobalInvocationID.xy);
-	immut u8vec2 nbh_pos = u8vec2(gl_LocalInvocationID.xy) + uint8_t(1u);
+	immut i8vec2 nbh_pos = i8vec2(gl_LocalInvocationID.xy) + int8_t(1);
 
 	f16vec3 color;
 
@@ -111,7 +111,7 @@ void main() {
 		#include "/lib/nbh/border_cornered.glsl"
 
 		if (border_offset != i8vec2(0)) {
-			immut u8vec2 border_pos = u8vec2(i8vec2(nbh_pos) + border_offset);
+			immut i8vec2 border_pos = nbh_pos + border_offset;
 			nbh[border_pos.x][border_pos.y] = offset_color;
 		}
 	}
@@ -146,17 +146,17 @@ void main() {
 		// d e f
 		// g h i
 		immut f16vec3[3][3] cas_nbh = f16vec3[3][3](f16vec3[3](
-			nbh[nbh_pos.x - uint8_t(1u)][nbh_pos.y - uint8_t(1u)],
-			nbh[nbh_pos.x - uint8_t(1u)][nbh_pos.y],
-			nbh[nbh_pos.x - uint8_t(1u)][nbh_pos.y + uint8_t(1u)]
+			nbh[nbh_pos.x - int8_t(1)][nbh_pos.y - int8_t(1)],
+			nbh[nbh_pos.x - int8_t(1)][nbh_pos.y],
+			nbh[nbh_pos.x - int8_t(1)][nbh_pos.y + int8_t(1)]
 		), f16vec3[3](
-			nbh[nbh_pos.x][nbh_pos.y - uint8_t(1u)],
+			nbh[nbh_pos.x][nbh_pos.y - int8_t(1)],
 			color,
-			nbh[nbh_pos.x][nbh_pos.y + uint8_t(1u)]
+			nbh[nbh_pos.x][nbh_pos.y + int8_t(1)]
 		), f16vec3[3](
-			nbh[nbh_pos.x + uint8_t(1u)][nbh_pos.y - uint8_t(1u)],
-			nbh[nbh_pos.x + uint8_t(1u)][nbh_pos.y],
-			nbh[nbh_pos.x + uint8_t(1u)][nbh_pos.y + uint8_t(1u)]
+			nbh[nbh_pos.x + int8_t(1)][nbh_pos.y - int8_t(1)],
+			nbh[nbh_pos.x + int8_t(1)][nbh_pos.y],
+			nbh[nbh_pos.x + int8_t(1)][nbh_pos.y + int8_t(1)]
 		));
 
 		// Soft min and max

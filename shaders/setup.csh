@@ -1,21 +1,21 @@
 #include "/prelude/core.glsl"
 
 #ifdef IS_OCULUS
-	#warning "RenderPearl: RenderPearl requires Iris, but seems to have been loaded by Oculus instead, which may not be fully compatible. No support will be provided for using RenderPearl in this configuration."
+	#error "RenderPearl: RenderPearl requires Iris, but seems to have been loaded by Oculus instead, which may not be fully compatible. No support will be provided for using RenderPearl in this configuration."
 #elif !defined IS_IRIS
-	#warning "RenderPearl: RenderPearl requires Iris, but seems to have been loaded by a different, unknown shader loader. Various issues may occur. No support will be provided for using RenderPearl in this configuration."
+	#error "RenderPearl: RenderPearl requires Iris, but seems to have been loaded by a different, unknown shader loader. Various issues may occur. No support will be provided for using RenderPearl in this configuration."
 #endif
 
 #ifdef IS_MONOCLE
-	#warning "RenderPearl: The Monocle mod is incompatible with RenderPearl. Visual issues may occur. No support will be provided for using RenderPearl in this configuration."
+	#error "RenderPearl: The Monocle mod is incompatible with RenderPearl. Visual issues may occur. No support will be provided for using RenderPearl in this configuration."
 #endif
 
 #ifdef DISTANT_HORIZONS
-	#warning "RenderPearl: RenderPearl does not render Distant Horizons geometry. For optimal performance, please disable "Enable Rendering" in your Distant Horizons configuration."
+	#error "RenderPearl: RenderPearl does not render Distant Horizons geometry. For optimal performance, please disable "Enable Rendering" in your Distant Horizons configuration."
 #endif
 
 #ifdef CHUNKS_FADE_IN_ENABLED
-	#warning "RenderPearl: Chunks Fade In support is experimental. Various issues may occur."
+	#error "RenderPearl: Chunks Fade In support is experimental. Various issues may occur."
 #endif
 
 const ivec3 workGroups = ivec3(1, 1, 1);
