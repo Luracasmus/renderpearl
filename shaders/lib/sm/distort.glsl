@@ -4,7 +4,7 @@ vec2 distort(vec2 pos) {
 	// https://www.wikiwand.com/en/articles/Squircle#Fern%C3%A1ndez-Guasti_squircle
 	// https://www.desmos.com/3d/5vlbwkxhkb
 
-	// not sure if this actually scales correctly to always prevent artifacts
+	// Not sure if this actually scales correctly to always prevent artifacts.
 	const float squareness = 1.0 - 2.0 / shadowDistance;
 	const float s = squareness;
 

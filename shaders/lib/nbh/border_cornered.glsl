@@ -1,5 +1,5 @@
 // Helper for processing a 1 thread nbh border WITH corners, computing BORDER_OP(offset) on threads at the edge of the work group, and NON_BORDER_OP otherwise
-// `offset` is the offset from the thread's location in the work group to the location of the border pixel it's processing
+// `offset` is the offset from the thread's location in the work group to the location of the border pixel it's processing.
 
 {
 	// TODO: make u8vec2 once it works in Iris

@@ -1,8 +1,8 @@
 uniform int frameCounter;
 
 // Interleaved Gradient Noise
-// Based on code snippet "Interleaved Gradient Noise, but using fixed point math to replace precision dropoff with overflow/wrap-around." by LowellCamp
-// Found at https://discord.com/channels/237199950235041794/525510804494221312/950103097596846081 in the shaderLABS Discord server
+// Based on code snippet "Interleaved Gradient Noise, but using fixed point math to replace precision dropoff with overflow/wrap-around." by LowellCamp.
+// Found at https://discord.com/channels/237199950235041794/525510804494221312/950103097596846081 in the shaderLABS Discord server.
 
 float ign(vec2 texel, float time) {
 	immut ivec2 components = ivec2(fma(vec2(time), vec2(5.588238), texel)) * ivec2(1125928, 97931);

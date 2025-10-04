@@ -2,7 +2,7 @@
 
 // We sometimes assume support based on device characteristics,
 // since it's not always properly advertised by drivers,
-// which causes Iris to not define all macros for supported extensions
+// which causes Iris to not define all macros for supported extensions.
 
 #ifdef ASSUME_NV_GPU_SHADER5
 #endif
@@ -17,7 +17,7 @@
 	#define immut
 #endif
 
-// It seems like this is always supported on non-NVIDIA drivers
+// It seems like this is always supported on non-NVIDIA drivers.
 // Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_shader_trinary_minmax
 #if (MINMAX_3 >= 1 && defined MC_GL_AMD_shader_trinary_minmax) || (MINMAX_3 >= 2 && !defined MC_GL_VENDOR_NVIDIA && !(defined MC_GL_VENDOR_INTEL && defined MC_OS_WINDOWS)) || MINMAX_3 >= 3
 	#extension GL_AMD_shader_trinary_minmax : require
@@ -26,7 +26,7 @@
 	#define max3(v0, v1, v2) max(v0, max(v1, v2))
 #endif
 
-// It seems like this is always supported on Mesa drivers for Intel GPUs (excluding some mobile or very old GPUs)
+// It seems like this is always supported on Mesa drivers for Intel GPUs (excluding some mobile or very old GPUs).
 // Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_INTEL_shader_integer_functions2
 #if (MUL_32x16 >= 1 && defined MC_GL_INTEL_shader_integer_functions2) || (MUL_32x16 >= 2 && defined MC_GL_VENDOR_MESA && defined MC_GL_RENDERER_INTEL) || MUL_32x16 >= 3
 	#extension GL_INTEL_shader_integer_functions2 : require
@@ -43,7 +43,7 @@
 #endif
 
 #ifdef SIZED_16_8
-	// It seems like this is always supported on NVIDIA drivers
+	// It seems like this is always supported on NVIDIA drivers.
 	// Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_NV_gpu_shader5
 	#if defined MC_GL_NV_gpu_shader5 || (defined ASSUME_NV_GPU_SHADER5 && defined MC_GL_VENDOR_NVIDIA)
 		#extension GL_NV_gpu_shader5 : require
@@ -53,7 +53,7 @@
 		// #define MAT16 // doesn't seem to work :/
 	#endif
 
-	// It seems like this is always supported on Windows with ATI/AMD drivers for Radeon GPUs (excluding some mobile or very old GPUs)
+	// It seems like this is always supported on Windows with ATI/AMD drivers for Radeon GPUs (excluding some mobile or very old GPUs).
 	// Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_gpu_shader_half_float
 	#if defined MC_GL_AMD_gpu_shader_half_float || (defined ASSUME_AMD_GPU_SHADER_HALF_FLOAT && defined MC_GL_RENDERER_RADEON && defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
 		#extension GL_AMD_gpu_shader_half_float : require
@@ -63,7 +63,7 @@
 		#define AMD_FLOAT16
 	#endif
 
-	// Same as above
+	// Same as above.
 	// Based on: https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_gpu_shader_int16
 	#if defined MC_GL_AMD_gpu_shader_int16 || (defined ASSUME_AMD_GPU_SHADER_INT16 && defined MC_GL_RENDERER_RADEON && defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
 		#extension GL_AMD_gpu_shader_int16 : require
@@ -79,7 +79,7 @@
 
 	#ifdef MC_GL_EXT_shader_16bit_storage
 		#extension GL_EXT_shader_16bit_storage : require
-		#define FLOAT16 // how does this interact with trinary min/max?
+		#define FLOAT16 // How does this interact with trinary min/max?
 		#define INT16
 	#endif
 
@@ -111,7 +111,7 @@
 #endif
 
 #ifdef BUFFER_16_8
-	// Only used in shaders.properties to allow for smaller buffers. Required since Iris' .properties pre-processor doesn't handle non-option macros, so we can't check for actual support
+	// Only used in shaders.properties to allow for smaller buffers. Required since Iris' .properties pre-processor doesn't handle non-option macros, so we can't check for actual support.
 	// https://discord.com/channels/774352792659820594/774354522361299006/1360611068812198001 (The Iris Project)
 #endif
 
@@ -129,7 +129,7 @@
 	#define u16vec3 uvec3
 	#define u16vec4 uvec4
 
-	// Work around Iris bug
+	// Work around Iris bug.
 	// https://discord.com/channels/774352792659820594/774354522361299006/1360611068812198001 (The Iris Project)
 	#undef INT16
 #endif

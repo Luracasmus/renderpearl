@@ -42,7 +42,7 @@ float16_t sky_fog(float16_t height) {
 				if (isEyeInWater == 0) {
 					immut float proximity = dot(n_pe, sun_dir);
 
-					immut float sun = max(0.0, proximity); // * skyState.y // make this only apply to edge fog, not pbr
+					immut float sun = max(0.0, proximity); // * skyState.y // TODO: Make this only apply to edge fog, not PBR.
 					immut float moon = max(0.0, -proximity) * float16_t(skyState.z) * float16_t(0.2); // * (1.0 - skyState.y)
 
 					immut float16_t day = float16_t(skyState.y);

@@ -116,6 +116,9 @@ screen.ATMOSPHERICS=§6◀§r Atmosfär §6▶
 	option.SUN_BLOOM=§b⌚§r Sol-Bloom
 	option.SKY_BLOOM=§b⌚§r Himmel-Bloom
 
+	option.CLOUD_FOG_END=§b⌚§r Slut på Molndimma
+		suffix.CLOUD_FOG_END=\ datablock
+
 screen.ENHANCED_VANILLA_LIGHTING=§6◀§r Blockljus §6▶
 	screen.ENHANCED_VANILLA_LIGHTING.comment=Inte sådana man tänder då alltså
 

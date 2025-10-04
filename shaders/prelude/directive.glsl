@@ -8,7 +8,7 @@
 	const bool shadowHardwareFiltering0 = true;
 	const bool shadowHardwareFiltering1 = true;
 
-	// these make VL a bit faster with high sample count (if you use a higher LOD) but aren't worth the performance impact otherwise
+	// These make VL a bit faster with high sample count (if you use a higher LOD) but aren't worth the performance impact otherwise.
 	// const bool shadowtex0Mipmap = true;
 	// const bool shadowtex1Mipmap = true;
 	// const bool shadowcolor0Mipmap = true;
@@ -29,8 +29,8 @@
 
 const float shadowDistanceRenderMul = 0.85;
 
-// probably not 100% optimal but i've not noticed any issues
-// could be smaller if we cap the sunPathRotation to the current default
+// Probably not 100% optimal but i've not noticed any issues.
+// Could be smaller if we cap the `sunPathRotation` to the current default.
 /* https://play.rust-lang.org/
 	```rust
 	const REN_MUL: f64 = 0.85; // shadowDistanceRenderMul

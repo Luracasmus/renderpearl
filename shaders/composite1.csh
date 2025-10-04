@@ -70,22 +70,22 @@ void main() {
 
 	if (any(edges)) {
 		delta.zw = f16vec2(
-			redmean(color, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(1, 0)).rgb))), // right
-			redmean(color, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(0, 1)).rgb))) // bottom
+			redmean(color, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(1, 0)).rgb))), // Right.
+			redmean(color, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(0, 1)).rgb))) // Bottom.
 		);
 
 		f16vec2 delta_max = max(delta.xy, delta.zw);
 
 		delta.zw = f16vec2(
-			redmean(left, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(-2, 0)).rgb))), // left-left
-			redmean(top, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(0, -2)).rgb))) // top-top
+			redmean(left, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(-2, 0)).rgb))), // Left-left.
+			redmean(top, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(0, -2)).rgb))) // Top-top.
 		);
 
 		delta_max = max(delta_max.xy, delta.zw);
 
 		const float16_t local_contrast_adaptation_factor = float16_t(2.0);
 		immut bvec2 temp = greaterThanEqual(delta.xy, (max(delta_max.x, delta_max.y) / local_contrast_adaptation_factor).xx);
-		immut bvec2 result = bvec2(edges.x && temp.x, edges.y && temp.y); // gotta do this instead of result && temp on AMD :(
+		immut bvec2 result = bvec2(edges.x && temp.x, edges.y && temp.y); // This is required over of `result && temp` on AMD, due to different interpretations of the GLSL spec.
 
 		if (any(result)) imageStore(edge, texel, f16vec4(result, 0.0, 0.0));
 	}

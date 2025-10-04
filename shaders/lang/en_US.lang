@@ -175,6 +175,9 @@ screen.ATMOSPHERICS=§6◀§r Atmosphere §6▶
 	option.SKY_BLOOM=§b⌚§r Sky Bloom
 		value.SKY_BLOOM.0=§cOff
 
+	option.CLOUD_FOG_END=§b⌚§r Cloud Fog End
+		suffix.CLOUD_FOG_END=\ chunks
+
 screen.SURFACE=§6◀§r Surface §6▶
 	option.WATER_OPACITY=§b⌚§r Water Opacity
 		suffix.WATER_OPACITY=%

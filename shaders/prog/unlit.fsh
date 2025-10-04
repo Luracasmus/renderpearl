@@ -1,6 +1,6 @@
 #include "/prelude/core.glsl"
 
-#ifdef TRANSLUCENT // requires TINTED
+#ifdef TRANSLUCENT // Requires `TINTED`
 	/* RENDERTARGETS: 1 */
 	layout(location = 0) out f16vec4 colortex1;
 #else
@@ -43,12 +43,12 @@ void main() {
 			colortex1 = linear(f16vec3(texture(gtexture, v.coord).rgb));
 			colortex2 = 0x40000000u;
 		#endif
-	#else // has to be TINTED
+	#else // Has to be `TINTED`.
 		#ifdef TRANSLUCENT
 			colortex1 = f16vec4(unpackUnorm4x8(v.tint));
 		#else
 			colortex1 = unpack_un11_11_10(v.tint);
-			colortex2 = 0x40000000u; // set light and emission to 0 and "pure light" flag to 1
+			colortex2 = 0x40000000u; // Set light and emission to 0 and "pure light" flag to 1.
 		#endif
 	#endif
 }

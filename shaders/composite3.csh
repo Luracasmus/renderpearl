@@ -159,18 +159,18 @@ void main() {
 			nbh[nbh_pos.x + int8_t(1)][nbh_pos.y + int8_t(1)]
 		));
 
-		// Soft min and max
+		// Soft min. and max.
 		//  a b c             b
 		//  d e f * 0.5  +  d e f * 0.5
 		//  g h i             h
-		// These are 2.0x bigger (factored out the extra multiply)
+		// These are 2.0x bigger (factored out the extra multiply).
 		f16vec3 minimum = min3(min3(cas_nbh[0][1], cas_nbh[1][1], cas_nbh[2][1]), cas_nbh[1][0], cas_nbh[1][2]);
 		minimum += min3(min3(minimum, cas_nbh[0][0], cas_nbh[2][0]), cas_nbh[0][2], cas_nbh[2][2]);
 
 		f16vec3 maximum = max3(max3(cas_nbh[0][1], cas_nbh[1][1], cas_nbh[2][1]), cas_nbh[1][0], cas_nbh[1][2]);
 		maximum += max3(max3(maximum, cas_nbh[0][0], cas_nbh[2][0]), cas_nbh[0][2], cas_nbh[2][2]);
 
-		// Smooth minimum distance to signal limit divided by smooth max
+		// Smooth minimum distance to signal limit divided by smooth max.
 		immut f16vec3 amplify = sqrt(saturate(min(minimum, float16_t(2.0) - maximum) / maximum));
 
 		// Filter shape:
@@ -179,12 +179,12 @@ void main() {
 		// 0 w 0
 		const float16_t sharpness = float16_t(-1.0 / mix(8.0, 5.0, SHARPNESS));
 		immut float16_t weight = sharpness * luminance(amplify);
-		immut float16_t rcp_rcp_weight = (float16_t(1.0) + float16_t(4.0) * weight); // this naming is cursed
+		immut float16_t rcp_rcp_weight = (float16_t(1.0) + float16_t(4.0) * weight); // This naming is cursed.
 
 		color = saturate(((cas_nbh[1][0] + cas_nbh[0][1] + cas_nbh[2][1] + cas_nbh[1][2]) * weight + cas_nbh[1][1]) / rcp_rcp_weight);
 	}
 
-	// DEBUG work groups
+	// DEBUG: work groups.
 	// color.rb += vec2(equal(gl_LocalInvocationID.xy, uvec2(0u)));
 
 	imageStore(colorimg0, texel, f16vec4(srgb(color), 0.0));

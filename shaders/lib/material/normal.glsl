@@ -1,12 +1,12 @@
 #if NORMALS == 1 && defined MC_NORMAL_MAP
 	uniform sampler2D normals;
 
-	vec3 sample_normal(vec2 nm) { // TODO: f16
+	vec3 sample_normal(vec2 nm) { // TODO: `float16_t`
 		nm = fma(nm, vec2(2.0), vec2(-1.0));
 		return vec3(nm, sqrt(1.0 - dot(nm, nm)));
 	}
 #elif NORMALS != 2
-	// Alpha-checked sRGB -> luma conversion that falls back to zero
+	// Alpha-checked sRGB -> luma conversion that falls back to zero.
 	float16_t srgbl_a_ck(f16vec4 color, f16vec3 tint) {
 		#ifdef ALPHA_CHECK
 			return (color.a > float16_t(alphaTestRef)) ? luminance(tint * color.rgb) : float16_t(0.0);

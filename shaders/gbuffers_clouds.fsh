@@ -24,7 +24,7 @@ void main() {
 	immut vec3 world = pe + gbufferModelViewInverse[3].xyz + cameraPosition;
 
 	immut vec2 abs_pe = abs(pe.xz);
-	immut float16_t fog = min(float16_t(pow(max(abs_pe.x, abs_pe.y) * 0.6 / fogState.x, fogState.y)), float16_t(1.0));
+	immut float16_t fog = min(float16_t(pow(max(abs_pe.x, abs_pe.y) / float(16 * CLOUD_FOG_END), fogState.y)), float16_t(1.0));
 
 	immut float16_t dist = length(f16vec3(pe));
 

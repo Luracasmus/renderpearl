@@ -22,7 +22,7 @@
 	SOFTWARE.
 */
 
-// fp16 adaptation from https://google.github.io/filament/Filament.html#listing_speculardfp16
+// `float16_t` adaptation from https://google.github.io/filament/Filament.html#listing_speculardfp16
 float16_t d_ggx(float16_t roughness, float16_t n_dot_h, f16vec3 normal, f16vec3 half_dir) {
 	immut f16vec3 n_x_h = cross(normal, half_dir);
 	immut float16_t a = n_dot_h * roughness;
@@ -42,7 +42,7 @@ float16_t f_schlick(float16_t f0, float16_t f90, float16_t u) {
 	return fma(pow(float16_t(1.0) - u, float16_t(5.0)), f90 - f0, f0);
 }
 
-// Diffuse BRDF
+// Diffuse BRDF.
 float16_t fd_burley(float16_t roughness, float16_t n_dot_v, float16_t n_dot_l, float16_t l_dot_h) {
 	immut float16_t f90 = float16_t(0.5) + float16_t(2.0) * roughness * l_dot_h * l_dot_h;
 	immut float16_t scatter_l = f_schlick(float16_t(1.0), f90, n_dot_l);

@@ -3,8 +3,8 @@
 #include "/lib/sm/bias.glsl"
 
 #if SM_BLUR == 2
-	// terrible generated versions of 'sample_sm' from '/lib/sm/sample.glsl' with offsets
-	// const parameters don't work here (probably since they're patched away by Iris)
+	// Terrible generated versions of 'sample_sm' from '/lib/sm/sample.glsl' with offsets.
+	// `const` parameters don't work here (probably since they're patched away by Iris)
 	// and using a non-const parameter causes compile failures on AMD :(
 
 	#define SAMPLE_SM(X, Y) \

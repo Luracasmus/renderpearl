@@ -57,7 +57,7 @@ shared uint[local_index_size] sh_index_data;
 shared uint16_t[local_index_size] sh_index_color;
 
 void main() {
-	// TODO: look into skipping light list stuff if the entire work group is unlit
+	// TODO: Look into skipping light list stuff if the entire work group is unlit.
 
 	if (gl_LocalInvocationIndex == 0u) {
 		sh_index_len = 0u;
@@ -80,7 +80,7 @@ void main() {
 	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
 	vec3 ndc = fma(vec3(coord, depth), vec3(2.0), vec3(-1.0));
 
-	if (gbuf.y >= 0x80000000u) ndc.z /= MC_HAND_DEPTH; // the most significant bit being 1 indicates hand
+	if (gbuf.y >= 0x80000000u) ndc.z /= MC_HAND_DEPTH; // The most significant bit being 1 indicates hand.
 
 	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
 	immut vec3 pe = mat3(gbufferModelViewInverse) * view;
@@ -88,7 +88,7 @@ void main() {
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
-	// check if block light (first 15 bits) isn't zero, and we're within LL_DIST
+	// Check if block light (first 15 bits) isn't zero, and we're within LL_DIST.
 	immut bool lit = (gbuf.y & 32767u) != 0u && chebyshev_dist < float16_t(LL_DIST);
 
 	barrier();
@@ -142,7 +142,7 @@ void main() {
 
 	vec3 index_offset = vec3(-255.5);
 
-	if (all(greaterThanEqual(bb_pe_max, bb_pe_min))) { // make sure this tile isn't fully unlit, out of range or sky
+	if (all(greaterThanEqual(bb_pe_max, bb_pe_min))) { // Make sure this tile isn't fully unlit, out of range or sky.
 		index_offset += ll.offset - cameraPositionFract - gbufferModelViewInverse[3].xyz;
 
 		immut f16vec3 bb_view_min = f16vec3(sh_bb_view_min);
@@ -158,11 +158,11 @@ void main() {
 				bitfieldExtract(light_data, 18, 9)
 			) + f16vec3(index_offset);
 
-			// add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting
+			// Add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
 			immut float16_t offset_intensity = float16_t(bitfieldExtract(light_data.x, 27, 4)) + float16_t(0.5);
 
-			// distance between light and closest point on bounding box
-			// in world-aligned space (player-eye) we can use Manhattan distance
+			// Distance between light and closest point on bounding box.
+			// In world-aligned space (player-eye) we can use Manhattan distance.
 			immut float16_t light_mhtn_dist_from_bb = dot(abs(pe_light - clamp(pe_light, bb_pe_min, bb_pe_max)), f16vec3(1.0));
 			immut bool pe_visible = light_mhtn_dist_from_bb <= offset_intensity; // not sure why this +1 is needed here
 
@@ -244,7 +244,7 @@ void main() {
 						immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
 						immut f16vec3 n_w_rel_light = w_rel_light * inversesqrt(sq_dist_light);
 
-						// make falloff start a block away of the light source when the "wide" flag (most significant bit) is set
+						// Make falloff start a block away of the light source when the "wide" flag (most significant bit) is set.
 						immut float16_t falloff = float16_t(1.0) / (
 							light_data >= 0x80000000u ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
 						);
@@ -252,8 +252,8 @@ void main() {
 						immut float16_t light_level = intensity - mhtn_dist + float16_t(0.5);
 						float16_t brightness = intensity * falloff;
 						brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
-						brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible
-						brightness = min(brightness, float16_t(48.0)); // prevent float16_t overflow later on
+						brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible.
+						brightness = min(brightness, float16_t(48.0)); // Prevent `float16_t` overflow later on.
 
 						immut f16vec3 illum = brightness * f16vec3(
 							(light_color >> uint16_t(6u)) & uint16_t(31u),
@@ -263,7 +263,7 @@ void main() {
 
 						immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
 
-						float16_t light_diffuse = ind_bl; // very fake GI
+						float16_t light_diffuse = ind_bl; // Very fake GI.
 
 						if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > float16_t(0.0)) {
 							immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness_sss.r);
@@ -275,14 +275,14 @@ void main() {
 					}
 				}
 
-				// Undo the multiplication from packing light color and brightness
+				// Undo the multiplication from packing light color and brightness.
 				const vec3 packing_scale = vec3(15u * uvec3(31u, 63u, 31u));
 				immut f16vec3 new_light = f16vec3(float(DIR_BL * 3) / packing_scale) * light.x * fma(specular, rcp_color, diffuse);
 
 				block_light = mix(new_light, block_light, smoothstep(float16_t(LL_DIST - 15), float16_t(LL_DIST), chebyshev_dist));
-			} // else block_light = f16vec3(1.0); // DEBUG `lit`
+			} // else block_light = f16vec3(1.0); // DEBUG: `lit`
 
-			// Debug culling & LDS overflow
+			// DEBUG: Culling & LDS overflow.
 			// block_light.gb += f16vec2(sh_index_len < ll.len, sh_index_len == 0);
 			// block_light.rgb += distance(max(float16_t(sh_bb_view_min), float16_t(0.0)), max(float16_t(sh_bb_view_max), float16_t(0.0))) * float16_t(0.01);
 			// if (sh_index_len > local_index_size) block_light *= 10;
@@ -300,7 +300,7 @@ void main() {
 			#endif
 
 			#if HAND_LIGHT
-				if (gbuf.y < 0x80000000u) { // not hand
+				if (gbuf.y < 0x80000000u) { // Not hand.
 					immut uint hand_light_count = hand_light.data.a;
 
 					if (hand_light_count != 0u) {
@@ -328,7 +328,7 @@ void main() {
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
 				immut float16_t tex_n_dot_shadow_l = dot(w_tex_normal, n_w_shadow_light);
 
-				if (min(dot(w_face_normal, n_w_shadow_light), tex_n_dot_shadow_l) > float16_t(0.0)) { // TODO: handle roughness_sss.g
+				if (min(dot(w_face_normal, n_w_shadow_light), tex_n_dot_shadow_l) > float16_t(0.0)) { // TODO: Handle `roughness_sss.g`.
 					const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
 					immut f16vec2 specular_diffuse = brdf(tex_n_dot_shadow_l, w_tex_normal, n_pe, n_w_shadow_light, roughness_sss.r);
 

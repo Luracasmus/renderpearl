@@ -13,7 +13,7 @@ readonly
 #include "/lib/norm_uv2.glsl"
 #include "/lib/skylight.glsl"
 
-// slightly less cool version of the lighting done in deferred1_a.csh, adapted to work in vertex shaders
+// Slightly less cool version of the lighting done in deferred1_a.csh, adapted to work in vertex shaders.
 f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal, float16_t ao) {
 	immut float16_t ind_bl = float16_t(IND_BL) * ao;
 
@@ -52,7 +52,7 @@ f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal, float16_t ao) {
 				immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
 				immut f16vec3 n_w_rel_light = w_rel_light * inversesqrt(sq_dist_light);
 
-				// make falloff start a block away of the light source when the "wide" flag (most significant bit) is set
+				// Make falloff start a block away of the light source when the "wide" flag (most significant bit) is set.
 				immut float16_t falloff = float16_t(1.0) / (
 					light_data >= 0x80000000u ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
 				);
@@ -60,8 +60,8 @@ f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal, float16_t ao) {
 				immut float16_t light_level = intensity - mhtn_dist + float16_t(0.5);
 				float16_t brightness = intensity * falloff;
 				brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
-				brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // compensate for multiplication with light.x later on, in order to make the falloff follow the inverse square law as much as possible
-				brightness = min(brightness, float16_t(48.0)); // prevent float16_t overflow later on
+				brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with `light.x` later on, in order to make the falloff follow the inverse square law as much as possible.
+				brightness = min(brightness, float16_t(48.0)); // Prevent `float16_t` overflow later on.
 
 				immut f16vec3 illum = brightness * f16vec3(
 					(light_color >> uint16_t(6u)) & uint16_t(31u),
@@ -71,7 +71,7 @@ f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal, float16_t ao) {
 
 				immut float16_t face_n_dot_l = dot(w_face_normal, n_w_rel_light);
 
-				float16_t light_diffuse = ind_bl; // very fake GI
+				float16_t light_diffuse = ind_bl; // Very fake GI.
 
 				if (min(face_n_dot_l, dot(w_face_normal, n_w_rel_light)) > float16_t(0.0)) {
 					light_diffuse += brdf(face_n_dot_l, w_face_normal, normalize(f16vec3(pe)), n_w_rel_light, float16_t(1.0)).y;
@@ -81,7 +81,7 @@ f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal, float16_t ao) {
 			}
 		}
 
-		// Undo the multiplication from packing light color and brightness
+		// Undo the multiplication from packing light color and brightness.
 		const vec3 packing_scale = vec3(15u * uvec3(31u, 63u, 31u));
 		immut f16vec3 new_light = f16vec3(float(DIR_BL * 3) / packing_scale) * light.x * diffuse;
 

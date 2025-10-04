@@ -1,7 +1,7 @@
 #include "/prelude/core.glsl"
 
 /* RENDERTARGETS: 1,2 */
-layout(location = 0) out f16vec4 colortex1; // does this work outside of NVIDIA drivers? (the f16*)
+layout(location = 0) out f16vec4 colortex1; // Does this work outside of NVIDIA drivers? (the f16*)
 
 #ifdef NETHER
 	layout(location = 1) out uvec3 colortex2;
@@ -130,16 +130,16 @@ void main() {
 	colortex2.r = packSnorm4x8(f16vec4(octa_w_tex_normal, octa_w_face_normal));
 
 	{
-		// we have to min() after conversion here because of float16_t precision at these high values
+		// We have to `min()` after conversion here because of `float16_t` precision at these high values.
 		immut uvec2 scaled_light = min(uvec2(fma(f16vec2(v.light), f16vec2(32767.0), f16vec2(0.5))), 32767u);
 		uint data = bitfieldInsert(scaled_light.x, scaled_light.y, 15, 15);
 
 		#if defined TERRAIN || defined HAND
-			immut uint emission = bitfieldExtract(v_tbn.handedness_and_misc, 1, 4); // TODO: should be 8 bits // TODO: labPBR emission map support
-			color *= fma(float16_t(emission), float16_t(2.0/15.0), float16_t(1.0)); // TODO: we should just add to the lighting in deferred instead of multiplying the color
+			immut uint emission = bitfieldExtract(v_tbn.handedness_and_misc, 1, 4); // TODO: Should be 8 bits. // TODO: labPBR emission map support.
+			color *= fma(float16_t(emission), float16_t(2.0/15.0), float16_t(1.0)); // TODO: We should just add to the lighting in deferred instead of multiplying the color.
 
 			#ifdef HAND
-				data |= 0x80000000u; // set most significant bit to 1
+				data |= 0x80000000u; // Set most significant bit to 1.
 			#endif
 		#endif
 
@@ -159,7 +159,7 @@ void main() {
 			float16_t roughness = gen_roughness(luma, avg_luma);
 		#endif
 
-		const float16_t sss = float16_t(0.0); // TODO: labPBR SSS map support
+		const float16_t sss = float16_t(0.0); // TODO: labPBR SSS map support.
 
 		uint data = packUnorm4x8(f16vec4(roughness, sss, 0.0, 0.0));
 
@@ -190,9 +190,9 @@ void main() {
 		float16_t ao = float16_t(0.9);
 	#endif
 
-	ao = saturate(fma(luma - avg_luma, float16_t(0.5), ao)); // TODO: make the multiplier here a configurable value
+	ao = saturate(fma(luma - avg_luma, float16_t(0.5), ao)); // TODO: Make the multiplier here a configurable value.
 
-	// TODO: labPBR AO map support
+	// TODO: labPBR AO map support.
 
 	colortex1 = f16vec4(color.rgb, float16_t(ao));
 }

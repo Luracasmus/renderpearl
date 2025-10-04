@@ -92,7 +92,7 @@ void main() {
 			vec2 bias = shadow_bias(n_dot_l);
 
 			#if SSS && defined TERRAIN
-				// TODO: check that this makes sense
+				// TODO: Check that this makes sense.
 				if (mc_Entity.x == 0.0 && n_dot_l < float16_t(0.0)) bias *= -1.0;
 			#endif
 
@@ -100,7 +100,7 @@ void main() {
 			s_ndc.xy = distort(s_ndc.xy);
 
 			s_ndc = fma(mat3(shadowModelView) * vec3(bias.y * w_normal), shadow_proj_scale, s_ndc);
-			//s_ndc.z += float(bias.x); // doesn't really seem to help :/
+			// s_ndc.z += float(bias.x); // Doesn't really seem to help :/
 
 			v.s_screen = fma(s_ndc, vec3(0.5), vec3(0.5));
 		#endif
@@ -109,7 +109,7 @@ void main() {
 			#if !WAVES
 				immut bool fluid = mc_Entity.y == 1.0;
 			#endif
-			if (fluid) v_tbn.handedness_and_misc |= 0x80000000u; // "fluid" flag // set most significant bit to 1
+			if (fluid) v_tbn.handedness_and_misc |= 0x80000000u; // "fluid" flag. // Set most significant bit to 1.
 
 			immut float16_t emission = min((max(float16_t(mc_Entity.x), float16_t(0.0)) + float16_t(at_midBlock.w)) / float16_t(15.0), float16_t(1.0));
 			v.light.x = min(fma(emission, float16_t(0.3), max(v.light.x, emission)), float16_t(1.0)); // TODO: check this

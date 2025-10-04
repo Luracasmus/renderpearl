@@ -161,7 +161,7 @@ void main() {
 		if (solid_depth < 1.0) {
 			immut vec3 solid_ndc = fma(vec3(gl_FragCoord.xy / view_size(), solid_depth), vec3(2.0), vec3(-1.0));
 			immut vec3 solid_pe = mat3(gbufferModelViewInverse) * proj_inv(gbufferProjectionInverse, solid_ndc);
-			immut float16_t fog = min(fog(solid_pe) + float16_t(1.0 - exp(-0.0125 / fogState.y * length(solid_pe))), float16_t(1.0)); // TODO: make this less cursed
+			immut float16_t fog = min(fog(solid_pe) + float16_t(1.0 - exp(-0.0125 / fogState.y * length(solid_pe))), float16_t(1.0)); // TODO: Make this less cursed.
 
 			#if defined END || defined NETHER
 				color.rgb = mix(color.rgb, color.rgb * linear(f16vec3(fogColor)), fog);
@@ -173,7 +173,7 @@ void main() {
 			#endif
 
 			color.a = saturate(color.a + fog);
-		} // TODO: self-colored fog should be based on the distance between the current surface and the solid one behind it, not the distance from the camera to the solid surface
+		} // TODO: Self-colored fog should be based on the distance between the current surface and the solid one behind it, not the distance from the camera to the solid surface.
 	*/
 
 	color.a *= float16_t(1.0) - edge_fog(rot_trans_mmul(gbufferModelViewInverse, view));

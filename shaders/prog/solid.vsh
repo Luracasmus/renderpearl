@@ -21,9 +21,9 @@ uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, texture
 	#include "/lib/sm/bias.glsl"
 #endif
 
-//#if defined TERRAIN || (HAND_LIGHT && defined HAND) || (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
+// #if defined TERRAIN || (HAND_LIGHT && defined HAND) || (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
 	uniform sampler2D gtexture;
-//#endif // todo!()
+// #endif // TODO
 
 #ifdef HAND
 	uniform int handLightLevel;
@@ -155,11 +155,11 @@ void main() {
 			#elif defined TERRAIN
 				v.ao = vaColor.a;
 
-				//#if !(defined SM && defined MC_SPECULAR_MAP)
+				// #if !(defined SM && defined MC_SPECULAR_MAP)
 					immut f16vec3 avg_col = color * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
 					immut uint scaled_avg_luma = uint(fma(luminance(avg_col), float16_t(8191.0), float16_t(0.5)));
 					v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, scaled_avg_luma, 5, 13);
-				//#endif
+				// #endif
 
 				float16_t norm_emission = min((max(float16_t(mc_Entity.x), float16_t(0.0)) + float16_t(at_midBlock.w)) / float16_t(15.0), float16_t(1.0));
 				v.light.x = min(fma(float16_t(norm_emission), float16_t(0.3), max(v.light.x, norm_emission)), float16_t(1.0));
@@ -167,25 +167,25 @@ void main() {
 				immut uint emission = uint(fma(norm_emission, float16_t(15.0), float16_t(0.5))); // bring into 4-bit-representable range and round
 				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, emission, 1, 4);
 
-				if (rebuildLL) { // only rebuild the index once every LL_RATE frames
+				if (rebuildLL) { // Only rebuild the index once every LL_RATE frames.
 					immut f16vec3 view_f16 = f16vec3(view);
 
 					if (
-						// run once per face
+						// Run once per face.
 						(gl_VertexID & 3) == 1 && // gl_VertexID % 4 == 1
-						// cull too weak or non-lights
+						// Cull too weak or non-lights.
 						emission >= MIN_LL_INTENSITY &&
-						// cull outside LL_DIST using Chebyshev distance
+						// Cull outside LL_DIST using Chebyshev distance.
 						chebyshev_dist < float16_t(LL_DIST) &&
-						// cull behind camera outside of illumination range
+						// Cull behind camera outside of illumination range.
 						(view_f16.z < float16_t(0.0) || dot(abs_pe, f16vec3(1.0)) <= float16_t(emission))
 					) {
 						immut bool fluid = mc_Entity.y == 1.0;
 						immut uvec3 seed = uvec3(ivec3(0.5 + cameraPosition + pe));
 
 						// LOD culling
-						// increase times two each LOD
-						// the fact that the values resulting from higher LODs are divisible by the lower ones means that no lights will appear only further away
+						// Increase times two each LOD.
+						// The fact that the values resulting from higher LODs are divisible by the lower ones means that no lights will appear only further away.
 						if (uint8_t(pcg(seed.x + pcg(seed.y + pcg(seed.z)))) % (uint8_t(1u) << uint8_t(min(7.0, fma(
 							(fluid ? float16_t(LAVA_LOD_BIAS) : float16_t(0.0)) + length(view_f16) / float16_t(LL_DIST),
 							float16_t(LOD_FALLOFF),
@@ -199,13 +199,13 @@ void main() {
 
 							immut uint i = atomicAdd(ll.queue, 1u);
 
-							immut uvec3 light_pe = uvec3(clamp(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + pe + cameraPositionFract), 0.0, 511.5)); // this feels slightly cursed but it works // somehow
+							immut uvec3 light_pe = uvec3(clamp(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + pe + cameraPositionFract), 0.0, 511.5)); // This feels slightly cursed but it works. // somehow
 
 							uint light_data = bitfieldInsert(
-								bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9), // position
+								bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9), // Position.
 								emission, 27, 4 // intensity
 							);
-							if (fluid) light_data |= 0x80000000u; // set "wide" flag for lava
+							if (fluid) light_data |= 0x80000000u; // Set "wide" flag for lava.
 
 							ll.data[i] = light_data;
 
@@ -231,14 +231,14 @@ void main() {
 					immut f16vec3 w_normal = f16vec3(mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0));
 				#endif
 
-				// TODO: this bias is better than before but it would probably be best to do it in shadow screen space and offset a scaled amount of texels
+				// TODO: This bias is better than before but it would probably be best to do it in shadow screen space and offset a scaled amount of texels.
 				immut f16vec2 bias = shadow_bias(dot(w_normal, f16vec3(shadowLightDirectionPlr)));
 
 				vec3 s_ndc = shadow_proj_scale * (mat3(shadowModelView) * rot_trans_mmul(gbufferModelViewInverse, view));
 				s_ndc.xy = distort(s_ndc.xy);
 
 				s_ndc = fma(mat3(shadowModelView) * vec3(bias.y * w_normal), shadow_proj_scale, s_ndc);
-				// s_ndc.z += float(bias.x); // doesn't really seem to help :/
+				// s_ndc.z += float(bias.x); // Doesn't really seem to help :/
 
 				v.s_screen = fma(s_ndc, vec3(0.5), vec3(0.5));
 			}

@@ -29,7 +29,7 @@ void main() {
 			f16vec4 color = f16vec4(texture(gtexture, v.coord));
 
 			// Beer–Lambert law https://discord.com/channels/237199950235041794/276979724922781697/612009520117448764
-			// TODO: make this configurable
+			// TODO: Make this configurable.
 			immut float16_t falloff = float16_t(1.0) - exp(float16_t(-75.0) * (
 				float16_t(texelFetch(shadowtex1, ivec2(gl_FragCoord.xy), 0).r) - float16_t(gl_FragCoord.z)
 			));
