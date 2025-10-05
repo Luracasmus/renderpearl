@@ -96,14 +96,14 @@ f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal, float16_t ao) {
 		#elif defined END
 			const f16vec3 ind_sky = f16vec3(0.15, 0.075, 0.2);
 		#else
-			immut float16_t ind_sky = (float16_t(1.0) - sqrt(float16_t(1.0) - light.y)) * luminance(skylight()) / float16_t(DIR_SL);
+			immut float16_t ind_sky = luminance(skylight()) / float16_t(DIR_SL) * smoothstep(float16_t(0.0), float16_t(1.0), light.y);
 		#endif
 	#endif
 
 	return fma(
 		fma(
 			f16vec3(ind_sky),
-			f16vec3(0.5 * IND_SL),
+			f16vec3(IND_SL),
 			f16vec3(AMBIENT * 0.1)
 		),
 		ao.xxx,
