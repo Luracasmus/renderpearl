@@ -100,7 +100,6 @@ f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal, float16_t ao) {
 		#endif
 	#endif
 
-	return f16vec3(ind_sky);
 	return fma(
 		fma(
 			f16vec3(ind_sky),
