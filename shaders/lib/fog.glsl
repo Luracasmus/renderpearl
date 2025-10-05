@@ -29,7 +29,7 @@ float16_t sky_fog(float16_t height) {
 			#ifdef SKY_FSH
 				immut vec2 texel_pos = gl_FragCoord.xy;
 			#else
-				immut uvec2 texel_pos = gl_GlobalInvocationID.xy;
+				immut vec2 texel_pos = vec2(gl_GlobalInvocationID.xy);
 			#endif
 
 			return mix(f16vec3(rand(fma(trunc(texel_pos * 0.25), vec2(4.0), frameTimeCounter.xx))), f16vec3(rand(floor(n_pe.xz * 1024.0 + frameTimeCounter * 1))) * f16vec3(0.05, 0.0, 0.05) * (float16_t(1.25) - float16_t(n_pe.y)), float16_t(0.99));
