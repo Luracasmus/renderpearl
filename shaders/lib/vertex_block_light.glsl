@@ -13,7 +13,7 @@ readonly
 #include "/lib/norm_uv2.glsl"
 #include "/lib/skylight.glsl"
 
-// Slightly less cool version of the lighting done in deferred1_a.csh, adapted to work in vertex shaders.
+// Slightly less cool version of the lighting done in `deferred1_a.csh`, adapted to work in vertex shaders.
 f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal, float16_t ao) {
 	immut float16_t ind_bl = float16_t(IND_BL) * ao;
 
