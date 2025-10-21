@@ -4,9 +4,14 @@
 	/* RENDERTARGETS: 1 */
 	layout(location = 0) out f16vec4 colortex1;
 #else
-	/* RENDERTARGETS: 1,2 */
+	#ifdef NO_COLORTEX2_WRITE
+		/* RENDERTARGETS: 1 */
+	#else
+		/* RENDERTARGETS: 1,2 */
+		layout(location = 1, component = 1) out uint colortex2;
+	#endif
+
 	layout(location = 0) out f16vec3 colortex1;
-	layout(location = 1, component = 1) out uint colortex2;
 
 	#ifdef ALPHA_CHECK
 		uniform float alphaTestRef;
@@ -48,7 +53,10 @@ void main() {
 				#endif
 
 				colortex1 = unpack_un11_11_10(v.tint) * linear(color.rgb);
-				colortex2 = 0x40000000u;
+
+				#ifndef NO_COLORTEX2_WRITE
+					colortex2 = 0x40000000u;
+				#endif
 			#endif
 		#else
 			/* // Currently unused.
@@ -62,14 +70,20 @@ void main() {
 			immut f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
 
 			colortex1 = linear(color.rgb);
-			colortex2 = 0x40000000u;
+
+			#ifndef NO_COLORTEX2_WRITE
+				colortex2 = 0x40000000u;
+			#endif
 		#endif
 	#else // Has to be `TINTED`.
 		#ifdef TRANSLUCENT
 			colortex1 = f16vec4(unpackUnorm4x8(v.tint));
 		#else
 			colortex1 = unpack_un11_11_10(v.tint);
-			colortex2 = 0x40000000u; // Set light and emission to 0 and "pure light" flag to 1.
+
+			#ifndef NO_COLORTEX2_WRITE
+				colortex2 = 0x40000000u; // Set light and emission to 0 and "pure light" flag to 1.
+			#endif
 		#endif
 	#endif
 }
