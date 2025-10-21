@@ -2,19 +2,26 @@
 	uniform vec3 skyColorLinear;
 #endif
 
-uniform vec2 fogState;
+uniform float far;
+uniform float fogEnd, fogStart;
 uniform vec3 fogColor;
 uniform int isEyeInWater;
 
-float16_t pbr_fog(float dist) {
-	// Beer–Lambert law https://discord.com/channels/237199950235041794/276979724922781697/612009520117448764
-	return min(float16_t(1.0 - exp(-0.001 / fogState.y * dist)), float16_t(1.0));
+float16_t linear_step(float16_t edge0, float16_t edge1, float16_t x) {
+	return saturate((x - edge0) / (edge1 - edge0));
 }
 
-float16_t edge_fog(vec3 pe) {
-	immut float n_dist = (max(length(pe.xz), abs(pe.y)) + 1.0) / fogState.x;
+float16_t vanilla_fog(vec3 pe) {
+	immut float16_t far_f16 = float16_t(far);
 
-	return min(float16_t(pow(n_dist, fogState.y)), float16_t(1.0));
+	return max(
+		linear_step(float16_t(fogStart), float16_t(fogEnd), float16_t(length(pe))), // Spherical environment fog.
+		linear_step(
+			far_f16 - clamp(float16_t(0.1) * far_f16, float16_t(4.0), float16_t(64.0)),
+			far_f16,
+			max(float16_t(length(pe.xz)), abs(float16_t(pe.y)))
+		) // Cylidrical border fog.
+	);
 }
 
 float16_t sky_fog(float16_t height) {

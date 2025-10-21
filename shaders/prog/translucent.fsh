@@ -176,7 +176,7 @@ void main() {
 		} // TODO: Self-colored fog should be based on the distance between the current surface and the solid one behind it, not the distance from the camera to the solid surface.
 	*/
 
-	color.a *= float16_t(1.0) - edge_fog(rot_trans_mmul(gbufferModelViewInverse, view));
+	color.a *= float16_t(1.0) - vanilla_fog(rot_trans_mmul(gbufferModelViewInverse, view));
 
 	colortex1 = color;
 }

@@ -4,7 +4,7 @@
 layout(location = 0) out f16vec4 colortex1;
 layout(depth_unchanged) out float gl_FragDepth;
 
-uniform float frameTimeCounter;
+uniform float frameTimeCounter, pbrFogDensity;
 uniform vec3 cameraPosition, sunDirectionPlr;
 uniform mat4 gbufferModelViewInverse, gbufferProjectionInverse;
 
@@ -24,7 +24,7 @@ void main() {
 	immut vec3 world = pe + gbufferModelViewInverse[3].xyz + cameraPosition;
 
 	immut vec2 abs_pe = abs(pe.xz);
-	immut float16_t fog = min(float16_t(pow(max(abs_pe.x, abs_pe.y) / float(16 * CLOUD_FOG_END), fogState.y)), float16_t(1.0));
+	immut float16_t fog = min(float16_t(pow(max(abs_pe.x, abs_pe.y) / float(16 * CLOUD_FOG_END), pbrFogDensity)), float16_t(1.0));
 
 	immut float16_t dist = length(f16vec3(pe));
 

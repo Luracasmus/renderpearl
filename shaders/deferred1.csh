@@ -357,7 +357,8 @@ void main() {
 				}
 			#endif
 
-			color = mix(color_ao.rgb * final_light, fog_col, edge_fog(pe));
+			// Could this sRGB<->Linear stuff be done faster?
+			color = linear(mix(srgb(color_ao.rgb * final_light), srgb(fog_col), vanilla_fog(pe)));
 		} else {
 			#if defined NETHER || defined END
 				color = fog_col;

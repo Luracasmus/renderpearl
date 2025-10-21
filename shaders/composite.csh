@@ -20,9 +20,15 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #include "/lib/tonemap.glsl"
 
 #if VL && !defined NETHER
+	uniform float pbrFogDensity;
 	uniform vec3 sunDirectionPlr;
 	uniform mat4 gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView;
 	uniform sampler2D depthtex0;
+
+	float16_t pbr_fog(float dist) {
+		// Beer–Lambert law https://discord.com/channels/237199950235041794/276979724922781697/612009520117448764
+		return min(float16_t(1.0 - exp(-0.001 / pbrFogDensity * dist)), float16_t(1.0));
+	}
 
 	#ifdef END
 		#include "/lib/prng/fast_rand.glsl"
@@ -68,7 +74,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 				immut vec3 sample_s_ndc = shadow_proj_scale * (mat3(shadowModelView) * (sample_pe + gbufferModelViewInverse[3].xyz));
 				immut vec3 s_scrn = fma(vec3(distort(sample_s_ndc.xy), sample_s_ndc.z), vec3(0.5), vec3(0.5));
 
-				ray += sample_sm(float16_t(1.0) - float16_t(exp(-0.1 / fogState.y * pe_dist * dist)), s_scrn);
+				ray += sample_sm(float16_t(1.0) - float16_t(exp(-0.1 / pbrFogDensity * pe_dist * dist)), s_scrn);
 			}
 
 			immut uvec3 scaled_ray = uvec3(fma(ray, f16vec3(31.0, 63.0, 31.0), f16vec3(0.5)));
@@ -109,7 +115,7 @@ void main() {
 		barrier();
 
 		if (geometry) {
-			immut float16_t fog = saturate(edge_fog(pe) + pbr_fog(length(pe)));
+			immut float16_t fog = saturate(vanilla_fog(pe) + pbr_fog(length(pe)));
 
 			const uvec2[8] offsets = uvec2[8](
 				uvec2(0u, 0u), uvec2(1u, 0u), uvec2(2u, 0u), uvec2(2u, 1u), uvec2(2u, 2u), uvec2(1u, 2u), uvec2(0u, 2u), uvec2(0u, 1u)
