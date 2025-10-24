@@ -158,7 +158,7 @@ screen.COMPAT=§6◀§r Kompatibilitet §6▶
 		value.MINMAX_3.2=§c⚠§r På (anta stöd baserat på enhet)
 		value.MINMAX_3.3=§c⚠§r På (alltid)
 
-	option.MUL_32x16=§e⌚§r 32x16-Bit Multiplication
+	option.MUL_32x16=§e⌚§r 32x16-Bitars Multiplikation
 		option.MUL_32x16.comment=Utför multiplikation mellan 32-bitars integers och integers i det av 16-bitar representerbara intervallet med hjälp av speciella funktioner tillhandahållna av §oINTEL_shader_integer_functions2§r-tillägget, som kan vara snabbare än vanliga 32-bitars multiplikationsoperatörer\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas
 
 		value.MUL_32x16.1=På (kontrollera stöd)
