@@ -149,7 +149,7 @@ void main() {
 		}
 
 		#if SSS
-			else lighting = fma(light, skylight, lighting);
+			else lighting = fma(light, skylight, lighting);  // TODO: We should use AO here.
 		#endif
 	#endif
 

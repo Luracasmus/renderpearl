@@ -27,6 +27,7 @@ uniform sampler2D gtexture;
 	#include "/lib/tbn/fsh.glsl"
 #endif
 
+#include "/lib/ao_curve.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/material/specular.glsl"
 #include "/lib/material/normal.glsl"
@@ -181,11 +182,7 @@ void main() {
 	#ifdef TERRAIN
 		immut float16_t in_ao = float16_t(v.ao);
 
-		float16_t ao = mix(
-			smoothstep(float16_t(0.05), float16_t(0.8), in_ao),
-			float16_t(1.0),
-			float16_t(0.25)
-		) * mix(in_ao, float16_t(1.0), float16_t(0.75));
+		float16_t ao = ao_curve(in_ao);
 	#else
 		float16_t ao = float16_t(0.9);
 	#endif
