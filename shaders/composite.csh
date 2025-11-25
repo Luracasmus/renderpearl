@@ -132,7 +132,7 @@ void main() {
 				), f16vec3(1.0 / vec3(31.0, 63.0, 31.0)), ray);
 			}
 
-			ray *= float16_t(float(VL) * 0.001 / float(9 * VL_SAMPLES)) * (float16_t(1.0) - fog);
+			ray *= float16_t(float(VL) * 0.001 / float((offsets.length() + 1u) * uint(VL_SAMPLES))) * (float16_t(1.0) - fog);
 			color = fma(ray, skylight(), color);
 		}
 	#endif
