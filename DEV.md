@@ -98,8 +98,8 @@ searchtex       : >-*-------------*--------------*---┘            *           
  |  |  |  |  └["pure light" flag] (bool)
  |  |  |  └[sky light] (unorm)
  |  |  └[block light] (unorm)
- |  └[octahedron encoded face normal] (float)
- └[octahedron encoded texture normal] (float)
+ |  └[octahedron encoded face normal] (snorm)
+ └[octahedron encoded texture normal] (snorm)
 ```
 
 ```
@@ -133,11 +133,11 @@ searchtex       : >-*-------------*--------------*---┘            *           
  |  |  |  |  | | | └[emissiveness] (unorm)
  |  |  |  |  | | └[subsurface scattering] (unorm)
  |  |  |  |  | └[roughness] (unorm)
- |  |  |  |  └[AO direction in 2D across the face) (uint)
+ |  |  |  |  └[AO direction in 2D across the face] (uint)
  |  |  |  └[AO] (unorm)
  |  |  └[sky light] (float)
- |  └[octahedron encoded face normal] (float)
- └[octahedron encoded texture normal] (float)
+ |  └[octahedron encoded texture normal] (snorm)
+ └[octahedron encoded face normal] (snorm)
 ```
 
 ```
