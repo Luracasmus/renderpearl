@@ -78,7 +78,7 @@ void main() {
 
 		immut vec3 index_offset = -255.5 - cameraPositionFract - gbufferModelViewInverse[3].xyz;
 
-		// Copy shared list into global, with lights sorted closest to furthest.
+		// Copy shared list into global, with lights enumeration sorted closest to furthest.
 		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {
 			uint16_t k = uint16_t(0u);
 
@@ -98,7 +98,8 @@ void main() {
 					bitfieldExtract(other_data, 18, 9)
 				) + index_offset;
 
-				if (dot(other_pe, other_pe) < sq_dist) ++k;
+				immut float other_sq_dist = dot(other_pe, other_pe);
+				if (other_sq_dist < sq_dist || (other_sq_dist == other_sq_dist && i < j)) ++k;
 			}
 
 			ll.data[k] = data;
