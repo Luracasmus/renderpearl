@@ -167,7 +167,10 @@ void main() {
 				immut uint emission = uint(fma(norm_emission, float16_t(15.0), float16_t(0.5))); // bring into 4-bit-representable range and round
 				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, emission, 1, 4);
 
-				if (rebuildLL) { // Only rebuild the index once every LL_RATE frames.
+				if (
+					rebuildLL &&
+					max3(chunkOffset.x, chunkOffset.y, chunkOffset.z) < float(LL_DIST + 16)
+				) { // Only rebuild the index once every LL_RATE frames, and cull chunks which completely outside LL_DIST in Chebyshev distance in uniform control flow.
 					immut f16vec3 view_f16 = f16vec3(view);
 
 					if (
@@ -175,7 +178,7 @@ void main() {
 						(gl_VertexID & 3) == 1 && // gl_VertexID % 4 == 1
 						// Cull too weak or non-lights.
 						emission >= MIN_LL_INTENSITY &&
-						// Cull outside LL_DIST using Chebyshev distance.
+						// Cull vertices outside LL_DIST using Chebyshev distance.
 						chebyshev_dist < float16_t(LL_DIST) &&
 						// Cull behind camera outside of illumination range.
 						(view_f16.z < float16_t(0.0) || dot(abs_pe, f16vec3(1.0)) <= float16_t(emission))
