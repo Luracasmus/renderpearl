@@ -14,11 +14,13 @@
 	layout(location = 0) out f16vec3 colortex1;
 
 	#ifdef ALPHA_CHECK
+		layout(depth_greater) out float gl_FragDepth;
+
 		uniform float alphaTestRef;
+	#else
+		layout(depth_unchanged) out float gl_FragDepth;
 	#endif
 #endif
-
-layout(depth_unchanged) out float gl_FragDepth;
 
 uniform sampler2D gtexture;
 
