@@ -99,7 +99,7 @@ void main() {
 				) + index_offset;
 
 				immut float other_sq_dist = dot(other_pe, other_pe);
-				if (other_sq_dist < sq_dist || (other_sq_dist == other_sq_dist && i < j)) ++k;
+				if (other_sq_dist < sq_dist || (other_sq_dist == sq_dist && i < j)) ++k;
 			}
 
 			ll.data[k] = data;
