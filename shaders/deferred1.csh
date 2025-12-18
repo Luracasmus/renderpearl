@@ -57,6 +57,29 @@ shared ivec3 sh_bb_view_max;
 shared uint[local_index_size] sh_index_data;
 shared uint16_t[local_index_size] sh_index_color;
 
+#if HAND_LIGHT != 0
+	f16vec3 get_hand_light(uint count, uvec3 color, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, f16vec3 pe_to_light) {
+		immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
+		immut f16vec3 n_w_rel_light = pe_to_light * inversesqrt(sq_dist);
+
+		immut f16vec3 illum = float16_t(float(HAND_LIGHT) / 255.0) / max(float16_t(count) * sq_dist, float16_t(0.0078125)) * f16vec3(color);
+
+		immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
+
+		f16vec3 light;
+
+		if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > float16_t(0.0)) {
+			immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness);
+
+			light = fma(specular_diffuse.xxx, rcp_color, (specular_diffuse.y + ind_bl).xxx);
+		} else {
+			light = ind_bl.xxx;
+		}
+
+		return light * illum;
+	}
+#endif
+
 void main() {
 	// TODO: Look into skipping light list stuff if the entire work group is unlit.
 
@@ -206,6 +229,9 @@ void main() {
 			immut f16vec3 w_face_normal = normalize(octa_decode(octa_normal.zw));
 
 			immut f16vec3 rcp_color = float16_t(1.0) / max(color_ao.rgb, float16_t(1.0e-4));
+			#if HAND_LIGHT != 0
+				immut float16_t ind_bl = float16_t(IND_BL) * color_ao.a;
+			#endif
 
 			immut f16vec2 light = f16vec2(vec2(
 				gbuf.y & 32767u,
@@ -219,7 +245,9 @@ void main() {
 			#endif
 
 			if (lit) {
-				immut float16_t ind_bl = float16_t(IND_BL) * color_ao.a;
+				#if HAND_LIGHT == 0
+					immut float16_t ind_bl = float16_t(IND_BL) * color_ao.a;
+				#endif
 
 				immut vec3 offset = vec3(index_offset) - pe;
 
@@ -307,17 +335,19 @@ void main() {
 			#endif
 
 			#if HAND_LIGHT
-				if (gbuf.y < 0x80000000u) { // Not hand.
-					immut uint hand_light_count = hand_light.data.a;
+				immut uint hand_light_count_left = hand_light.left.a;
+				immut uint hand_light_count_right = hand_light.right.a;
 
-					if (hand_light_count != 0u) {
-						immut uvec3 hand_light_color = hand_light.data.rgb;
+				if (hand_light_count_left != 0u) {
+					immut f16vec3 origin = mat3(gbufferModelViewInverse) * vec3(-0.2, -0.2, -0.1); // Approximate right hand position.
+					immut f16vec3 diff = origin - pe;
+					block_light += get_hand_light(hand_light_count_left, hand_light.left.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, diff);
+				}
 
-						immut f16vec3 illum = float16_t(float(HAND_LIGHT) / 255.0) / max(float16_t(hand_light_count) * float16_t(dot(pe, pe)), float16_t(0.0078125)) * f16vec3(hand_light_color.rgb);
-
-						immut f16vec2 specular_diffuse = brdf(float16_t(1.0), w_tex_normal, n_pe, n_pe * float16_t(-0.999), roughness_sss.r);
-						block_light = fma(fma(specular_diffuse.xxx, rcp_color, specular_diffuse.yyy), illum, block_light);
-					}
+				if (hand_light_count_right != 0) {
+					immut f16vec3 origin = mat3(gbufferModelViewInverse) * vec3(0.2, -0.2, -0.1); // Approximate left hand position.
+					immut f16vec3 diff = origin - pe;
+					block_light += get_hand_light(hand_light_count_right, hand_light.right.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, diff);
 				}
 			#endif
 

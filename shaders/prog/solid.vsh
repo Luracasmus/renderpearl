@@ -26,7 +26,7 @@ uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, texture
 // #endif // TODO
 
 #ifdef HAND
-	uniform int handLightLevel;
+	uniform int handLightLeft, handLightRight;
 
 	#if HAND_LIGHT
 		#include "/buf/hand_light.glsl"
@@ -140,16 +140,25 @@ void main() {
 			#endif
 
 			#ifdef HAND
-				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, uint(handLightLevel), 1, 4);
+				immut bool is_right = view.x > 0.0;
+				immut uint hand_light_level = uint(is_right ? handLightRight : handLightLeft);
+				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, hand_light_level, 1, 4);
 
 				#if HAND_LIGHT
-					if (handLightLevel > 0) {
-						immut uvec3 scaled_color = uvec3(fma(linear(vaColor.rgb * textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb), vec3(255.0), vec3(0.5)));
+					if (hand_light_level > 0u) {
+						immut uvec3 scaled_color = uvec3(fma(linear(vaColor.rgb * textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb), vec3(255.0), vec3(0.5))) * hand_light_level;
 
-						atomicAdd(hand_light.data.r, scaled_color.r);
-						atomicAdd(hand_light.data.g, scaled_color.g);
-						atomicAdd(hand_light.data.b, scaled_color.b);
-						atomicAdd(hand_light.data.a, 1u);
+						if (is_right) {
+							atomicAdd(hand_light.right.r, scaled_color.r);
+							atomicAdd(hand_light.right.g, scaled_color.g);
+							atomicAdd(hand_light.right.b, scaled_color.b);
+							atomicAdd(hand_light.right.a, 1u);
+						} else {
+							atomicAdd(hand_light.left.r, scaled_color.r);
+							atomicAdd(hand_light.left.g, scaled_color.g);
+							atomicAdd(hand_light.left.b, scaled_color.b);
+							atomicAdd(hand_light.left.a, 1u);
+						}
 					}
 				#endif
 			#elif defined TERRAIN
@@ -246,5 +255,7 @@ void main() {
 				v.s_screen = fma(s_ndc, vec3(0.5), vec3(0.5));
 			}
 		#endif
-	} else gl_Position = vec4(0.0/0.0, 0.0/0.0, 1.0/0.0, 1.0);
+	} else {
+		gl_Position = vec4(0.0/0.0, 0.0/0.0, 1.0/0.0, 1.0);
+	}
 }

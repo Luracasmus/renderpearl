@@ -44,6 +44,7 @@ void main() {
 	ll.len = uint16_t(0u);
 
 	#if HAND_LIGHT
-		hand_light.data = uvec4(0u);
+		hand_light.left = uvec4(0u);
+		hand_light.right = uvec4(0u);
 	#endif
 }
