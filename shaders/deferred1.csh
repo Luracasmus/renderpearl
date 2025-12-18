@@ -58,7 +58,8 @@ shared uint[local_index_size] sh_index_data;
 shared uint16_t[local_index_size] sh_index_color;
 
 #if HAND_LIGHT != 0
-	f16vec3 get_hand_light(uint count, uvec3 color, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, f16vec3 pe_to_light) {
+	f16vec3 get_hand_light(uint count, uvec3 color, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, f16vec3 pe, f16vec3 origin) {
+		immut f16vec3 pe_to_light = origin - pe;
 		immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
 		immut f16vec3 n_w_rel_light = pe_to_light * inversesqrt(sq_dist);
 
@@ -204,7 +205,7 @@ void main() {
 
 	barrier();
 
-	if (bitfieldExtract(gbuf.y, 30, 1) == 0u) { // exit on "pure light" flag
+	if (bitfieldExtract(gbuf.y, 30, 1) == 0u) { // Exit on "pure light" flag.
 		immut f16vec3 n_pe = f16vec3(normalize(pe));
 
 		#ifdef NETHER
@@ -338,16 +339,16 @@ void main() {
 				immut uint hand_light_count_left = hand_light.left.a;
 				immut uint hand_light_count_right = hand_light.right.a;
 
+				immut f16vec3 f16_pe = f16vec3(pe);
+
 				if (hand_light_count_left != 0u) {
 					immut f16vec3 origin = mat3(gbufferModelViewInverse) * vec3(-0.2, -0.2, -0.1); // Approximate right hand position.
-					immut f16vec3 diff = origin - pe;
-					block_light += get_hand_light(hand_light_count_left, hand_light.left.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, diff);
+					block_light += get_hand_light(hand_light_count_left, hand_light.left.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, f16_pe, origin);
 				}
 
 				if (hand_light_count_right != 0) {
 					immut f16vec3 origin = mat3(gbufferModelViewInverse) * vec3(0.2, -0.2, -0.1); // Approximate left hand position.
-					immut f16vec3 diff = origin - pe;
-					block_light += get_hand_light(hand_light_count_right, hand_light.right.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, diff);
+					block_light += get_hand_light(hand_light_count_right, hand_light.right.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, f16_pe, origin);
 				}
 			#endif
 
