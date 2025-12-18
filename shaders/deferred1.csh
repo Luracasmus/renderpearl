@@ -11,6 +11,9 @@ readonly
 #if HAND_LIGHT
 	readonly
 	#include "/buf/hand_light.glsl"
+
+	uniform mat4 gbufferProjection;
+	uniform sampler2D depthtex2;
 #endif
 
 uniform vec3 cameraPositionFract;
@@ -63,13 +66,44 @@ shared uint16_t[local_index_size] sh_index_color;
 		immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
 		immut f16vec3 n_w_rel_light = pe_to_light * inversesqrt(sq_dist);
 
-		immut f16vec3 illum = float16_t(float(HAND_LIGHT) / 255.0) / max(float16_t(count) * sq_dist, float16_t(0.0078125)) * f16vec3(color);
+		f16vec3 illum = float16_t(float(HAND_LIGHT) / 255.0) / max(float16_t(count) * sq_dist, float16_t(0.0078125)) * f16vec3(color);
 
 		immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
 
 		f16vec3 light;
 
 		if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > float16_t(0.0)) {
+			#define MAX_HAND_LIGHT_TRACE_DIST 64 // temp/todo
+			#define HAND_LIGHT_TRACE_STEPS 8
+
+			const float trace_dist = float(MAX_HAND_LIGHT_TRACE_DIST);
+			if (sq_dist < trace_dist*trace_dist) { // Ray trace.
+				f16vec4 from = proj_mmul(gbufferProjection, origin * mat3(gbufferModelViewInverse));
+				f16vec4 to = proj_mmul(gbufferProjection, pe * mat3(gbufferModelViewInverse));
+
+				// Do multiplication part of ndc -> screen out here.
+				from.xyz *= float16_t(0.5);
+				to.xyz *= float16_t(0.5);
+
+				immut f16vec4 step = (to - from) / float(HAND_LIGHT_TRACE_STEPS + 1);
+				f16vec4 ray_halfclip = from;
+
+				for (uint i = 0u; i < uint(HAND_LIGHT_TRACE_STEPS); ++i) {
+					ray_halfclip += step;
+
+					immut vec2 ray_screen_undiv_xy = ray_halfclip.xy + 0.5 * ray_halfclip.w;
+					// immut ivec2 texel = ivec2(ray_screen.xy * view_size());
+
+					// immut vec4 depth_samples = textureGather(depthtex2, trace_screen.xy, 0);
+					// immut bvec4 visible_samples = greaterThan(trace_screen.zzzz, depth_samples); // step just doesn't work here on AMD Mesa for some reason
+
+					immut float sampled = textureProjLod(depthtex2, vec3(ray_screen_undiv_xy, ray_halfclip.w), 0.0).r;
+					if ((sampled - 0.5) * ray_halfclip.w < ray_halfclip.z) { // We should really take texel position into account here and lerp to make a smooth shadow
+						return ind_bl * illum;
+					}
+				}
+			}
+
 			immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness);
 
 			light = fma(specular_diffuse.xxx, rcp_color, (specular_diffuse.y + ind_bl).xxx);
@@ -336,19 +370,22 @@ void main() {
 			#endif
 
 			#if HAND_LIGHT
-				immut uint hand_light_count_left = hand_light.left.a;
-				immut uint hand_light_count_right = hand_light.right.a;
+				#define MAX_HAND_LIGHT_DIST 64 // temp/todo
+				if (dot(pe, pe) < 64.0*64.0) {
+					immut uint hand_light_count_left = hand_light.left.a;
+					immut uint hand_light_count_right = hand_light.right.a;
 
-				immut f16vec3 f16_pe = f16vec3(pe);
+					immut f16vec3 f16_pe = f16vec3(pe);
 
-				if (hand_light_count_left != 0u) {
-					immut f16vec3 origin = mat3(gbufferModelViewInverse) * vec3(-0.2, -0.2, -0.1); // Approximate right hand position.
-					block_light += get_hand_light(hand_light_count_left, hand_light.left.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, f16_pe, origin);
-				}
+					if (hand_light_count_left != 0u) {
+						immut f16vec3 origin = mat3(gbufferModelViewInverse) * vec3(-0.2, -0.2, -0.1); // Approximate right hand position.
+						block_light += get_hand_light(hand_light_count_left, hand_light.left.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, f16_pe, origin);
+					}
 
-				if (hand_light_count_right != 0) {
-					immut f16vec3 origin = mat3(gbufferModelViewInverse) * vec3(0.2, -0.2, -0.1); // Approximate left hand position.
-					block_light += get_hand_light(hand_light_count_right, hand_light.right.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, f16_pe, origin);
+					if (hand_light_count_right != 0) {
+						immut f16vec3 origin = mat3(gbufferModelViewInverse) * vec3(0.2, -0.2, -0.1); // Approximate left hand position.
+						block_light += get_hand_light(hand_light_count_right, hand_light.right.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, f16_pe, origin);
+					}
 				}
 			#endif
 
@@ -390,7 +427,7 @@ void main() {
 
 			// Could this sRGB<->Linear stuff be done faster?
 			color = linear(mix(srgb(color_ao.rgb * final_light), srgb(fog_col), vanilla_fog(pe)));
-		} else {
+		} else { // Render sky.
 			#if defined NETHER || defined END
 				color = fog_col;
 			#else
