@@ -63,11 +63,19 @@ f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal, float16_t ao) {
 				brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with `light.x` later on, in order to make the falloff follow the inverse square law as much as possible.
 				brightness = min(brightness, float16_t(48.0)); // Prevent `float16_t` overflow later on.
 
-				immut f16vec3 illum = brightness * f16vec3(
-					(light_color >> uint16_t(6u)) & uint16_t(31u),
-					light_color & uint16_t(63u),
-					(light_color >> uint16_t(11u))
-				);
+				#ifdef INT16
+					immut f16vec3 illum = brightness * f16vec3(
+						(light_color >> uint16_t(6u)) & uint16_t(31u),
+						light_color & uint16_t(63u),
+						(light_color >> uint16_t(11u))
+					);
+				#else
+					immut f16vec3 illum = brightness * f16vec3(
+						bitfieldExtract(uint(light_color), 6, 5),
+						light_color & uint16_t(63u),
+						(light_color >> uint16_t(11u))
+					);
+				#endif
 
 				immut float16_t face_n_dot_l = dot(w_face_normal, n_w_rel_light);
 

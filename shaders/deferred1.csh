@@ -146,8 +146,8 @@ void main() {
 
 	immut i16vec2 texel = i16vec2(gl_GlobalInvocationID.xy);
 	immut float depth = texelFetch(depthtex0, texel, 0).r;
-	immut bool geometry = depth < 1.0;
-	immut uvec4 gbuf = geometry ? texelFetch(colortex2, texel, 0) : uvec4(0u);
+	immut bool is_geo = depth < 1.0;
+	immut uvec4 gbuf = is_geo ? texelFetch(colortex2, texel, 0) : uvec4(0u);
 
 	immut vec2 texel_size = 1.0 / vec2(view_size());
 	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
@@ -162,11 +162,11 @@ void main() {
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
 	// Check if block light (first 15 bits) isn't zero, and we're within LL_DIST.
-	immut bool lit = (gbuf.y & 32767u) != 0u && chebyshev_dist < float16_t(LL_DIST);
+	immut bool is_lit = (gbuf.y & 32767u) != 0u && chebyshev_dist < float16_t(LL_DIST);
 
 	barrier();
 
-	if (lit) { // Calculate view and player-eye space bounding boxes for the work group.
+	if (is_lit) { // Calculate view and player-eye space bounding boxes for the work group.
 		#ifdef SUBGROUP_ENABLED
 			immut vec3 sg_pe_min = subgroupMin(pe);
 			immut vec3 sg_pe_max = subgroupMax(pe);
@@ -265,7 +265,7 @@ void main() {
 
 		f16vec3 color;
 
-		if (geometry) {
+		if (is_geo) {
 			immut f16vec4 color_ao = f16vec4(imageLoad(colorimg1, texel));
 			immut f16vec3 skylight_color = skylight();
 
@@ -291,7 +291,7 @@ void main() {
 				f16vec3 block_light = light.x * f16vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B);
 			#endif
 
-			if (lit) {
+			if (is_lit) {
 				#if HAND_LIGHT == 0
 					immut float16_t ind_bl = float16_t(IND_BL) * color_ao.a;
 				#endif
@@ -331,17 +331,19 @@ void main() {
 						brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible.
 						brightness = min(brightness, float16_t(48.0)); // Prevent `float16_t` overflow later on.
 
-						immut f16vec3 illum = brightness * f16vec3(
-							(light_color >> uint16_t(6u)) & uint16_t(31u),
-							light_color & uint16_t(63u),
-							(light_color >> uint16_t(11u))
-						);
-
-						/*
+						#ifdef INT16
 							immut f16vec3 illum = brightness * f16vec3(
-								u16_unpack3(light_color, u16vec2(6, 5)).grb
+								(light_color >> uint16_t(6u)) & uint16_t(31u),
+								light_color & uint16_t(63u),
+								(light_color >> uint16_t(11u))
 							);
-						*/
+						#else
+							immut f16vec3 illum = brightness * f16vec3(
+								bitfieldExtract(uint(light_color), 6, 5),
+								light_color & uint16_t(63u),
+								(light_color >> uint16_t(11u))
+							);
+						#endif
 
 						immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
 
@@ -362,7 +364,7 @@ void main() {
 				immut f16vec3 new_light = f16vec3(float(DIR_BL * 3) / packing_scale) * light.x * fma(specular, rcp_color, diffuse);
 
 				block_light = mix(new_light, block_light, smoothstep(float16_t(LL_DIST - 15), float16_t(LL_DIST), chebyshev_dist));
-			} // else block_light = f16vec3(1.0); // DEBUG: `lit`
+			} // else block_light = f16vec3(1.0); // DEBUG: `is_lit`
 
 			// DEBUG: Culling & LDS overflow.
 			// block_light.gb += f16vec2(sh_index_len < ll.len, sh_index_len == 0);
