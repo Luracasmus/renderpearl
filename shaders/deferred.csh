@@ -2,7 +2,7 @@
 
 /* Light Index Deduplication */
 
-// Work around compiler bug on Intel drivers (and I think Mesa and maybe elsewhere too).
+// Work around compiler bug on some drivers, such as those by Intel.
 #if defined MC_GL_VENDOR_NVIDIA || defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI || (defined MC_GL_RENDERER_RADEON && defined MC_GL_VENDOR_MESA)
 	layout(local_size_x = min(gl_MaxComputeWorkGroupSize.x, LL_CAPACITY), local_size_y = 1, local_size_z = 1) in;
 #elif LL_CAPACITY < 1024

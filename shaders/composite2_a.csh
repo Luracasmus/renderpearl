@@ -24,7 +24,7 @@ void main() {
 	#endif
 
 	#if AUTO_EXP
-		const vec2 composite_wg_size = vec2(32.0, 16.0); // Keep up to date.
+		const vec2 composite_wg_size = vec2(8.0, 16.0); // Keep up to date.
 		immut vec2 work_groups = ceil(vec2(view_size()) / composite_wg_size);
 
 		immut float16_t geo_avg_luma = float16_t(exp(float(auto_exp.sum_log_luma) * LOG2_E / (1024.0 * work_groups.x * work_groups.y)));

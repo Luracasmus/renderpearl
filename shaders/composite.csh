@@ -1,6 +1,6 @@
 #include "/prelude/core.glsl"
 
-layout(local_size_x = 32, local_size_y = 16, local_size_z = 1) in; // keep synced with composite2_a.csh `composite_wg_size`
+layout(local_size_x = 8, local_size_y = 16, local_size_z = 1) in; // keep synced with composite2_a.csh `composite_wg_size`
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 uniform layout(rgba16f) restrict image2D colorimg1;
@@ -46,7 +46,8 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 
 	shared uint16_t[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] sh_nbh;
 
-	f16vec3 get_vl_and_add_to_nbh(
+	// Calculate and return volumetric light value and add it to the shared neighborhood.
+	f16vec3 volumetric_light(
 		bool geometry,
 		float depth,
 		i16vec2 texel,
@@ -98,22 +99,29 @@ void main() {
 		immut bool geometry = depth < 1.0;
 
 		immut uvec2 nbh_pos = gl_LocalInvocationID.xy + 1u;
-		vec3 pe; f16vec3 ray = get_vl_and_add_to_nbh(geometry, depth, texel, texel_size, nbh_pos, pe);
+		vec3 pe; f16vec3 ray = volumetric_light(geometry, depth, texel, texel_size, nbh_pos, pe);
 
-		#define BORDER_OP(offset) \
-			immut float border_depth = texelFetchOffset(depthtex0, texel, 0, offset).r; \
-			vec3 _border_pe; \
-			get_vl_and_add_to_nbh( \
-				border_depth < 1.0, \
-				border_depth, \
-				texel + i16vec2(offset), \
-				texel_size, \
-				nbh_pos + offset, \
-				_border_pe \
-			);
-
-		#define NON_BORDER_OP
+		i16vec2 border_offset;
+		bool is_border;
+		#define BORDER_OP(offset) { border_offset = i16vec2(offset); is_border = true; }
+		#define NON_BORDER_OP { is_border = false; }
 		#include "/lib/nbh/border_cornered.glsl"
+
+		if (is_border) {
+			immut i16vec2 border_texel = texel + i16vec2(border_offset);
+			immut float border_depth = texelFetch(depthtex0, border_texel, 0).r;
+
+			vec3 _border_pe;
+
+			volumetric_light(
+				border_depth < 1.0,
+				border_depth,
+				border_texel,
+				texel_size,
+				uvec2(ivec2(nbh_pos) + ivec2(border_offset)),
+				_border_pe
+			);
+		}
 
 		barrier();
 
