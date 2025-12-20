@@ -2,7 +2,7 @@
 
 /* Deferred Lighting */
 
-layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 readonly
