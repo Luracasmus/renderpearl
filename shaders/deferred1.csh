@@ -61,6 +61,7 @@ shared uint[local_index_size] sh_index_data;
 shared uint16_t[local_index_size] sh_index_color;
 
 #if HAND_LIGHT != 0
+	//
 	f16vec3 get_hand_light(uint count, uvec3 color, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, f16vec3 pe, f16vec3 origin, bool not_hand) {
 		immut f16vec3 pe_to_light = origin - pe;
 		immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
@@ -151,7 +152,7 @@ void main() {
 	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
 	vec3 ndc = fma(vec3(coord, depth), vec3(2.0), vec3(-1.0));
 
-	if (gbuf.y >= 0x80000000u) ndc.z /= MC_HAND_DEPTH; // The most significant bit being 1 indicates hand.
+	if (gbuf.y >= 0x80000000u) { ndc.z /= MC_HAND_DEPTH; } // The most significant bit being 1 indicates hand.
 
 	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
 	immut vec3 pe = mat3(gbufferModelViewInverse) * view;
@@ -164,47 +165,45 @@ void main() {
 
 	barrier();
 
-	if (lit) {
-		immut ivec3 ceil_pe = ivec3(pe + 0.5);
-		immut ivec3 floor_pe = ivec3(pe - 0.5);
+	if (lit) { // Calculate view and player-eye space bounding boxes for the work group.
+		#ifdef SUBGROUP_ENABLED
+			immut vec3 sg_pe_min = subgroupMin(pe);
+			immut vec3 sg_pe_max = subgroupMax(pe);
 
-		atomicMin(sh_bb_pe_min.x, floor_pe.x); atomicMax(sh_bb_pe_max.x, ceil_pe.x);
-		atomicMin(sh_bb_pe_min.y, floor_pe.y); atomicMax(sh_bb_pe_max.y, ceil_pe.y);
-		atomicMin(sh_bb_pe_min.z, floor_pe.z); atomicMax(sh_bb_pe_max.z, ceil_pe.z);
-
-		immut ivec3 ceil_view = ivec3(view + 0.5);
-		immut ivec3 floor_view = ivec3(view - 0.5);
-
-		atomicMin(sh_bb_view_min.x, floor_view.x); atomicMax(sh_bb_view_max.x, ceil_view.x);
-		atomicMin(sh_bb_view_min.y, floor_view.y); atomicMax(sh_bb_view_max.y, ceil_view.y);
-		atomicMin(sh_bb_view_min.z, floor_view.z); atomicMax(sh_bb_view_max.z, ceil_view.z);
-	}
-
-	/*
-		if (subgroupAny(lit)) {
-			immut vec3 sg_pe_min = subgroupMin(lit ? pe : vec3(1.0/0.0));
-			immut vec3 sg_pe_max = subgroupMax(lit ? pe : vec3(-1.0/0.0));
-
-			immut vec3 sg_view_min = subgroupMin(lit ? view : vec3(1.0/0.0));
-			immut vec3 sg_view_max = subgroupMax(lit ? view : vec3(-1.0/0.0));
+			immut vec3 sg_view_min = subgroupMin(view);
+			immut vec3 sg_view_max = subgroupMax(view);
 
 			if (subgroupElect()) {
-				immut ivec3 i_sg_pe_min = ivec3(fma(sign(sg_pe_min), vec3(0.5), sg_pe_min));
-				immut ivec3 i_sg_bb_max = ivec3(fma(sign(sg_pe_max), vec3(0.5), sg_pe_max));
+				immut ivec3 floor_sg_pe_min = ivec3(pe - 0.5);
+				immut ivec3 ceil_sg_pe_max = ivec3(pe + 0.5);
 
-				atomicMin(sh_bb_pe_min.x, i_sg_pe_min.x); atomicMax(sh_bb_pe_max.x, i_sg_bb_max.x);
-				atomicMin(sh_bb_pe_min.y, i_sg_pe_min.y); atomicMax(sh_bb_pe_max.y, i_sg_bb_max.y);
-				atomicMin(sh_bb_pe_min.z, i_sg_pe_min.z); atomicMax(sh_bb_pe_max.z, i_sg_bb_max.z);
+				atomicMin(sh_bb_pe_min.x, floor_sg_pe_min.x); atomicMax(sh_bb_pe_max.x, ceil_sg_pe_max.x);
+				atomicMin(sh_bb_pe_min.y, floor_sg_pe_min.y); atomicMax(sh_bb_pe_max.y, ceil_sg_pe_max.y);
+				atomicMin(sh_bb_pe_min.z, floor_sg_pe_min.z); atomicMax(sh_bb_pe_max.z, ceil_sg_pe_max.z);
 
-				immut ivec3 i_sg_view_min = ivec3(fma(sign(sg_view_min), vec3(0.5), sg_view_min));
-				immut ivec3 i_sg_view_max = ivec3(fma(sign(sg_view_max), vec3(0.5), sg_view_max));
+				immut ivec3 floor_sg_view_min = ivec3(view - 0.5);
+				immut ivec3 ceil_sg_view_max = ivec3(view + 0.5);
 
-				atomicMin(sh_bb_view_min.x, i_sg_view_min.x); atomicMax(sh_bb_view_max.x, i_sg_view_max.x);
-				atomicMin(sh_bb_view_min.y, i_sg_view_min.y); atomicMax(sh_bb_view_max.y, i_sg_view_max.y);
-				atomicMin(sh_bb_view_min.z, i_sg_view_min.z); atomicMax(sh_bb_view_max.z, i_sg_view_max.z);
+				atomicMin(sh_bb_view_min.x, floor_sg_view_min.x); atomicMax(sh_bb_view_max.x, ceil_sg_view_max.x);
+				atomicMin(sh_bb_view_min.y, floor_sg_view_min.y); atomicMax(sh_bb_view_max.y, ceil_sg_view_max.y);
+				atomicMin(sh_bb_view_min.z, floor_sg_view_min.z); atomicMax(sh_bb_view_max.z, ceil_sg_view_max.z);
 			}
-		}
-	*/
+		#else
+			immut ivec3 ceil_pe = ivec3(pe + 0.5);
+			immut ivec3 floor_pe = ivec3(pe - 0.5);
+
+			atomicMin(sh_bb_pe_min.x, floor_pe.x); atomicMax(sh_bb_pe_max.x, ceil_pe.x);
+			atomicMin(sh_bb_pe_min.y, floor_pe.y); atomicMax(sh_bb_pe_max.y, ceil_pe.y);
+			atomicMin(sh_bb_pe_min.z, floor_pe.z); atomicMax(sh_bb_pe_max.z, ceil_pe.z);
+
+			immut ivec3 ceil_view = ivec3(view + 0.5);
+			immut ivec3 floor_view = ivec3(view - 0.5);
+
+			atomicMin(sh_bb_view_min.x, floor_view.x); atomicMax(sh_bb_view_max.x, ceil_view.x);
+			atomicMin(sh_bb_view_min.y, floor_view.y); atomicMax(sh_bb_view_max.y, ceil_view.y);
+			atomicMin(sh_bb_view_min.z, floor_view.z); atomicMax(sh_bb_view_max.z, ceil_view.z);
+		#endif
+	}
 
 	barrier();
 

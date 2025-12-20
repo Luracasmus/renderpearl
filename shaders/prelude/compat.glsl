@@ -37,6 +37,8 @@
 #if (SUBGROUP >= 1 && defined GL_KHR_shader_subgroup) || (SUBGROUP >= 2 && defined MC_GL_VENDOR_NVIDIA) || SUBGROUP >= 3
 	#extension GL_KHR_shader_subgroup_basic : require
 	#extension GL_KHR_shader_subgroup_vote : require
+	#extension GL_KHR_shader_subgroup_arithmetic : require
+	#define SUBGROUP_ENABLED
 #else
 	#define subgroupAny(v) (v)
 	#define subgroupElect() true

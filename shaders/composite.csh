@@ -79,7 +79,9 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 
 			immut uvec3 scaled_ray = uvec3(fma(ray, f16vec3(31.0, 63.0, 31.0), f16vec3(0.5)));
 			sh_nbh[nbh_pos.x][nbh_pos.y] = uint16_t(bitfieldInsert(bitfieldInsert(scaled_ray.r, scaled_ray.g, 5, 6), scaled_ray.b, 11, 5));
-		} else sh_nbh[nbh_pos.x][nbh_pos.y] = uint16_t(0u);
+		} else {
+			sh_nbh[nbh_pos.x][nbh_pos.y] = uint16_t(0u);
+		}
 
 		return ray;
 	}
@@ -114,9 +116,11 @@ void main() {
 
 		barrier();
 
-		if (geometry) {
+		if (geometry) { // Do volumetric light.
 			immut float16_t fog = saturate(vanilla_fog(pe) + pbr_fog(length(pe)));
 
+			// We use the average VL color of a 3x3 neighborhood to take advantage of IGN's low discrepancy
+			// and get reasonably good results with very few samples.
 			const uvec2[8] offsets = uvec2[8](
 				uvec2(0u, 0u), uvec2(1u, 0u), uvec2(2u, 0u), uvec2(2u, 1u), uvec2(2u, 2u), uvec2(1u, 2u), uvec2(0u, 2u), uvec2(0u, 1u)
 			);
@@ -164,9 +168,10 @@ void main() {
 	#endif
 
 	#if AUTO_EXP
-		if (gl_LocalInvocationIndex == 0u) atomicAdd(auto_exp.sum_log_luma, int(
-			roundEven(clamp(log2(luma), float16_t(-7.0), float16_t(7.0)) * float16_t(512.0)) // Clamp to avoid over- or underflowing the counter.
-		));
+		if (gl_LocalInvocationIndex == 0u) {
+			// Clamp to avoid over- or underflowing the counter.
+			atomicAdd(auto_exp.sum_log_luma, int(roundEven(clamp(log2(luma), float16_t(-7.0), float16_t(7.0)) * float16_t(512.0))));
+		}
 
 		color *= auto_exp.exposure;
 	#endif
@@ -196,10 +201,10 @@ void main() {
 				N - < z > + S
 			*/
 
-			comp_color.r += max(dot(dir, vec2(0.0, -1.0)) - inv_comp_line, 0.0); // TODO: These dots could probably be done faster.
-			comp_color.rg += max(dot(dir, vec2(1.0, 0.0)) - inv_comp_line, 0.0);
-			comp_color.rb += max(dot(dir, vec2(-1.0, 0.0)) - inv_comp_line, 0.0);
-			comp_color.gb += max(dot(dir, vec2(0.0, 1.0)) - inv_comp_line, 0.0);
+			comp_color.r += saturate(-dir.y - inv_comp_line);
+			comp_color.rg += saturate(dir.x - inv_comp_line);
+			comp_color.rb += saturate(-dir.x - inv_comp_line);
+			comp_color.gb += saturate(dir.y - inv_comp_line);
 
 			comp_color = fma(comp_color, (1.0 / comp_line).xxx, vec3(max(0.1 - abs_dist.y, 0.0) * 10.0));
 

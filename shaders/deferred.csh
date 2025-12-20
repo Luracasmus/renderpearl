@@ -29,10 +29,11 @@ void main() {
 	// Maybe we could average all the light colors here for ambient light color.
 
 	immut uint16_t local_invocation_i = uint16_t(gl_LocalInvocationIndex);
+	immut bool is_first_invoc = local_invocation_i == uint16_t(0u);
 	const uint16_t wg_size = uint16_t(gl_WorkGroupSize.x);
 
 	if (rebuildLL) {
-		if (local_invocation_i == uint16_t(0u)) sh_culled_len = 0u;
+		if (is_first_invoc) { sh_culled_len = 0u; }
 
 		// if (ll.queue > ll.data.length()) { ll.len = uint16_t(0u); return; }
 
@@ -51,10 +52,14 @@ void main() {
 			bool unique = true;
 
 			// Cull identical lights.
-			for (uint16_t j = uint16_t(0u); unique && j < i; ++j) if (sh_index_data[j] == data && sh_index_color[j] == color) unique = false;
+			for (uint16_t j = uint16_t(0u); unique && j < i; ++j) {
+				if (sh_index_data[j] == data && sh_index_color[j] == color) { unique = false; }
+			}
 
 			// Cull different colored lights at the same pos, comparing the color bits to make it deterministic.
-			for (uint16_t j = uint16_t(0u); unique && j < len; ++j) if (sh_index_data[j] == data && sh_index_color[j] < color) unique = false;
+			for (uint16_t j = uint16_t(0u); unique && j < len; ++j) {
+				if (sh_index_data[j] == data && sh_index_color[j] < color) { unique = false; }
+			}
 
 			// Copy shared list to global.
 			if (unique) {
@@ -99,17 +104,17 @@ void main() {
 				) + index_offset;
 
 				immut float other_sq_dist = dot(other_pe, other_pe);
-				if (other_sq_dist < sq_dist || (other_sq_dist == sq_dist && i < j)) ++k;
+				if (other_sq_dist < sq_dist || (other_sq_dist == sq_dist && i < j)) { ++k; }
 			}
 
 			ll.data[k] = data;
 			ll.color[k] = sh_index_color[i];
 		}
 
-		if (local_invocation_i == uint16_t(0u)) {
+		if (is_first_invoc) {
 			ll.queue = 0u;
 			ll.offset = vec3(0.0);
 			ll.len = culled_len;
 		}
-	} else if (local_invocation_i == uint16_t(0u)) ll.offset += invCameraPositionDeltaInt;
+	} else if (is_first_invoc) { ll.offset += invCameraPositionDeltaInt; }
 }
