@@ -26,7 +26,7 @@ uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, texture
 // #endif // TODO
 
 #ifdef HAND
-	uniform int handLightLeft, handLightRight;
+	uniform int handLightPackedLR;
 
 	#if HAND_LIGHT
 		#include "/buf/hand_light.glsl"
@@ -141,23 +141,28 @@ void main() {
 
 			#ifdef HAND
 				immut bool is_right = view.x > 0.0;
-				immut uint hand_light_level = uint(is_right ? handLightRight : handLightLeft);
-				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, hand_light_level, 1, 4);
+				immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
+				immut uint16_t this_hand_light = is_right ? hand_light_lr.y : hand_light_lr.x;
+				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, this_hand_light, 1, 4);
 
 				#if HAND_LIGHT
-					if (hand_light_level > 0u) {
-						immut uvec3 scaled_color = uvec3(fma(linear(vaColor.rgb * textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb), vec3(255.0), vec3(0.5))) * hand_light_level;
+					if (this_hand_light != uint16_t(0u)) {
+						// Scale and round to fit packing.
+						immut u16vec3 scaled_color = u16vec3(fma(
+							linear(vaColor.rgb * textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb),
+							hand_light_pack_scale.xxx,
+							vec3(0.5)
+						));
+
+						immut uint rg = packUint2x16(scaled_color.rg);
+						immut uint b_count = packUint2x16(u16vec2(scaled_color.g, uint16_t(1u))); // The second component is just 1, to count the number of times we're adding to the sum.
 
 						if (is_right) {
-							atomicAdd(hand_light.right.r, scaled_color.r);
-							atomicAdd(hand_light.right.g, scaled_color.g);
-							atomicAdd(hand_light.right.b, scaled_color.b);
-							atomicAdd(hand_light.right.a, 1u);
+							atomicAdd(hand_light.right.x, rg);
+							atomicAdd(hand_light.right.y, b_count);
 						} else {
-							atomicAdd(hand_light.left.r, scaled_color.r);
-							atomicAdd(hand_light.left.g, scaled_color.g);
-							atomicAdd(hand_light.left.b, scaled_color.b);
-							atomicAdd(hand_light.left.a, 1u);
+							atomicAdd(hand_light.left.x, rg);
+							atomicAdd(hand_light.left.y, b_count);
 						}
 					}
 				#endif

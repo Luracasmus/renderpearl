@@ -8,14 +8,6 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 readonly
 #include "/buf/ll.glsl"
 
-#if HAND_LIGHT
-	readonly
-	#include "/buf/hand_light.glsl"
-
-	uniform mat4 gbufferProjection;
-	uniform sampler2D depthtex2;
-#endif
-
 uniform vec3 cameraPositionFract;
 uniform mat4 gbufferModelViewInverse, gbufferProjectionInverse;
 uniform sampler2D depthtex0;
@@ -61,15 +53,23 @@ shared uint[local_index_size] sh_index_data;
 shared uint16_t[local_index_size] sh_index_color;
 
 #if HAND_LIGHT != 0
-	//
-	f16vec3 get_hand_light(uint count, uvec3 color, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, f16vec3 pe, f16vec3 origin, bool not_hand) {
-		immut f16vec3 pe_to_light = origin - pe;
+	readonly
+	#include "/buf/hand_light.glsl"
+
+	uniform int handLightPackedLR;
+	uniform mat4 gbufferProjection;
+	uniform sampler2D depthtex2;
+
+	f16vec3 get_hand_light(uint16_t light_level, uvec2 buf_data, vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, bool not_hand) {
+		immut f16vec3 pe_to_light = mat3(gbufferModelViewInverse) * origin_view - pe;
 		immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
 		immut f16vec3 n_w_rel_light = pe_to_light * inversesqrt(sq_dist);
 
-		immut f16vec3 illum = float16_t(float(HAND_LIGHT) / 255.0) / max(float16_t(count) * sq_dist, float16_t(0.0078125)) * f16vec3(color);
-
 		immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
+
+		immut u16vec2 rg = unpackUint2x16(buf_data.x);
+		immut u16vec2 b_count = unpackUint2x16(buf_data.y);
+		immut f16vec3 illum = float16_t(light_level) * float16_t(float(HAND_LIGHT) / hand_light_pack_scale) / max(float16_t(b_count.y) * sq_dist, float16_t(0.0078125)) * f16vec3(rg, b_count.x);
 
 		f16vec3 light;
 
@@ -81,8 +81,8 @@ shared uint16_t[local_index_size] sh_index_color;
 
 			const float trace_dist = float(MAX_HAND_LIGHT_TRACE_DIST);
 			if (sq_dist < trace_dist*trace_dist && not_hand) { // Ray trace if not hand and within tracing range.
-				f16vec4 from = proj_mmul(gbufferProjection, origin * mat3(gbufferModelViewInverse));
-				f16vec4 to = proj_mmul(gbufferProjection, pe * mat3(gbufferModelViewInverse));
+				f16vec4 from = proj_mmul(gbufferProjection, origin_view);
+				f16vec4 to = proj_mmul(gbufferProjection, view);
 
 				// Do multiplication part of ndc -> screen out here.
 				from.xyz *= float16_t(0.5);
@@ -382,21 +382,19 @@ void main() {
 
 			#if HAND_LIGHT
 				#define MAX_HAND_LIGHT_DIST 64 // temp/todo
-				if (dot(pe, pe) < 64.0*64.0) {
-					immut uint hand_light_count_left = hand_light.left.a;
-					immut uint hand_light_count_right = hand_light.right.a;
+				if (handLightPackedLR != 0) {
+					if (dot(pe, pe) < MAX_HAND_LIGHT_DIST*MAX_HAND_LIGHT_DIST) {
+						immut bool not_hand = gbuf.y < 0x80000000u;
 
-					immut bool not_hand = gbuf.y < 0x80000000u;
-					immut f16vec3 f16_pe = f16vec3(pe);
+						immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
 
-					if (hand_light_count_left != 0u) {
-						immut f16vec3 origin = mat3(gbufferModelViewInverse) * vec3(-0.2, -0.2, -0.1); // Approximate right hand position.
-						block_light += get_hand_light(hand_light_count_left, hand_light.left.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, f16_pe, origin, not_hand);
-					}
+						if (hand_light_lr.x != 0) {
+							block_light += get_hand_light(hand_light_lr.x, hand_light.left, f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, not_hand);
+						}
 
-					if (hand_light_count_right != 0) {
-						immut f16vec3 origin = mat3(gbufferModelViewInverse) * vec3(0.2, -0.2, -0.1); // Approximate left hand position.
-						block_light += get_hand_light(hand_light_count_right, hand_light.right.rgb, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, f16_pe, origin, not_hand);
+						if (hand_light_lr.y != 0) {
+							block_light += get_hand_light(hand_light_lr.y, hand_light.right, f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, not_hand);
+						}
 					}
 				}
 			#endif
