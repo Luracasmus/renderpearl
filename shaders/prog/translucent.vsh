@@ -73,18 +73,19 @@ void main() {
 		immut vec3 view = rot_trans_mmul(modelViewMatrix, model);
 		gl_Position = proj_mmul(projectionMatrix, view);
 
-		immut vec3 v_normal =
-			#ifdef NO_NORMAL
-				vec3(0.0, 0.0, 1.0);
-			#else
-				normalMatrix * normalize(vaNormal);
-			#endif
-
 		#ifndef NO_NORMAL
+			immut vec3 v_normal = normalMatrix * normalize(vaNormal);
+
 			init_tbn(f16vec3(v_normal), f16vec3(normalMatrix * normalize(at_tangent.xyz)));
 		#endif
 
-		immut f16vec3 w_normal = f16vec3(MV_INV * v_normal);
+		immut f16vec3 w_normal =
+			#ifdef NO_NORMAL
+				mvInv2; // == MV_INV * vec3(0.0, 0.0, 1.0)
+			#else
+				f16vec3(MV_INV * v_normal);
+			#endif
+
 		immut f16vec4 color = f16vec4(vaColor);
 		v.light = indexed_block_light(MV_INV * view, w_normal, color.a);
 

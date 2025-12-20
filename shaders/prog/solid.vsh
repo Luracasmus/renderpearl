@@ -246,7 +246,7 @@ void main() {
 		#ifndef NETHER
 			if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
 				#ifdef NO_NORMAL
-					immut f16vec3 w_normal = f16vec3(MV_INV * vec3(0.0, 0.0, 1.0));
+					immut f16vec3 w_normal = f16vec3(mvInv2); // == f16vec3(MV_INV * vec3(0.0, 0.0, 1.0))
 				#endif
 
 				// TODO: This bias is better than before but it would probably be best to do it in shadow screen space and offset a scaled amount of texels.

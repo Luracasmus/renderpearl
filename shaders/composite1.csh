@@ -85,8 +85,10 @@ void main() {
 
 		const float16_t local_contrast_adaptation_factor = float16_t(2.0);
 		immut bvec2 temp = greaterThanEqual(delta.xy, (max(delta_max.x, delta_max.y) / local_contrast_adaptation_factor).xx);
-		immut bvec2 result = bvec2(edges.x && temp.x, edges.y && temp.y); // This is required over of `result && temp` on AMD, due to different interpretations of the GLSL spec.
+		immut bvec2 result = bvec2(edges.x && temp.x, edges.y && temp.y); // This is required instead of `result && temp` on AMD, due to different interpretations of the GLSL spec.
 
-		if (any(result)) imageStore(edge, texel, f16vec4(result, 0.0, 0.0));
+		if (any(result)) {
+			imageStore(edge, texel, f16vec4(result, 0.0, 0.0));
+		}
 	}
 }

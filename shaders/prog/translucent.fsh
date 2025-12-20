@@ -91,7 +91,7 @@ void main() {
 	#endif
 
 	#if defined NO_NORMAL
-		immut f16vec3 v_tex_normal = f16vec3(vec3(0.0, 0.0, 1.0));
+		immut f16vec3 v_tex_normal = f16vec3(0.0, 0.0, 1.0);
 	#else
 		immut f16vec2 octa_v_face_normal = f16vec2(unpackFloat2x16(v_tbn.half2x16_octa_normal));
 		immut f16vec2 octa_v_face_tangent = f16vec2(unpackFloat2x16(v_tbn.half2x16_octa_tangent));

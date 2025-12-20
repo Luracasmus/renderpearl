@@ -1,6 +1,6 @@
 #include "/prelude/core.glsl"
 
-layout(local_size_x = 8, local_size_y = 16, local_size_z = 1) in; // keep synced with composite2_a.csh `composite_wg_size`
+layout(local_size_x = 8, local_size_y = 16, local_size_z = 1) in; // Keep synced with composite2_a.csh `composite_wg_size`.
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 uniform layout(rgba16f) restrict image2D colorimg1;
@@ -46,18 +46,11 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 
 	shared uint16_t[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] sh_nbh;
 
-	// Calculate and return volumetric light value and add it to the shared neighborhood.
-	f16vec3 volumetric_light(
-		bool geometry,
-		float depth,
-		i16vec2 texel,
-		vec2 texel_size,
-		uvec2 nbh_pos,
-		out vec3 pe
-	) {
+	// Compute and return volumetric light value and add it to the shared neighborhood.
+	f16vec3 volumetric_light(bool is_geo, float depth, i16vec2 texel, vec2 texel_size, uvec2 nbh_pos, out vec3 pe) {
 		f16vec3 ray = f16vec3(0.0);
 
-		if (geometry) {
+		if (is_geo) {
 			immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
 			immut vec3 ndc = fma(vec3(coord, depth), vec3(2.0), vec3(-1.0));
 			pe = MV_INV * proj_inv(gbufferProjectionInverse, ndc);
@@ -96,10 +89,10 @@ void main() {
 	#if VL && !defined NETHER
 		immut float depth = texelFetch(depthtex0, texel, 0).r;
 		immut vec2 texel_size = 1.0 / vec2(view_size());
-		immut bool geometry = depth < 1.0;
+		immut bool is_geo = depth < 1.0;
 
 		immut uvec2 nbh_pos = gl_LocalInvocationID.xy + 1u;
-		vec3 pe; f16vec3 ray = volumetric_light(geometry, depth, texel, texel_size, nbh_pos, pe);
+		vec3 pe; f16vec3 ray = volumetric_light(is_geo, depth, texel, texel_size, nbh_pos, pe);
 
 		i16vec2 border_offset;
 		bool is_border;
@@ -125,10 +118,11 @@ void main() {
 
 		barrier();
 
-		if (geometry) { // Do volumetric light.
+		if (is_geo) { // Apply computed volumetric light.
 			immut float16_t fog = saturate(vanilla_fog(pe) + pbr_fog(length(pe)));
 
-			// We use the average VL color of a 3x3 neighborhood to take advantage of IGN's low discrepancy
+			// We use the average VL color of a 3x3 neighborhood of invocations
+			// to take advantage of IGN's low discrepancy
 			// and get reasonably good results with very few samples.
 			const uvec2[8] offsets = uvec2[8](
 				uvec2(0u, 0u), uvec2(1u, 0u), uvec2(2u, 0u), uvec2(2u, 1u), uvec2(2u, 2u), uvec2(1u, 2u), uvec2(0u, 2u), uvec2(0u, 1u)
