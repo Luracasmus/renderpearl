@@ -175,15 +175,15 @@ void main() {
 			immut vec3 sg_view_max = subgroupMax(view);
 
 			if (subgroupElect()) {
-				immut ivec3 floor_sg_pe_min = ivec3(pe - 0.5);
-				immut ivec3 ceil_sg_pe_max = ivec3(pe + 0.5);
+				immut ivec3 floor_sg_pe_min = ivec3(sg_pe_min - 0.5);
+				immut ivec3 ceil_sg_pe_max = ivec3(sg_pe_max + 0.5);
 
 				atomicMin(sh_bb_pe_min.x, floor_sg_pe_min.x); atomicMax(sh_bb_pe_max.x, ceil_sg_pe_max.x);
 				atomicMin(sh_bb_pe_min.y, floor_sg_pe_min.y); atomicMax(sh_bb_pe_max.y, ceil_sg_pe_max.y);
 				atomicMin(sh_bb_pe_min.z, floor_sg_pe_min.z); atomicMax(sh_bb_pe_max.z, ceil_sg_pe_max.z);
 
-				immut ivec3 floor_sg_view_min = ivec3(view - 0.5);
-				immut ivec3 ceil_sg_view_max = ivec3(view + 0.5);
+				immut ivec3 floor_sg_view_min = ivec3(sg_view_min - 0.5);
+				immut ivec3 ceil_sg_view_max = ivec3(sg_view_max + 0.5);
 
 				atomicMin(sh_bb_view_min.x, floor_sg_view_min.x); atomicMax(sh_bb_view_max.x, ceil_sg_view_max.x);
 				atomicMin(sh_bb_view_min.y, floor_sg_view_min.y); atomicMax(sh_bb_view_max.y, ceil_sg_view_max.y);
