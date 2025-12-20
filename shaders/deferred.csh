@@ -15,8 +15,7 @@
 const ivec3 workGroups = ivec3(1, 1, 1);
 
 uniform bool rebuildLL;
-uniform vec3 cameraPositionFract, invCameraPositionDeltaInt;
-uniform mat4 gbufferModelViewInverse;
+uniform vec3 cameraPositionFract, invCameraPositionDeltaInt, mvInv3;
 
 coherent
 #include "/buf/ll.glsl"
@@ -81,7 +80,7 @@ void main() {
 
 		barrier();
 
-		immut vec3 index_offset = -255.5 - cameraPositionFract - gbufferModelViewInverse[3].xyz;
+		immut vec3 index_offset = -255.5 - cameraPositionFract - mvInv3;
 
 		// Copy shared list into global, with lights enumeration sorted closest to furthest.
 		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {

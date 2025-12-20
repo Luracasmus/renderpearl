@@ -4,9 +4,10 @@
 layout(location = 0) out f16vec4 colortex1;
 layout(depth_unchanged) out float gl_FragDepth;
 
+#include "/lib/mv_inv.glsl"
 uniform float frameTimeCounter, pbrFogDensity;
 uniform vec3 cameraPosition, sunDirectionPlr;
-uniform mat4 gbufferModelViewInverse, gbufferProjectionInverse;
+uniform mat4 gbufferProjectionInverse;
 
 in VertexData { layout(location = 0, component = 0) flat uint tint; } v;
 
@@ -20,8 +21,8 @@ in VertexData { layout(location = 0, component = 0) flat uint tint; } v;
 
 void main() {
 	immut vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size()), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
-	immut vec3 pe = mat3(gbufferModelViewInverse) * proj_inv(gbufferProjectionInverse, ndc);
-	immut vec3 world = pe + gbufferModelViewInverse[3].xyz + cameraPosition;
+	immut vec3 pe = MV_INV * proj_inv(gbufferProjectionInverse, ndc);
+	immut vec3 world = pe + mvInv3 + cameraPosition;
 
 	immut vec2 abs_pe = abs(pe.xz);
 	immut float16_t fog = min(float16_t(pow(max(abs_pe.x, abs_pe.y) / float(16 * CLOUD_FOG_END), pbrFogDensity)), float16_t(1.0));

@@ -8,8 +8,9 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 readonly
 #include "/buf/ll.glsl"
 
+#include "/lib/mv_inv.glsl"
 uniform vec3 cameraPositionFract;
-uniform mat4 gbufferModelViewInverse, gbufferProjectionInverse;
+uniform mat4 gbufferProjectionInverse;
 uniform sampler2D depthtex0;
 uniform usampler2D colortex2;
 uniform layout(rgba16f) restrict image2D colorimg1;
@@ -61,7 +62,7 @@ shared uint16_t[local_index_size] sh_index_color;
 	uniform sampler2D depthtex2;
 
 	f16vec3 get_hand_light(uint16_t light_level, uvec2 buf_data, vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, bool not_hand) {
-		immut f16vec3 pe_to_light = mat3(gbufferModelViewInverse) * origin_view - pe;
+		immut f16vec3 pe_to_light = MV_INV * origin_view - pe;
 		immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
 		immut f16vec3 n_w_rel_light = pe_to_light * inversesqrt(sq_dist);
 
@@ -155,7 +156,7 @@ void main() {
 	if (gbuf.y >= 0x80000000u) { ndc.z /= MC_HAND_DEPTH; } // The most significant bit being 1 indicates hand.
 
 	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
-	immut vec3 pe = mat3(gbufferModelViewInverse) * view;
+	immut vec3 pe = MV_INV * view;
 
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
@@ -213,7 +214,7 @@ void main() {
 	vec3 index_offset = vec3(-255.5);
 
 	if (all(greaterThanEqual(bb_pe_max, bb_pe_min))) { // Make sure this tile isn't fully unlit, out of range or sky.
-		index_offset += ll.offset - cameraPositionFract - gbufferModelViewInverse[3].xyz;
+		index_offset += ll.offset - cameraPositionFract - mvInv3;
 
 		immut f16vec3 bb_view_min = f16vec3(sh_bb_view_min);
 		immut f16vec3 bb_view_max = f16vec3(sh_bb_view_max);
@@ -236,7 +237,7 @@ void main() {
 			immut float16_t light_mhtn_dist_from_bb = dot(abs(pe_light - clamp(pe_light, bb_pe_min, bb_pe_max)), f16vec3(1.0));
 			immut bool pe_visible = light_mhtn_dist_from_bb <= offset_intensity; // not sure why this +1 is needed here
 
-			immut f16vec3 v_light = f16vec3(pe_light * mat3(gbufferModelViewInverse));
+			immut f16vec3 v_light = f16vec3(pe_light * MV_INV);
 			immut bool view_visible = distance(v_light, clamp(v_light, bb_view_min, bb_view_max)) <= offset_intensity;
 
 			if (pe_visible && view_visible) {

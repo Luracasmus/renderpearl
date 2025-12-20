@@ -2,9 +2,10 @@
 
 out gl_PerVertex { vec4 gl_Position; };
 
+#include "/lib/mv_inv.glsl"
 uniform float farSquared;
 uniform vec3 shadowLightDirectionPlr;
-uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, shadowModelView, textureMatrix;
+uniform mat4 modelViewMatrix, projectionMatrix, shadowModelView, textureMatrix;
 
 #ifndef NO_NORMAL
 	uniform mat3 normalMatrix;
@@ -83,9 +84,9 @@ void main() {
 			init_tbn(f16vec3(v_normal), f16vec3(normalMatrix * normalize(at_tangent.xyz)));
 		#endif
 
-		immut f16vec3 w_normal = f16vec3(mat3(gbufferModelViewInverse) * v_normal);
+		immut f16vec3 w_normal = f16vec3(MV_INV * v_normal);
 		immut f16vec4 color = f16vec4(vaColor);
-		v.light = indexed_block_light(mat3(gbufferModelViewInverse) * view, w_normal, color.a);
+		v.light = indexed_block_light(MV_INV * view, w_normal, color.a);
 
 		#ifndef NETHER
 			immut float16_t n_dot_l = dot(w_normal, f16vec3(shadowLightDirectionPlr));
@@ -96,7 +97,7 @@ void main() {
 				if (mc_Entity.x == 0.0 && n_dot_l < float16_t(0.0)) bias *= -1.0;
 			#endif
 
-			vec3 s_ndc = shadow_proj_scale * (mat3(shadowModelView) * rot_trans_mmul(gbufferModelViewInverse, view));
+			vec3 s_ndc = shadow_proj_scale * (mat3(shadowModelView) * (MV_INV * view + mvInv3));
 			s_ndc.xy = distort(s_ndc.xy);
 
 			s_ndc = fma(mat3(shadowModelView) * vec3(bias.y * w_normal), shadow_proj_scale, s_ndc);

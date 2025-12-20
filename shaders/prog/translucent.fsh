@@ -11,7 +11,8 @@ layout(location = 0) out f16vec4 colortex1;
 	layout(depth_unchanged) out float gl_FragDepth;
 #endif
 
-uniform mat4 gbufferModelViewInverse, gbufferProjectionInverse;
+#include "/lib/mv_inv.glsl"
+uniform mat4 gbufferProjectionInverse;
 uniform sampler2D gtexture;
 
 #ifdef NO_NORMAL
@@ -176,7 +177,7 @@ void main() {
 		} // TODO: Self-colored fog should be based on the distance between the current surface and the solid one behind it, not the distance from the camera to the solid surface.
 	*/
 
-	color.a *= float16_t(1.0) - vanilla_fog(rot_trans_mmul(gbufferModelViewInverse, view));
+	color.a *= float16_t(1.0) - vanilla_fog(MV_INV * view + mvInv3);
 
 	colortex1 = color;
 }

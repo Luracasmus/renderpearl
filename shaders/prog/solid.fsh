@@ -20,8 +20,7 @@ layout(location = 0) out f16vec4 colortex1; // Does this work outside of NVIDIA 
 uniform sampler2D gtexture;
 
 #ifdef NO_NORMAL
-	uniform mat4 gbufferModelViewInverse;
-
+	#include "/lib/mv_inv.glsl"
 	#include "/lib/octa_normal.glsl"
 #else
 	#include "/lib/tbn/fsh.glsl"
@@ -77,8 +76,8 @@ void main() {
 	// #endif
 
 	#ifdef NO_NORMAL
-		immut vec3 w_face_normal = mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0);
-		immut f16vec2 octa_w_face_normal = octa_encode(f16vec3(mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0)));
+		immut vec3 w_face_normal = MV_INV * vec3(0.0, 0.0, 1.0);
+		immut f16vec2 octa_w_face_normal = octa_encode(f16vec3(MV_INV * vec3(0.0, 0.0, 1.0)));
 	#else
 		immut f16vec2 octa_w_face_normal = unpackFloat2x16(v_tbn.half2x16_octa_normal);
 	#endif
@@ -87,7 +86,7 @@ void main() {
 		immut f16vec2 octa_w_tex_normal = octa_w_face_normal;
 	#else
 		#ifdef NO_NORMAL
-			immut vec3 w_face_tangent = mat3(gbufferModelViewInverse) * vec3(0.0, 1.0, 0.0);
+			immut vec3 w_face_tangent = MV_INV * vec3(0.0, 1.0, 0.0);
 			immut mat3 w_tbn = mat3(w_face_tangent, cross(w_face_tangent, w_face_normal), w_face_normal);
 		#else
 			immut f16vec2 octa_w_face_tangent = unpackFloat2x16(v_tbn.half2x16_octa_tangent);

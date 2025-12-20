@@ -20,9 +20,10 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #include "/lib/tonemap.glsl"
 
 #if VL && !defined NETHER
+	#include "/lib/mv_inv.glsl"
 	uniform float pbrFogDensity;
 	uniform vec3 sunDirectionPlr;
-	uniform mat4 gbufferModelViewInverse, gbufferProjectionInverse, shadowModelView;
+	uniform mat4 gbufferProjectionInverse, shadowModelView;
 	uniform sampler2D depthtex0;
 
 	float16_t pbr_fog(float dist) {
@@ -58,12 +59,12 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 		if (geometry) {
 			immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
 			immut vec3 ndc = fma(vec3(coord, depth), vec3(2.0), vec3(-1.0));
-			pe = mat3(gbufferModelViewInverse) * proj_inv(gbufferProjectionInverse, ndc);
+			pe = MV_INV * proj_inv(gbufferProjectionInverse, ndc);
 			immut float pe_dist = length(pe);
 
 			immut vec4 view_undiv_zero = gbufferProjectionInverse * vec4(ndc.xy, 0.0, 1.0);
 			immut vec3 view_zero = view_undiv_zero.xyz / view_undiv_zero.w;
-			immut vec3 pe_zero = mat3(gbufferModelViewInverse) * view_zero;
+			immut vec3 pe_zero = MV_INV * view_zero;
 
 			// immut float16_t density = float16_t(-0.02) * float16_t(fogState.y);
 
@@ -71,7 +72,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 				immut float dist = ign(vec2(texel), float(frameCounter + i)); // pow(..., 1.5) ?
 				immut vec3 sample_pe = mix(pe_zero, pe, dist);
 
-				immut vec3 sample_s_ndc = shadow_proj_scale * (mat3(shadowModelView) * (sample_pe + gbufferModelViewInverse[3].xyz));
+				immut vec3 sample_s_ndc = shadow_proj_scale * (mat3(shadowModelView) * (sample_pe + mvInv3));
 				immut vec3 s_scrn = fma(vec3(distort(sample_s_ndc.xy), sample_s_ndc.z), vec3(0.5), vec3(0.5));
 
 				ray += sample_sm(float16_t(1.0) - float16_t(exp(-0.1 / pbrFogDensity * pe_dist * dist)), s_scrn);

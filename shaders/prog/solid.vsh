@@ -9,9 +9,10 @@
 
 out gl_PerVertex { vec4 gl_Position; };
 
+#include "/lib/mv_inv.glsl"
 uniform float farSquared;
 uniform vec3 cameraPositionFract;
-uniform mat4 gbufferModelViewInverse, modelViewMatrix, projectionMatrix, textureMatrix;
+uniform mat4 modelViewMatrix, projectionMatrix, textureMatrix;
 
 #ifndef NETHER
 	uniform vec3 shadowLightDirectionPlr;
@@ -122,12 +123,12 @@ void main() {
 		#endif
 		v.tint = vec3(color);
 
-		immut vec3 pe = mat3(gbufferModelViewInverse) * view;
+		immut vec3 pe = MV_INV * view;
 		immut f16vec3 abs_pe = abs(f16vec3(pe));
 		immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
 		#ifndef NO_NORMAL
-			immut mat3 normal_model_view_inverse = mat3(gbufferModelViewInverse) * normalMatrix;
+			immut mat3 normal_model_view_inverse = MV_INV * normalMatrix;
 			immut f16vec3 w_normal = f16vec3(normal_model_view_inverse * normalize(vaNormal));
 			immut f16vec3 w_tangent = f16vec3(normal_model_view_inverse * normalize(at_tangent.xyz));
 
@@ -245,13 +246,13 @@ void main() {
 		#ifndef NETHER
 			if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
 				#ifdef NO_NORMAL
-					immut f16vec3 w_normal = f16vec3(mat3(gbufferModelViewInverse) * vec3(0.0, 0.0, 1.0));
+					immut f16vec3 w_normal = f16vec3(MV_INV * vec3(0.0, 0.0, 1.0));
 				#endif
 
 				// TODO: This bias is better than before but it would probably be best to do it in shadow screen space and offset a scaled amount of texels.
 				immut f16vec2 bias = shadow_bias(dot(w_normal, f16vec3(shadowLightDirectionPlr)));
 
-				vec3 s_ndc = shadow_proj_scale * (mat3(shadowModelView) * rot_trans_mmul(gbufferModelViewInverse, view));
+				vec3 s_ndc = shadow_proj_scale * (mat3(shadowModelView) * rot_trans_mmul(mat4(mat4x3(mvInv0, mvInv1, mvInv2, mvInv3)), view));
 				s_ndc.xy = distort(s_ndc.xy);
 
 				s_ndc = fma(mat3(shadowModelView) * vec3(bias.y * w_normal), shadow_proj_scale, s_ndc);
