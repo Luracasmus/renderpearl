@@ -61,7 +61,7 @@ shared uint16_t[local_index_size] sh_index_color;
 	uniform mat4 gbufferProjection;
 	uniform sampler2D depthtex2;
 
-	f16vec3 get_hand_light(uint16_t light_level, uvec2 buf_data, vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, bool not_hand) {
+	f16vec3 get_hand_light(uint16_t light_level, uvec2 buf_data, vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, bool is_hand) {
 		immut f16vec3 pe_to_light = MV_INV * origin_view - pe;
 		immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
 		immut f16vec3 n_w_rel_light = pe_to_light * inversesqrt(sq_dist);
@@ -81,7 +81,7 @@ shared uint16_t[local_index_size] sh_index_color;
 			float16_t dir_bl;
 
 			const float trace_dist = float(MAX_HAND_LIGHT_TRACE_DIST);
-			if (sq_dist < trace_dist*trace_dist && not_hand) { // Ray trace if not hand and within tracing range.
+			if (sq_dist < trace_dist*trace_dist && !is_hand) { // Ray trace if not hand and within tracing range.
 				f16vec4 from = proj_mmul(gbufferProjection, origin_view);
 				f16vec4 to = proj_mmul(gbufferProjection, view);
 
@@ -153,7 +153,8 @@ void main() {
 	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
 	vec3 ndc = fma(vec3(coord, depth), vec3(2.0), vec3(-1.0));
 
-	if (gbuf.y >= 0x80000000u) { ndc.z /= MC_HAND_DEPTH; } // The most significant bit being 1 indicates hand.
+	immut bool is_hand = gbuf.y >= 0x80000000u; // The most significant bit being 1 indicates hand.
+	if (is_hand) { ndc.z /= MC_HAND_DEPTH; }
 
 	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
 	immut vec3 pe = MV_INV * view;
@@ -261,24 +262,20 @@ void main() {
 		#else
 			immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
 			immut f16vec3 fog_col = sky(sky_fog_val, n_pe, sunDirectionPlr);
+
+			immut f16vec3 skylight_color = skylight();
 		#endif
 
 		f16vec3 color;
 
 		if (is_geo) {
 			immut f16vec4 color_ao = f16vec4(imageLoad(colorimg1, texel));
-			immut f16vec3 skylight_color = skylight();
 
 			immut f16vec2 roughness_sss = f16vec2(unpackUnorm4x8(gbuf.z).xy);
 
 			immut f16vec4 octa_normal = f16vec4(unpackSnorm4x8(gbuf.x));
 			immut f16vec3 w_tex_normal = normalize(octa_decode(octa_normal.xy));
 			immut f16vec3 w_face_normal = normalize(octa_decode(octa_normal.zw));
-
-			immut f16vec3 rcp_color = float16_t(1.0) / max(color_ao.rgb, float16_t(1.0e-4));
-			#if HAND_LIGHT != 0
-				immut float16_t ind_bl = float16_t(IND_BL) * color_ao.a;
-			#endif
 
 			immut f16vec2 light = f16vec2(vec2(
 				gbuf.y & 32767u,
@@ -289,6 +286,12 @@ void main() {
 				f16vec3 block_light = f16vec3(visualize_ll(light.x));
 			#else
 				f16vec3 block_light = light.x * f16vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B);
+			#endif
+
+			immut f16vec3 rcp_color = float16_t(1.0) / max(color_ao.rgb, float16_t(1.0e-4));
+
+			#if HAND_LIGHT != 0
+				immut float16_t ind_bl = float16_t(IND_BL) * color_ao.a;
 			#endif
 
 			if (is_lit) {
@@ -387,16 +390,14 @@ void main() {
 				#define MAX_HAND_LIGHT_DIST 64 // temp/todo
 				if (handLightPackedLR != 0) {
 					if (dot(pe, pe) < MAX_HAND_LIGHT_DIST*MAX_HAND_LIGHT_DIST) {
-						immut bool not_hand = gbuf.y < 0x80000000u;
-
 						immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
 
 						if (hand_light_lr.x != 0) {
-							block_light += get_hand_light(hand_light_lr.x, hand_light.left, f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, not_hand);
+							block_light += get_hand_light(hand_light_lr.x, hand_light.left, f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
 						}
 
 						if (hand_light_lr.y != 0) {
-							block_light += get_hand_light(hand_light_lr.y, hand_light.right, f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, not_hand);
+							block_light += get_hand_light(hand_light_lr.y, hand_light.right, f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
 						}
 					}
 				}
@@ -438,7 +439,6 @@ void main() {
 				}
 			#endif
 
-			// Could this sRGB<->Linear stuff be done faster?
 			color = linear(mix(srgb(color_ao.rgb * final_light), srgb(fog_col), vanilla_fog(pe)));
 		} else { // Render sky.
 			#if defined NETHER || defined END
@@ -457,11 +457,15 @@ void main() {
 					)
 				);
 
+				color = stars + fog_col;
+
 				immut vec3 sun_abs_dist = abs(n_pe - sunDirectionPlr);
 				immut bool sun = max3(sun_abs_dist.x, sun_abs_dist.y, sun_abs_dist.z) < 0.04;
 				immut bool moon = all(lessThan(abs(n_pe + sunDirectionPlr), fma(skyState.z, 0.0025, 0.02).xxx));
 
-				color = fma(skylight(), f16vec3(moon || sun), fog_col + stars);
+				if (sun || moon) {
+					color += skylight_color;
+				}
 			#endif
 		}
 

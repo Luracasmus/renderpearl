@@ -221,17 +221,13 @@ void main() {
 
 							uint light_data = bitfieldInsert(
 								bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9), // Position.
-								emission, 27, 4 // intensity
+								emission, 27, 4 // Intensity.
 							);
 							if (fluid) light_data |= 0x80000000u; // Set "wide" flag for lava.
 
 							ll.data[i] = light_data;
 
-							immut f16vec3 scaled_color = fma(
-								linear(color * avg_col),
-								f16vec3(31.0, 63.0, 31.0),
-								f16vec3(0.5)
-							);
+							immut f16vec3 scaled_color = fma(linear(color * avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5));
 
 							#ifdef INT16
 								ll.color[i] = uint16_t(scaled_color.g) | (uint16_t(scaled_color.r) << uint16_t(6u)) | (uint16_t(scaled_color.b) << uint16_t(11u));
@@ -239,9 +235,6 @@ void main() {
 								immut uvec3 uint_color = uvec3(scaled_color);
 								ll.color[i] = bitfieldInsert(bitfieldInsert(uint_color.g, uint_color.r, 6, 5), uint_color.b, 11, 5);
 							#endif
-
-							// immut uvec3 col = uvec3(fma(linear(color * avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5)));
-							// ll.color[i] = uint16_t(bitfieldInsert(bitfieldInsert(col.g, col.r, 6, 5), col.b, 11, 5));
 						}
 					}
 				}

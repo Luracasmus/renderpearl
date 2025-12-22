@@ -9,13 +9,15 @@
 
 	#define SAMPLE_SM(X, Y) \
 		const ivec2 offset = ivec2(X, Y); \
-		immut float16_t solid_vis = float16_t(textureLodOffset(shadowtex1HW, s_scrn, 0.0, offset)); \
-		if (solid_vis > float16_t(0.0)) { \
-			immut float16_t trans_vis = float16_t(textureLodOffset(shadowtex0HW, s_scrn, 0.0, offset)); \
+		immut float16_t solid_vis = float16_t(textureLodOffset(shadowtex1HW, s_scrn, 0.0, offset).r); \
+		if (solid_vis == float16_t(0.0)) { \
+			return f16vec3(0.0); \
+		} else { \
+			immut float16_t trans_vis = float16_t(textureLodOffset(shadowtex0HW, s_scrn, 0.0, offset).r); \
 			f16vec3 color = (mul * solid_vis).xxx; \
-			if (trans_vis < solid_vis) color = mix(color * f16vec3(textureLodOffset(shadowcolor0, s_scrn.xy, 0.0, offset).rgb), color, trans_vis); \
+			if (trans_vis < solid_vis) { color = mix(color * f16vec3(textureLodOffset(shadowcolor0, s_scrn.xy, 0.0, offset).rgb), color, trans_vis); } \
 			return color; \
-		} else return f16vec3(0.0);
+		} \
 
 	#define SAMPLE_SM_ARGS float16_t mul, vec3 s_scrn
 
@@ -52,7 +54,7 @@ f16vec3 sample_shadow(vec3 s_scrn) {
 		base_uv = fma(base_uv, vec2(1.0 / sm_res), vec2(-0.5 / sm_res));
 
 		immut f16vec2 uvw0 = fma(st, f16vec2(-3.0), f16vec2(4.0));
-		const vec2 uvw1_f32 = vec2(7.0); // might as well do const 32-bit if we can
+		const vec2 uvw1_f32 = vec2(7.0); // Might as well do const 32-bit if we can.
 		const f16vec2 uvw1 = f16vec2(uvw1_f32);
 		immut f16vec2 uvw2 = fma(st, f16vec2(3.0), f16vec2(1.0));
 
