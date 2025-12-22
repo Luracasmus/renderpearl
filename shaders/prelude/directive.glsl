@@ -13,7 +13,7 @@
 	// const bool shadowtex1Mipmap = true;
 	// const bool shadowcolor0Mipmap = true;
 
-	const bool shadowcolor0Clear = false;
+	const bool shadowcolor0Clear = true;
 	const vec4 shadowcolor0ClearColor = vec4(0.0, 0.0, 0.0, 0.0);
 	const int shadowcolor0Format = RGB565;
 
