@@ -44,7 +44,9 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	#include "/lib/sm/distort.glsl"
 	#include "/lib/prng/ign.glsl"
 
-	shared uint16_t[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] sh_nbh;
+	struct Shared {
+		uint16_t[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] nbh;
+	}; shared Shared sh;
 
 	// Compute and return volumetric light value and add it to the shared neighborhood.
 	f16vec3 volumetric_light(bool is_geo, float depth, i16vec2 texel, vec2 texel_size, uvec2 nbh_pos, out vec3 pe) {
@@ -73,9 +75,9 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 			}
 
 			immut uvec3 scaled_ray = uvec3(fma(ray, f16vec3(31.0, 63.0, 31.0), f16vec3(0.5)));
-			sh_nbh[nbh_pos.x][nbh_pos.y] = uint16_t(bitfieldInsert(bitfieldInsert(scaled_ray.r, scaled_ray.g, 5, 6), scaled_ray.b, 11, 5));
+			sh.nbh[nbh_pos.x][nbh_pos.y] = uint16_t(bitfieldInsert(bitfieldInsert(scaled_ray.r, scaled_ray.g, 5, 6), scaled_ray.b, 11, 5));
 		} else {
-			sh_nbh[nbh_pos.x][nbh_pos.y] = uint16_t(0u);
+			sh.nbh[nbh_pos.x][nbh_pos.y] = uint16_t(0u);
 		}
 
 		return ray;
@@ -130,7 +132,7 @@ void main() {
 
 			for (uint i = 0u; i < offsets.length(); ++i) {
 				immut uvec2 nbh_pos = gl_LocalInvocationID.xy + offsets[i];
-				immut uint16_t packed_ray = sh_nbh[nbh_pos.x][nbh_pos.y];
+				immut uint16_t packed_ray = sh.nbh[nbh_pos.x][nbh_pos.y];
 
 				ray = fma(f16vec3(
 					packed_ray & uint16_t(31u),

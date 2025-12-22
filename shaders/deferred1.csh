@@ -45,13 +45,15 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 
 const uint local_index_size = uint(float(LL_CAPACITY) * LDS_RATIO);
 
-shared ivec3 sh_bb_pe_min;
-shared ivec3 sh_bb_pe_max;
-shared ivec3 sh_bb_view_min;
-shared uint sh_index_len;
-shared ivec3 sh_bb_view_max;
-shared uint[local_index_size] sh_index_data;
-shared uint16_t[local_index_size] sh_index_color;
+struct Shared {
+	ivec3 bb_pe_min;
+	ivec3 bb_pe_max;
+	ivec3 bb_view_min;
+	uint index_len;
+	ivec3 bb_view_max;
+	uint[local_index_size] index_data;
+	uint16_t[local_index_size] index_color;
+}; shared Shared sh;
 
 #if HAND_LIGHT != 0
 	readonly
@@ -133,15 +135,15 @@ void main() {
 	// TODO: Look into skipping light list stuff if the entire work group is unlit.
 
 	if (gl_LocalInvocationIndex == 0u) {
-		sh_index_len = 0u;
+		sh.index_len = 0u;
 
 		const ivec3 i32_max = ivec3(0x7fffffff);
 		const ivec3 i32_min = ivec3(0x80000000);
 
-		sh_bb_pe_min = i32_max;
-		sh_bb_pe_max = i32_min;
-		sh_bb_view_min = i32_max;
-		sh_bb_view_max = i32_min;
+		sh.bb_pe_min = i32_max;
+		sh.bb_pe_max = i32_min;
+		sh.bb_view_min = i32_max;
+		sh.bb_view_max = i32_min;
 	}
 
 	immut i16vec2 texel = i16vec2(gl_GlobalInvocationID.xy);
@@ -179,46 +181,46 @@ void main() {
 				immut ivec3 floor_sg_pe_min = ivec3(sg_pe_min - 0.5);
 				immut ivec3 ceil_sg_pe_max = ivec3(sg_pe_max + 0.5);
 
-				atomicMin(sh_bb_pe_min.x, floor_sg_pe_min.x); atomicMax(sh_bb_pe_max.x, ceil_sg_pe_max.x);
-				atomicMin(sh_bb_pe_min.y, floor_sg_pe_min.y); atomicMax(sh_bb_pe_max.y, ceil_sg_pe_max.y);
-				atomicMin(sh_bb_pe_min.z, floor_sg_pe_min.z); atomicMax(sh_bb_pe_max.z, ceil_sg_pe_max.z);
+				atomicMin(sh.bb_pe_min.x, floor_sg_pe_min.x); atomicMax(sh.bb_pe_max.x, ceil_sg_pe_max.x);
+				atomicMin(sh.bb_pe_min.y, floor_sg_pe_min.y); atomicMax(sh.bb_pe_max.y, ceil_sg_pe_max.y);
+				atomicMin(sh.bb_pe_min.z, floor_sg_pe_min.z); atomicMax(sh.bb_pe_max.z, ceil_sg_pe_max.z);
 
 				immut ivec3 floor_sg_view_min = ivec3(sg_view_min - 0.5);
 				immut ivec3 ceil_sg_view_max = ivec3(sg_view_max + 0.5);
 
-				atomicMin(sh_bb_view_min.x, floor_sg_view_min.x); atomicMax(sh_bb_view_max.x, ceil_sg_view_max.x);
-				atomicMin(sh_bb_view_min.y, floor_sg_view_min.y); atomicMax(sh_bb_view_max.y, ceil_sg_view_max.y);
-				atomicMin(sh_bb_view_min.z, floor_sg_view_min.z); atomicMax(sh_bb_view_max.z, ceil_sg_view_max.z);
+				atomicMin(sh.bb_view_min.x, floor_sg_view_min.x); atomicMax(sh.bb_view_max.x, ceil_sg_view_max.x);
+				atomicMin(sh.bb_view_min.y, floor_sg_view_min.y); atomicMax(sh.bb_view_max.y, ceil_sg_view_max.y);
+				atomicMin(sh.bb_view_min.z, floor_sg_view_min.z); atomicMax(sh.bb_view_max.z, ceil_sg_view_max.z);
 			}
 		#else
 			immut ivec3 ceil_pe = ivec3(pe + 0.5);
 			immut ivec3 floor_pe = ivec3(pe - 0.5);
 
-			atomicMin(sh_bb_pe_min.x, floor_pe.x); atomicMax(sh_bb_pe_max.x, ceil_pe.x);
-			atomicMin(sh_bb_pe_min.y, floor_pe.y); atomicMax(sh_bb_pe_max.y, ceil_pe.y);
-			atomicMin(sh_bb_pe_min.z, floor_pe.z); atomicMax(sh_bb_pe_max.z, ceil_pe.z);
+			atomicMin(sh.bb_pe_min.x, floor_pe.x); atomicMax(sh.bb_pe_max.x, ceil_pe.x);
+			atomicMin(sh.bb_pe_min.y, floor_pe.y); atomicMax(sh.bb_pe_max.y, ceil_pe.y);
+			atomicMin(sh.bb_pe_min.z, floor_pe.z); atomicMax(sh.bb_pe_max.z, ceil_pe.z);
 
 			immut ivec3 ceil_view = ivec3(view + 0.5);
 			immut ivec3 floor_view = ivec3(view - 0.5);
 
-			atomicMin(sh_bb_view_min.x, floor_view.x); atomicMax(sh_bb_view_max.x, ceil_view.x);
-			atomicMin(sh_bb_view_min.y, floor_view.y); atomicMax(sh_bb_view_max.y, ceil_view.y);
-			atomicMin(sh_bb_view_min.z, floor_view.z); atomicMax(sh_bb_view_max.z, ceil_view.z);
+			atomicMin(sh.bb_view_min.x, floor_view.x); atomicMax(sh.bb_view_max.x, ceil_view.x);
+			atomicMin(sh.bb_view_min.y, floor_view.y); atomicMax(sh.bb_view_max.y, ceil_view.y);
+			atomicMin(sh.bb_view_min.z, floor_view.z); atomicMax(sh.bb_view_max.z, ceil_view.z);
 		#endif
 	}
 
 	barrier();
 
-	immut f16vec3 bb_pe_min = f16vec3(sh_bb_pe_min);
-	immut f16vec3 bb_pe_max = f16vec3(sh_bb_pe_max);
+	immut f16vec3 bb_pe_min = f16vec3(sh.bb_pe_min);
+	immut f16vec3 bb_pe_max = f16vec3(sh.bb_pe_max);
 
 	vec3 index_offset = vec3(-255.5);
 
 	if (all(greaterThanEqual(bb_pe_max, bb_pe_min))) { // Make sure this tile isn't fully unlit, out of range or sky.
 		index_offset += ll.offset - cameraPositionFract - mvInv3;
 
-		immut f16vec3 bb_view_min = f16vec3(sh_bb_view_min);
-		immut f16vec3 bb_view_max = f16vec3(sh_bb_view_max);
+		immut f16vec3 bb_view_min = f16vec3(sh.bb_view_min);
+		immut f16vec3 bb_view_max = f16vec3(sh.bb_view_max);
 
 		immut uint16_t global_len = uint16_t(ll.len);
 		for (uint16_t i = uint16_t(gl_LocalInvocationIndex); i < global_len; i += uint16_t(gl_WorkGroupSize.x * gl_WorkGroupSize.y)) {
@@ -242,10 +244,10 @@ void main() {
 			immut bool view_visible = distance(v_light, clamp(v_light, bb_view_min, bb_view_max)) <= offset_intensity;
 
 			if (pe_visible && view_visible) {
-				immut uint j = atomicAdd(sh_index_len, 1u);
+				immut uint j = atomicAdd(sh.index_len, 1u);
 
-				sh_index_data[j] = light_data;
-				sh_index_color[j] = ll.color[i];
+				sh.index_data[j] = light_data;
+				sh.index_color[j] = ll.color[i];
 			}
 		}
 	}
@@ -304,9 +306,9 @@ void main() {
 				f16vec3 diffuse = f16vec3(0.0);
 				f16vec3 specular = f16vec3(0.0);
 
-				immut uint16_t index_len = uint16_t(sh_index_len);
+				immut uint16_t index_len = uint16_t(sh.index_len);
 				for (uint16_t i = uint16_t(0u); i < index_len; ++i) {
-					immut uint light_data = sh_index_data[i];
+					immut uint light_data = sh.index_data[i];
 
 					immut f16vec3 w_rel_light = f16vec3(vec3(
 						light_data & 511u,
@@ -318,7 +320,7 @@ void main() {
 					immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
 
 					if (mhtn_dist < intensity + float16_t(0.5)) {
-						immut uint16_t light_color = sh_index_color[i];
+						immut uint16_t light_color = sh.index_color[i];
 
 						immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
 						immut f16vec3 n_w_rel_light = w_rel_light * inversesqrt(sq_dist_light);
@@ -370,9 +372,9 @@ void main() {
 			} // else block_light = f16vec3(1.0); // DEBUG: `is_lit`
 
 			// DEBUG: Culling & LDS overflow.
-			// block_light.gb += f16vec2(sh_index_len < ll.len, sh_index_len == 0);
-			// block_light.rgb += distance(max(float16_t(sh_bb_view_min), float16_t(0.0)), max(float16_t(sh_bb_view_max), float16_t(0.0))) * float16_t(0.01);
-			// if (sh_index_len > local_index_size) block_light *= 10;
+			// block_light.gb += f16vec2(sh.index_len < ll.len, sh.index_len == 0);
+			// block_light.rgb += distance(max(float16_t(sh.bb_view_min), float16_t(0.0)), max(float16_t(sh.bb_view_max), float16_t(0.0))) * float16_t(0.01);
+			// if (sh.index_len > local_index_size) block_light *= 10;
 
 			#ifdef LIGHT_LEVELS
 				const float16_t ind_sky = float16_t(0.0);

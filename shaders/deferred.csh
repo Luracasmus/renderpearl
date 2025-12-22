@@ -20,9 +20,11 @@ uniform vec3 cameraPositionFract, invCameraPositionDeltaInt, mvInv3;
 coherent
 #include "/buf/ll.glsl"
 
-shared uint sh_culled_len;
-shared uint[ll.data.length()] sh_index_data;
-shared uint16_t[ll.data.length()] sh_index_color;
+struct Shared {
+	uint culled_len;
+	uint[ll.data.length()] index_data;
+	uint16_t[ll.data.length()] index_color;
+}; shared Shared sh;
 
 void main() {
 	// Maybe we could average all the light colors here for ambient light color.
@@ -32,37 +34,37 @@ void main() {
 	const uint16_t wg_size = uint16_t(gl_WorkGroupSize.x);
 
 	if (rebuildLL) {
-		if (is_first_invoc) { sh_culled_len = 0u; }
+		if (is_first_invoc) { sh.culled_len = 0u; }
 
 		// if (ll.queue > ll.data.length()) { ll.len = uint16_t(0u); return; }
 
 		immut uint16_t len = min(uint16_t(ll.queue), uint16_t(ll.data.length()));
 		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
-			sh_index_data[i] = ll.data[i];
-			sh_index_color[i] = ll.color[i];
+			sh.index_data[i] = ll.data[i];
+			sh.index_color[i] = ll.color[i];
 		}
 
 		barrier();
 
 		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
-			immut uint data = sh_index_data[i];
-			immut uint16_t color = sh_index_color[i];
+			immut uint data = sh.index_data[i];
+			immut uint16_t color = sh.index_color[i];
 
 			bool unique = true;
 
 			// Cull identical lights.
 			for (uint16_t j = uint16_t(0u); unique && j < i; ++j) {
-				if (sh_index_data[j] == data && sh_index_color[j] == color) { unique = false; }
+				if (sh.index_data[j] == data && sh.index_color[j] == color) { unique = false; }
 			}
 
 			// Cull different colored lights at the same pos, comparing the color bits to make it deterministic.
 			for (uint16_t j = uint16_t(0u); unique && j < len; ++j) {
-				if (sh_index_data[j] == data && sh_index_color[j] < color) { unique = false; }
+				if (sh.index_data[j] == data && sh.index_color[j] < color) { unique = false; }
 			}
 
 			// Copy shared list to global.
 			if (unique) {
-				immut uint i = atomicAdd(sh_culled_len, 1u);
+				immut uint i = atomicAdd(sh.culled_len, 1u);
 				ll.data[i] = data;
 				ll.color[i] = color;
 			}
@@ -72,10 +74,10 @@ void main() {
 		groupMemoryBarrier(); // Requires 'coherent' SSBO.
 
 		// Copy back global list to shared.
-		immut uint16_t culled_len = uint16_t(sh_culled_len);
+		immut uint16_t culled_len = uint16_t(sh.culled_len);
 		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {
-			sh_index_data[i] = ll.data[i];
-			sh_index_color[i] = ll.color[i];
+			sh.index_data[i] = ll.data[i];
+			sh.index_color[i] = ll.color[i];
 		}
 
 		barrier();
@@ -86,7 +88,7 @@ void main() {
 		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {
 			uint16_t k = uint16_t(0u);
 
-			immut uint data = sh_index_data[i];
+			immut uint data = sh.index_data[i];
 			immut vec3 pe = vec3(
 				data & 511u,
 				bitfieldExtract(data, 9, 9),
@@ -95,7 +97,7 @@ void main() {
 			immut float sq_dist = dot(pe, pe);
 
 			for (uint16_t j = uint16_t(0u); j < culled_len; ++j) if (j != i) {
-				immut uint other_data = sh_index_data[j];
+				immut uint other_data = sh.index_data[j];
 				immut vec3 other_pe = vec3(
 					other_data & 511u,
 					bitfieldExtract(other_data, 9, 9),
@@ -107,7 +109,7 @@ void main() {
 			}
 
 			ll.data[k] = data;
-			ll.color[k] = sh_index_color[i];
+			ll.color[k] = sh.index_color[i];
 		}
 
 		if (is_first_invoc) {

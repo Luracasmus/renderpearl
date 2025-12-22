@@ -12,7 +12,9 @@ uniform sampler2D blendWeightS, colortex1;
 #include "/lib/srgb.glsl"
 #include "/lib/luminance.glsl"
 
-shared f16vec3[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] nbh;
+struct Shared {
+	f16vec3[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] nbh;
+}; shared Shared sh;
 
 /*
 	SMAA Neighborhood Blending
@@ -77,7 +79,7 @@ void main() {
 	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
 
 	f16vec3 color = smaa_nbh_blend(texel, texel_size, coord);
-	nbh[nbh_pos.x][nbh_pos.y] = color;
+	sh.nbh[nbh_pos.x][nbh_pos.y] = color;
 
 	i8vec2 border_offset;
 	bool is_border;
@@ -92,7 +94,7 @@ void main() {
 		immut f16vec3 border_color = smaa_nbh_blend(border_texel, texel_size, border_coord);
 
 		immut u8vec2 border_pos = u8vec2(i8vec2(nbh_pos) + i8vec2(border_offset));
-		nbh[border_pos.x][border_pos.y] = border_color;
+		sh.nbh[border_pos.x][border_pos.y] = border_color;
 	}
 
 	barrier();
@@ -125,17 +127,17 @@ void main() {
 		// d e f
 		// g h i
 		immut f16vec3[3][3] cas_nbh = f16vec3[3][3](f16vec3[3](
-			nbh[nbh_pos.x - uint8_t(1u)][nbh_pos.y - uint8_t(1u)],
-			nbh[nbh_pos.x - uint8_t(1u)][nbh_pos.y],
-			nbh[nbh_pos.x - uint8_t(1u)][nbh_pos.y + uint8_t(1u)]
+			sh.nbh[nbh_pos.x - uint8_t(1u)][nbh_pos.y - uint8_t(1u)],
+			sh.nbh[nbh_pos.x - uint8_t(1u)][nbh_pos.y],
+			sh.nbh[nbh_pos.x - uint8_t(1u)][nbh_pos.y + uint8_t(1u)]
 		), f16vec3[3](
-			nbh[nbh_pos.x][nbh_pos.y - uint8_t(1u)],
+			sh.nbh[nbh_pos.x][nbh_pos.y - uint8_t(1u)],
 			color,
-			nbh[nbh_pos.x][nbh_pos.y + uint8_t(1u)]
+			sh.nbh[nbh_pos.x][nbh_pos.y + uint8_t(1u)]
 		), f16vec3[3](
-			nbh[nbh_pos.x + uint8_t(1u)][nbh_pos.y - uint8_t(1u)],
-			nbh[nbh_pos.x + uint8_t(1u)][nbh_pos.y],
-			nbh[nbh_pos.x + uint8_t(1u)][nbh_pos.y + uint8_t(1u)]
+			sh.nbh[nbh_pos.x + uint8_t(1u)][nbh_pos.y - uint8_t(1u)],
+			sh.nbh[nbh_pos.x + uint8_t(1u)][nbh_pos.y],
+			sh.nbh[nbh_pos.x + uint8_t(1u)][nbh_pos.y + uint8_t(1u)]
 		));
 
 		// Soft min. and max.
