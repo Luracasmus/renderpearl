@@ -20,11 +20,11 @@ uniform vec3 cameraPositionFract, invCameraPositionDeltaInt, mvInv3;
 coherent
 #include "/buf/ll.glsl"
 
-struct Shared {
+shared struct {
 	uint culled_len;
 	uint[ll.data.length()] index_data;
 	uint16_t[ll.data.length()] index_color;
-}; shared Shared sh;
+} sh;
 
 void main() {
 	// Maybe we could average all the light colors here for ambient light color.

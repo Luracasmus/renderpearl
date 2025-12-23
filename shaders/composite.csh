@@ -44,9 +44,9 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	#include "/lib/sm/distort.glsl"
 	#include "/lib/prng/ign.glsl"
 
-	struct Shared {
+	shared struct {
 		uint16_t[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] nbh;
-	}; shared Shared sh;
+	} sh;
 
 	// Compute and return volumetric light value and add it to the shared neighborhood.
 	f16vec3 volumetric_light(bool is_geo, float depth, i16vec2 texel, vec2 texel_size, uvec2 nbh_pos, out vec3 pe) {

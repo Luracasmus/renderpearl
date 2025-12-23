@@ -45,7 +45,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 
 const uint local_index_size = uint(float(LL_CAPACITY) * LDS_RATIO);
 
-struct Shared {
+shared struct {
 	ivec3 bb_pe_min;
 	ivec3 bb_pe_max;
 	ivec3 bb_view_min;
@@ -53,7 +53,7 @@ struct Shared {
 	ivec3 bb_view_max;
 	uint[local_index_size] index_data;
 	uint16_t[local_index_size] index_color;
-}; shared Shared sh;
+} sh;
 
 #if HAND_LIGHT != 0
 	readonly

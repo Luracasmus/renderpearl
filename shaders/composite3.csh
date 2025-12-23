@@ -12,9 +12,9 @@ uniform sampler2D blendWeightS, colortex1;
 #include "/lib/srgb.glsl"
 #include "/lib/luminance.glsl"
 
-struct Shared {
+shared struct {
 	f16vec3[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] nbh;
-}; shared Shared sh;
+} sh;
 
 /*
 	SMAA Neighborhood Blending
