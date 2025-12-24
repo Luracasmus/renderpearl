@@ -147,7 +147,7 @@ void main() {
 				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, this_hand_light, 1, 4);
 
 				#if HAND_LIGHT
-					if (this_hand_light != uint16_t(0u)) {
+					if (this_hand_light != uint16_t(0u) && abs(view.x) > 0.3) { // Use a margin around the center to not register e.g. a swinging sword as being on the opposite side.
 						// Scale and round to fit packing.
 						immut u16vec3 scaled_color = u16vec3(fma(
 							linear(vaColor.rgb * textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb),
