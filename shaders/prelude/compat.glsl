@@ -38,10 +38,13 @@
 	#extension GL_KHR_shader_subgroup_basic : require
 	#extension GL_KHR_shader_subgroup_vote : require
 	#extension GL_KHR_shader_subgroup_arithmetic : require
+	#extension GL_KHR_shader_subgroup_ballot : require
 	#define SUBGROUP_ENABLED
 #else
 	#define subgroupAny(v) (v)
 	#define subgroupElect() true
+	#define subgroupBroadcastFirst(v) (v)
+	// These essentially emulate a subgroup size of 1.
 #endif
 
 #ifdef SIZED_16_8

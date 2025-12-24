@@ -74,7 +74,7 @@ void main() {
 		groupMemoryBarrier(); // Requires 'coherent' SSBO.
 
 		// Copy back global list to shared.
-		immut uint16_t culled_len = uint16_t(sh.culled_len);
+		immut uint16_t culled_len = uint16_t(subgroupBroadcastFirst(sh.culled_len));
 		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {
 			sh.index_data[i] = ll.data[i];
 			sh.index_color[i] = ll.color[i];

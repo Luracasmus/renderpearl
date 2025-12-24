@@ -211,8 +211,8 @@ void main() {
 
 	barrier();
 
-	immut f16vec3 bb_pe_min = f16vec3(sh.bb_pe_min);
-	immut f16vec3 bb_pe_max = f16vec3(sh.bb_pe_max);
+	immut f16vec3 bb_pe_min = f16vec3(subgroupBroadcastFirst(sh.bb_pe_min));
+	immut f16vec3 bb_pe_max = f16vec3(subgroupBroadcastFirst(sh.bb_pe_max));
 
 	vec3 index_offset = vec3(-255.5);
 
@@ -221,8 +221,8 @@ void main() {
 	if (all(greaterThanEqual(bb_pe_max, bb_pe_min))) {
 		index_offset += ll.offset - cameraPositionFract - mvInv3;
 
-		immut f16vec3 bb_view_min = f16vec3(sh.bb_view_min);
-		immut f16vec3 bb_view_max = f16vec3(sh.bb_view_max);
+		immut f16vec3 bb_view_min = f16vec3(subgroupBroadcastFirst(sh.bb_view_min));
+		immut f16vec3 bb_view_max = f16vec3(subgroupBroadcastFirst(sh.bb_view_max));
 
 		immut uint16_t global_len = uint16_t(ll.len);
 		for (uint16_t i = uint16_t(gl_LocalInvocationIndex); i < global_len; i += uint16_t(gl_WorkGroupSize.x * gl_WorkGroupSize.y)) {
@@ -308,7 +308,7 @@ void main() {
 				f16vec3 diffuse = f16vec3(0.0);
 				f16vec3 specular = f16vec3(0.0);
 
-				immut uint16_t index_len = uint16_t(sh.index_len);
+				immut uint16_t index_len = uint16_t(subgroupBroadcastFirst(sh.index_len));
 				for (uint16_t i = uint16_t(0u); i < index_len; ++i) {
 					immut uint light_data = sh.index_data[i];
 
