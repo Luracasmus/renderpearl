@@ -60,11 +60,14 @@ shared struct {
 	#include "/buf/hand_light.glsl"
 
 	uniform int handLightPackedLR;
-	uniform mat4 gbufferProjection;
-	uniform sampler2D depthtex2;
+
+	#if HAND_LIGHT_TRACE_STEPS != 0
+		uniform mat4 gbufferProjection;
+		uniform sampler2D depthtex2;
+	#endif
 
 	f16vec3 get_hand_light(uint16_t light_level, uvec2 buf_data, vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, bool is_hand) {
-		immut f16vec3 pe_to_light = MV_INV * origin_view - pe;
+		immut f16vec3 pe_to_light = f16vec3(MV_INV * origin_view - pe);
 		immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
 		immut f16vec3 n_w_rel_light = pe_to_light * inversesqrt(sq_dist);
 
@@ -77,50 +80,69 @@ shared struct {
 		f16vec3 light;
 
 		if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > float16_t(0.0)) {
-			#define MAX_HAND_LIGHT_TRACE_DIST 64 // temp/todo
-			#define HAND_LIGHT_TRACE_STEPS 32
+			f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness);
 
-			float16_t dir_bl;
+			#if HAND_LIGHT_TRACE_STEPS != 0
+				const float trace_dist = float(MAX_HAND_LIGHT_TRACE_DIST);
+				if (sq_dist < float16_t(trace_dist*trace_dist) && !is_hand) { // Ray trace if not hand and within tracing range.
+					immut vec3 abs_pe = abs(pe);
+					// immut uint steps = clamp(uint(log2(max3(abs_pe.x, abs_pe.y, abs_pe.z)) * HAND_LIGHT_TRACE_STEPS), 8u, HAND_LIGHT_TRACE_STEPS * 4);
+					const uint steps = uint(HAND_LIGHT_TRACE_STEPS);
 
-			const float trace_dist = float(MAX_HAND_LIGHT_TRACE_DIST);
-			if (sq_dist < trace_dist*trace_dist && !is_hand) { // Ray trace if not hand and within tracing range.
-				f16vec4 from = proj_mmul(gbufferProjection, origin_view);
-				f16vec4 to = proj_mmul(gbufferProjection, view);
+					f16vec4 from = f16vec4(proj_mmul(gbufferProjection, origin_view));
+					f16vec4 to = f16vec4(proj_mmul(gbufferProjection, view));
 
-				// Do multiplication part of ndc -> screen out here.
-				from.xyz *= float16_t(0.5);
-				to.xyz *= float16_t(0.5);
+					// Do multiplication part of ndc -> screen out here.
+					from.xyz *= float16_t(0.5);
+					to.xyz *= float16_t(0.5);
 
-				immut f16vec4 step = (to - from) / float(HAND_LIGHT_TRACE_STEPS + 1);
-				f16vec4 ray_halfclip = from;
+					immut f16vec4 step = (to - from) / float(steps + 1);
+					f16vec4 ray_halfclip = from;
 
-				float16_t visibility = float16_t(HAND_LIGHT_TRACE_STEPS);
+					#if HAND_LIGHT_TRACE_HARDNESS != 0
+						float16_t visibility = float16_t(steps);
+					#else
+						bool occluded = false;
+					#endif
 
-				for (uint i = 0u; i < uint(HAND_LIGHT_TRACE_STEPS); ++i) {
-					ray_halfclip += step;
+					for (uint i = 0u; i < steps; ++i) {
+						ray_halfclip += step;
 
-					immut f16vec2 ray_screen_undiv_xy = fma(ray_halfclip.ww, f16vec2(0.5), ray_halfclip.xy);
-					// immut ivec2 texel = ivec2(ray_screen.xy * view_size());
+						immut f16vec2 ray_screen_undiv_xy = fma(ray_halfclip.ww, f16vec2(0.5), ray_halfclip.xy);
+						// immut ivec2 texel = ivec2(ray_screen.xy * view_size());
 
-					// immut vec4 depth_samples = textureGather(depthtex2, trace_screen.xy, 0);
-					// immut bvec4 visible_samples = greaterThan(trace_screen.zzzz, depth_samples); // step just doesn't work here on AMD Mesa for some reason
+						// immut vec4 depth_samples = textureGather(depthtex2, trace_screen.xy, 0);
+						// immut bvec4 visible_samples = greaterThan(trace_screen.zzzz, depth_samples); // step just doesn't work here on AMD Mesa for some reason
 
-					immut float sampled = textureProjLod(depthtex2, vec3(ray_screen_undiv_xy, ray_halfclip.w), 0.0).r;
+						immut float16_t sampled = float16_t(textureProjLod(depthtex2, f16vec3(ray_screen_undiv_xy, ray_halfclip.w), 0.0).r);
 
-					visibility -= float16_t((sampled - 0.5) * ray_halfclip.w < ray_halfclip.z);
+						#if HAND_LIGHT_TRACE_HARDNESS != 0
+							// TODO: Maybe reduce visibility less when the sample is further behind the blocker (as to not assume every blocker is infinitely deep).
+							visibility -= float16_t((sampled - float16_t(0.5)) * ray_halfclip.w < ray_halfclip.z);
+							// ^Equivalent to, but faster than, converting the ray position to screen space:
+							// visibility -= float16_t(sampled < ray_halfclip.z / ray_halfclip.w + float16_t(0.5));
+						#else
+							if ((sampled - float16_t(0.5)) * ray_halfclip.w < ray_halfclip.z) {
+								occluded = true;
+							}
+						#endif
+					}
+
+					#if HAND_LIGHT_TRACE_HARDNESS != 0
+						/*
+							if (visibility <= float16_t(steps) * float16_t(0.5)) { // Adjust this to make shadows soft or hard
+								return ind_bl * illum;
+							}
+						*/
+
+						specular_diffuse *= pow(visibility / float16_t(steps), float16_t(float(steps * uint(HAND_LIGHT_TRACE_HARDNESS)) / 8.0));
+					#else
+						if (occluded) {
+							specular_diffuse = f16vec2(0.0);
+						}
+					#endif
 				}
-
-				if (visibility <= float16_t(HAND_LIGHT_TRACE_STEPS) * float16_t(0.5)) { // Adjust this to make shadows soft or hard
-					return ind_bl * illum;
-				}
-
-				visibility /= float(HAND_LIGHT_TRACE_STEPS);
-				dir_bl = visibility*visibility*visibility*visibility*visibility;
-			} else {
-				dir_bl = float16_t(1.0);
-			}
-
-			immut f16vec2 specular_diffuse = dir_bl * brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness);
+			#endif
 
 			light = fma(specular_diffuse.xxx, rcp_color, (specular_diffuse.y + ind_bl).xxx);
 		} else {
@@ -391,28 +413,22 @@ void main() {
 			#endif
 
 			#if HAND_LIGHT
-				#define MAX_HAND_LIGHT_DIST 64 // temp/todo
 				if (handLightPackedLR != 0) {
-					if (dot(pe, pe) < MAX_HAND_LIGHT_DIST*MAX_HAND_LIGHT_DIST) {
-						immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
+					immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
+					immut bvec2 active_lr = notEqual(hand_light_lr, u16vec2(0u));
 
-						if (hand_light_lr.x != 0) {
-							block_light += get_hand_light(hand_light_lr.x, hand_light.left, f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
-						}
+					if (active_lr.x) {
+						block_light += get_hand_light(hand_light_lr.x, hand_light.left, f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+					}
 
-						if (hand_light_lr.y != 0) {
-							block_light += get_hand_light(hand_light_lr.y, hand_light.right, f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
-						}
+					if (active_lr.y) {
+						block_light += get_hand_light(hand_light_lr.y, hand_light.right, f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
 					}
 				}
 			#endif
 
 			f16vec3 final_light = fma(
-				fma(
-					f16vec3(ind_sky),
-					f16vec3(IND_SL),
-					f16vec3(AMBIENT * 0.1)
-				),
+				fma(f16vec3(ind_sky), f16vec3(IND_SL), f16vec3(AMBIENT * 0.1)),
 				color_ao.aaa,
 				block_light
 			);

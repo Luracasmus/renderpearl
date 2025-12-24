@@ -6,7 +6,6 @@
 	#define IND_SL 0.75 // [0.0 0.125 0.25 0.375 0.5 0.625 0.75 0.875 1.0]
 	#define IND_BL 0.03 // [0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1]
 	#define AMBIENT 0.05 // [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
-	#define HAND_LIGHT 1 // [0 1 2 3 4 5]
 	#define SSS 5 // [0 1 2 3 4 5 6 7 8 9 10]
 	const float ambientOcclusionLevel = 1.0; // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
@@ -28,6 +27,21 @@
 		#define LOD_FALLOFF 3 // [1 2 3 4 5 6 7]
 		#define LAVA_LOD_BIAS 0.8 // [0.0 0.2 0.4 0.6 0.8 1.0 1.2]
 		#define LDS_RATIO 0.25 // [0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
+
+	// HAND_LIGHT
+		#define HAND_LIGHT 1 // [0 1 2 3 4 5]
+		#define MAX_HAND_LIGHT_TRACE_DIST 8 // [8 16 24 32 48 64 80 96]
+		#define HAND_LIGHT_TRACE_STEPS 32 // [0 4 8 16 32 64 128 256 512]
+		// 4 -> 1
+		// 8 -> 1
+		// 16 -> 1
+		// 32 -> 2
+		// 64 -> 2
+		// 128 -> 2
+		// 256 -> 2
+		// 512 -> 1
+		// ^ These are tuned with max HAND_LIGHT.
+		#define HAND_LIGHT_TRACE_HARDNESS 2 // [0 1 2 4 8]
 
 	// FALLBACK_BLOCK
 		#define BL_FALLBACK_R 1.2 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]

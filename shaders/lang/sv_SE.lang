@@ -17,8 +17,6 @@ screen.LIGHTING=§6◀§r Ljus §6▶
 	option.IND_BL=§b⌚§r Indirekt Blockljus
 	option.AMBIENT=§b⌚§r Omgivande Ljus
 
-	option.HAND_LIGHT=§e⌚§r Handljus
-
 	option.SSS.comment=Låter en del ljus skina genom tunna ytor\n\n§6⚠§r Detta avaktiverar vissa optimeringar för provtagning av shadow map:en
 
 	option.ambientOcclusionLevel.comment=Gör hörn mellan block mörkare
@@ -63,12 +61,18 @@ screen.LIGHTING=§6◀§r Ljus §6▶
 		option.LDS_RATIO=§6⌚§r LDS-förhållande
 			option.LDS_RATIO.comment=Mängden Local Data Share-minne som allokeras per ruta (work group) som en andel av §l§c⌚§r§l Kapacitet§r\n\nDetta påverkar den maximala mängden ljus som kan bearbetas §oefter utsortering§r innan artifakter uppstår
 
+	screen.HAND_LIGHT=§6◀§r Hand Light §6▶
+		option.HAND_LIGHT=§e⌚§r Ljusstyrka
+		option.MAX_HAND_LIGHT_TRACE_DIST=§c⌚§r Max. Strålavstånd
+		option.HAND_LIGHT_TRACE_STEPS=§c⌚§r Strålföljningssteg
+		option.HAND_LIGHT_TRACE_HARDNESS=§e⌚§r Skugghårdhet
+
 	screen.FALLBACK_BLOCK=§6◀§r Reserv-Blockljus §6▶
 		screen.FALLBACK_BLOCK.comment=Reserv-blockljusfärg för ljus utanför ljuslistans avstånd
 
-		option.BL_FALLBACK_R=Röd Intensitet
-		option.BL_FALLBACK_G=Grön Intensitet
-		option.BL_FALLBACK_B=Blå Intensitet
+		option.BL_FALLBACK_R=§b⌚§c Röd Intensitet
+		option.BL_FALLBACK_G=§b⌚§a Grön Intensitet
+		option.BL_FALLBACK_B=§b⌚§9 Blå Intensitet
 
 	screen.CUSTOM_EMISSIVE_BLOCKS=§6◀§r Extra Emitterande Block §6▶
 		option.EMISSIVE_REDSTONE_BLOCK=§e⌚§c Emitterande Redstoneblock

@@ -20,9 +20,6 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 	option.AMBIENT=§b⌚§r Ambient Light
 		value.AMBIENT.0=§cOff
 
-	option.HAND_LIGHT=§e⌚§r Hand Light
-		value.HAND_LIGHT.0=§cOff
-
 	option.SSS=§6⌚§r Subsurface Scattering
 		option.SSS.comment=Allows some light to shine through thin surfaces\n\n§6⚠§r This disables some shadow map sampling optimizations
 		value.SSS.0=§cOff
@@ -98,12 +95,23 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 		option.LDS_RATIO=§6⌚§r LDS Ratio
 			option.LDS_RATIO.comment=The amount of Local Data Share memory allocated per tile (work group) as a ratio of §l§c⌚§r§l Capacity§r\n\nThis affects the maximum amount of lights that can be processed §oafter culling§r before artifacts occur
 
+	screen.HAND_LIGHT=§6◀§r Hand Light §6▶
+		option.HAND_LIGHT=§e⌚§r Brightness
+			value.HAND_LIGHT.0=§cOff
+
+		option.MAX_HAND_LIGHT_TRACE_DIST=§c⌚§r Max. Ray Distance
+		option.HAND_LIGHT_TRACE_STEPS=§c⌚§r Ray Tracing Steps
+			value.HAND_LIGHT_TRACE_STEPS.0=§cOff
+
+		option.HAND_LIGHT_TRACE_HARDNESS=§e⌚§r Traced Shadow Hardness
+			value.HAND_LIGHT_TRACE_HARDNESS.0=§cOff
+
 	screen.FALLBACK_BLOCK=§6◀§r Fallback Block Light §6▶
 		screen.FALLBACK_BLOCK.comment=Fallback block light color for lights outside the range of the light list
 
-		option.BL_FALLBACK_R=Red Intensity
-		option.BL_FALLBACK_G=Green Intensity
-		option.BL_FALLBACK_B=Blue Intensity
+		option.BL_FALLBACK_R=§b⌚§c Red Intensity
+		option.BL_FALLBACK_G=§b⌚§a Green Intensity
+		option.BL_FALLBACK_B=§b⌚§9 Blue Intensity
 
 	screen.CUSTOM_EMISSIVE_BLOCKS=§6◀§r Custom Emissive Blocks §6▶
 		option.EMISSIVE_REDSTONE_BLOCK=§e⌚§c Emissive Redstone Block
