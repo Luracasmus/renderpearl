@@ -216,7 +216,9 @@ void main() {
 
 	vec3 index_offset = vec3(-255.5);
 
-	if (all(greaterThanEqual(bb_pe_max, bb_pe_min))) { // Make sure this tile isn't fully unlit, out of range or sky.
+	// Make sure this tile isn't fully unlit, out of range or sky by checking if the player-eye bounding box has non-negative dimensions.
+	// This branch must be taken the same way by the whole work group for the barrier within to be safe.
+	if (all(greaterThanEqual(bb_pe_max, bb_pe_min))) {
 		index_offset += ll.offset - cameraPositionFract - mvInv3;
 
 		immut f16vec3 bb_view_min = f16vec3(sh.bb_view_min);
@@ -250,9 +252,9 @@ void main() {
 				sh.index_color[j] = ll.color[i];
 			}
 		}
-	}
 
-	barrier();
+		barrier(); // This control flow is safe since it's guaranteed to be the same across the work group.
+	}
 
 	if (bitfieldExtract(gbuf.y, 30, 1) == 0u) { // Exit on "pure light" flag.
 		immut f16vec3 n_pe = f16vec3(normalize(pe));
