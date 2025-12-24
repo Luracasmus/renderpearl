@@ -119,6 +119,7 @@
 
 // Fallback definitions
 // WARN: possibly don't cover everything!
+// We use macro aliases to work around an AMD compiler bug on Windows where the fallback functions collide with nonexistent built-ins.
 
 #ifndef INT16
 	#define int16_t int
@@ -154,7 +155,10 @@
 	#define f16vec3 vec3
 	#define f16vec4 vec4
 
+	#define packFloat2x16(v) _packFloat2x16(v)
 	uint packFloat2x16(vec2 v) { return packHalf2x16(v); }
+
+	#define unpackFloat2x16(v) _unpackFloat2x16(v)
 	vec2 unpackFloat2x16(uint v) { return unpackHalf2x16(v); }
 #endif
 
@@ -173,19 +177,23 @@
 #endif
 
 #ifndef PACK_INT16
-	int packInt2x16(i16vec2 v) {
+	#define packInt2x16(v) _packInt2x16(v)
+	int _packInt2x16(i16vec2 v) {
 		immut ivec2 v_i32 = ivec2(v);
 		return bitfieldInsert(v_i32.x, v_i32.y, 16, 16);
 	}
 
-	i16vec2 unpackInt2x16(int v) { return i16vec2(v & 65535, v >> 16); }
+	#define unpackInt2x16(v) _unpackInt2x16(v)
+	i16vec2 _unpackInt2x16(int v) { return i16vec2(v & 65535, v >> 16); }
 
-	uint packUint2x16(u16vec2 v) {
+	#define packUint2x16(v) _packUint2x16(v)
+	uint _packUint2x16(u16vec2 v) {
 		immut uvec2 v_u32 = uvec2(v);
 		return bitfieldInsert(v_u32.x, v_u32.y, 16, 16);
 	}
 
-	u16vec2 unpackUint2x16(uint v) { return u16vec2(v & 65535u, v >> 16u); }
+	#define unpackUint2x16(v) _unpackUint2x16(v)
+	u16vec2 _unpackUint2x16(uint v) { return u16vec2(v & 65535u, v >> 16u); }
 #endif
 
 #ifndef TRANSMUTE_AND_PACK_INT16
@@ -214,8 +222,3 @@
 // #extension GL_EXT_shader_integer_mix : require
 // #extension GL_ARB_gpu_shader_int64 : require
 // #extension GL_AMD_gpu_shader_int64 : require
-
-// #extension GL_KHR_shader_subgroup_basic : require
-// #extension GL_KHR_shader_subgroup_quad : require
-// #extension GL_KHR_shader_subgroup_vote : require
-// #extension GL_KHR_shader_subgroup_arithmetic: require
