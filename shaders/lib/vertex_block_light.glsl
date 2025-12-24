@@ -30,11 +30,11 @@ f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal, float16_t ao) {
 	#endif
 
 	if (light.x > float16_t(0.0) && chebyshev_dist < float16_t(LL_DIST)) {
-		immut vec3 offset = -255.5 - cameraPositionFract - mvInv3 + ll.offset - pe;
+		immut vec3 offset = ((-255.5 - cameraPositionFract - mvInv3) + subgroupBroadcastFirst(ll.offset)) - pe;
 
 		f16vec3 diffuse = f16vec3(0.0);
 
-		immut uint16_t index_len = uint16_t(ll.len);
+		immut uint16_t index_len = uint16_t(subgroupBroadcastFirst(ll.len));
 		for (uint16_t i = uint16_t(0u); i < index_len; ++i) {
 			immut uint light_data = ll.data[i];
 

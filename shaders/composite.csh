@@ -178,7 +178,7 @@ void main() {
 			atomicAdd(auto_exp.sum_log_luma, int(roundEven(clamp(log2(luma), float16_t(-7.0), float16_t(7.0)) * float16_t(512.0))));
 		}
 
-		color *= auto_exp.exposure;
+		color *= subgroupBroadcastFirst(auto_exp.exposure);
 	#endif
 
 	#ifdef COMPASS

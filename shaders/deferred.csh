@@ -38,7 +38,7 @@ void main() {
 
 		// if (ll.queue > ll.data.length()) { ll.len = uint16_t(0u); return; }
 
-		immut uint16_t len = min(uint16_t(ll.queue), uint16_t(ll.data.length()));
+		immut uint16_t len = min(uint16_t(subgroupBroadcastFirst(ll.queue)), uint16_t(ll.data.length()));
 		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
 			sh.index_data[i] = ll.data[i];
 			sh.index_color[i] = ll.color[i];

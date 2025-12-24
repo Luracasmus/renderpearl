@@ -241,12 +241,12 @@ void main() {
 	// Make sure this tile isn't fully unlit, out of range or sky by checking if the player-eye bounding box has non-negative dimensions.
 	// This branch must be taken the same way by the whole work group for the barrier within to be safe.
 	if (all(greaterThanEqual(bb_pe_max, bb_pe_min))) {
-		index_offset += ll.offset - cameraPositionFract - mvInv3;
+		index_offset += subgroupBroadcastFirst(ll.offset) - cameraPositionFract - mvInv3;
 
 		immut f16vec3 bb_view_min = f16vec3(subgroupBroadcastFirst(sh.bb_view_min));
 		immut f16vec3 bb_view_max = f16vec3(subgroupBroadcastFirst(sh.bb_view_max));
 
-		immut uint16_t global_len = uint16_t(ll.len);
+		immut uint16_t global_len = uint16_t(subgroupBroadcastFirst(ll.len));
 		for (uint16_t i = uint16_t(gl_LocalInvocationIndex); i < global_len; i += uint16_t(gl_WorkGroupSize.x * gl_WorkGroupSize.y)) {
 			immut uint light_data = ll.data[i];
 
@@ -418,11 +418,11 @@ void main() {
 					immut bvec2 active_lr = notEqual(hand_light_lr, u16vec2(0u));
 
 					if (active_lr.x) {
-						block_light += get_hand_light(hand_light_lr.x, hand_light.left, f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+						block_light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hand_light.left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
 					}
 
 					if (active_lr.y) {
-						block_light += get_hand_light(hand_light_lr.y, hand_light.right, f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+						block_light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hand_light.right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
 					}
 				}
 			#endif
