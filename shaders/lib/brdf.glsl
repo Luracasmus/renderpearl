@@ -60,20 +60,21 @@ float16_t env_brdf_approx_ab_x(float16_t roughness, float16_t n_dot_v) {
 	return fma(a004, float16_t(-1.04), r.z);
 }
 
+// All directions must be in aligned spaces.
 f16vec2 brdf(
-	float16_t n_dot_l, // should be saturated
+	float16_t n_dot_l, // Receiver normal dot `rec_to_lig_dir`. Must be in [0, 1].
 	f16vec3 normal,
-	f16vec3 view_dir, // point dir from observer
-	f16vec3 light_dir, // light dir from point
+	f16vec3 obs_to_rec_dir, // Receiver direction from observer.
+	f16vec3 rec_to_lig_dir, // Light direction from receiver.
 	float16_t roughness
 ) {
 	const float16_t f0 = float16_t(0.04);
 
-	immut f16vec3 half_dir = normalize(light_dir - view_dir);
+	immut f16vec3 half_dir = normalize(rec_to_lig_dir - obs_to_rec_dir); // Halfway between light and observer direction from receiver.
 
-	immut float16_t n_dot_v = saturate(dot(normal, -view_dir));
+	immut float16_t n_dot_v = saturate(dot(normal, -obs_to_rec_dir));
 	immut float16_t n_dot_h = saturate(dot(normal, half_dir));
-	immut float16_t l_dot_h = saturate(dot(light_dir, half_dir));
+	immut float16_t l_dot_h = saturate(dot(rec_to_lig_dir, half_dir));
 
 	immut float16_t d = d_ggx(roughness, n_dot_h, normal, half_dir);
 	immut float16_t v = v_smith_ggx_correlated(roughness, n_dot_v, n_dot_l);

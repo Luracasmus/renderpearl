@@ -68,52 +68,60 @@ searchtex       : >-*-------------*--------------*---┘            *           
 
 ## Packing & Layout
 
-> Remember "When bit-packing fields into a G-Buffer, put highly correlated bits in the Most Significant Bits (MSBs) and noisy data in the Least Significant Bits (LSBs)." ([AMD RDNA Performance Guide](https://gpuopen.com/learn/rdna-performance-guide/))
+> "When bit-packing fields into a G-Buffer, put highly correlated bits in the Most Significant Bits (MSBs) and noisy data in the Least Significant Bits (LSBs)." ([AMD RDNA Performance Guide](https://gpuopen.com/learn/rdna-performance-guide/))
+
+Component descriptions (like "RGB") are in the order they would be packed. The first component is packed in the lowest bits, and the last in the highest.
+
+Most significant <-> Least significant
 
 ```
 ┌ colortex0 ┐
-|R |G |B |A |
+|A |B |G |R |
 └8 ┴8 ┴8 ┴8 ┘
- |  |  |  └X
- └[color (RGB)] (unorm)
+ |  |  |  |
+ |  └[color (RGB)] (unorm)
+ └X
 ```
 
 ```
 ┌ colortex1 ┐
-|R |G |B |A |
+|A |B |G |R |
 └16┴16┴16┴16┘
- |  |  |  └[AO] (float)
- └[color (RGB)] (float)
+ |  |  |  |
+ |  └[color (RGB)] (float)
+ └[AO] (float)
 ```
 
 ```
 ┌ colortex2 -----------------┐
-|R    |G        |B     |A    |
-└16 16┴15 15 1 1┴8 8 16┴16 16┘
- |  |  |  |  | | | | |  |  |
- |  |  |  |  | | | | └[biased shadow screen space position] (unorm)
- |  |  |  |  | | | └[subsurface scattering] (unorm)
- |  |  |  |  | | └[roughness] (unorm)
- |  |  |  |  | └["hand" flag] (bool)
- |  |  |  |  └["pure light" flag] (bool)
- |  |  |  └[sky light] (unorm)
- |  |  └[block light] (unorm)
- |  └[octahedron encoded face normal] (snorm)
- └[octahedron encoded texture normal] (snorm)
+|A    |B        |G     |R    |
+└16 16┴1 1 15 15┴8 8 16┴16 16┘
+ |  |  | | |  |  | | |  |  |
+ |  |  | | |  |  | | └[biased shadow screen space position (XYZ)] (unorm)
+ |  |  | | |  |  | └[roughness] (unorm)
+ |  |  | | |  |  └[subsurface scattering] (unorm)
+ |  |  | | |  └[block light] (unorm)
+ |  |  | | └[sky light] (unorm)
+ |  |  | └["pure light" flag] (bool)
+ |  |  └["hand" flag] (bool)
+ |  └[octahedron encoded texture normal] (snorm)
+ └[octahedron encoded face normal] (snorm)
 ```
 
 ```
 ┌ lightList ----┐
 |data     |color|
-└9 9 9 4 1┴6 5 5┘
+└1 4 9 9 9┴5 5 6┘
  | | | | | | | |
  | | | | | └[color (GRB)] (unorm)
- | | | | └["wide" flag] (bool)
- | | | └[intensity] (uint)
- └[player feet space position] (uint)
+ | | └[player feet space position (XYZ)] (uint)
+ | └[intensity] (uint)
+ └["wide" flag] (bool)
 ```
 
 ### Proposed
+
+These are in reverse bit order and a bit outdated.
 
 ```
 ┌ colortex1 ┐
@@ -155,3 +163,26 @@ searchtex       : >-*-------------*--------------*---┘            *           
  |  |
  └[biased shadow screen space position XY] (float)
 ```
+
+## Code
+
+### Standard variable names for positions
+
+* `texel` - Texel space.
+* `coord` - Screen space XY.
+* `depth` - Screen space Z.
+* `screen` - Screen space XYZ.
+* `ndc` - NDC space.
+* `clip` - Clip space.
+* `view` - View space.
+* `pe` - Player eye space.
+* `pf` - Player feet space.
+* `world` - World space.
+* `model` - Model space.
+
+> See the [shaderLABS coordinate space cheat sheet](https://shaderlabs.org/images/5/5a/Space_conversion_cheat_sheet.png).
+
+### Prefixes
+
+* `n_` - Normalized.
+* `abs_` - Absolute value.

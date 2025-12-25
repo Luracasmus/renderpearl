@@ -177,7 +177,7 @@ void main() {
 	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
 	vec3 ndc = fma(vec3(coord, depth), vec3(2.0), vec3(-1.0));
 
-	immut bool is_hand = gbuf.y >= 0x80000000u; // The most significant bit being 1 indicates hand.
+	immut bool is_hand = gbuf.b >= 0x80000000u; // The most significant bit being 1 indicates hand.
 	if (is_hand) { ndc.z /= MC_HAND_DEPTH; }
 
 	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
@@ -186,8 +186,8 @@ void main() {
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
-	// Check if block light (first 15 bits) isn't zero, and we're within LL_DIST.
-	immut bool is_lit = (gbuf.y & 32767u) != 0u && chebyshev_dist < float16_t(LL_DIST);
+	// Check if block light (lowest 15 bits) isn't zero, and we're within LL_DIST.
+	immut bool is_lit = (gbuf.b & 32767u) != 0u && chebyshev_dist < float16_t(LL_DIST);
 
 	barrier();
 
@@ -280,7 +280,7 @@ void main() {
 		barrier(); // This control flow is safe since it's guaranteed to be the same across the work group.
 	}
 
-	if (bitfieldExtract(gbuf.y, 30, 1) == 0u) { // Exit on "pure light" flag.
+	if (bitfieldExtract(gbuf.b, 30, 1) == 0u) { // Exit on "pure light" flag.
 		immut f16vec3 n_pe = f16vec3(normalize(pe));
 
 		#ifdef NETHER
@@ -299,15 +299,15 @@ void main() {
 		if (is_geo) {
 			immut f16vec4 color_ao = f16vec4(imageLoad(colorimg1, texel));
 
-			immut f16vec2 roughness_sss = f16vec2(unpackUnorm4x8(gbuf.z).xy);
+			immut f16vec2 roughness_sss = f16vec2(unpackUnorm4x8(gbuf.g).zw);
 
-			immut f16vec4 octa_normal = f16vec4(unpackSnorm4x8(gbuf.x));
+			immut f16vec4 octa_normal = f16vec4(unpackSnorm4x8(gbuf.a));
 			immut f16vec3 w_tex_normal = normalize(octa_decode(octa_normal.xy));
 			immut f16vec3 w_face_normal = normalize(octa_decode(octa_normal.zw));
 
 			immut f16vec2 light = f16vec2(vec2(
-				gbuf.y & 32767u,
-				bitfieldExtract(gbuf.y, 15, 15)
+				gbuf.b & 32767u,
+				bitfieldExtract(gbuf.b, 15, 15)
 			) / 32767.0);
 
 			#ifdef LIGHT_LEVELS
@@ -446,8 +446,8 @@ void main() {
 					f16vec3 sm_light = skylight_color * fma(specular_diffuse.xxx, rcp_color, specular_diffuse.yyy);
 					if (chebyshev_dist < sm_dist) {
 						vec3 s_screen = vec3(
-							unpackUnorm2x16(gbuf.z).y,
-							unpackUnorm2x16(gbuf.a)
+							unpackUnorm2x16(gbuf.r),
+							unpackUnorm2x16(gbuf.g).x
 						);
 
 						sm_light *= mix(

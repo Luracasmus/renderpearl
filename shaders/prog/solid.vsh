@@ -213,7 +213,7 @@ void main() {
 						(view_f16.z < float16_t(0.0) || dot(abs_pe, f16vec3(1.0)) <= float16_t(emission))
 					) {
 						immut bool fluid = mc_Entity.y == 1.0;
-						immut uvec3 seed = uvec3(ivec3(0.5 + cameraPosition + pe));
+						immut uvec3 seed = uvec3(ivec3((0.5 + cameraPosition) + pe));
 
 						// LOD culling
 						// Increase times two each LOD.
@@ -266,7 +266,7 @@ void main() {
 									packed_pe, // Position.
 									emission, 27, 4 // Intensity.
 								);
-								if (fluid) light_data |= 0x80000000u; // Set "wide" flag for lava.
+								if (fluid) { light_data |= 0x80000000u; } // Set "wide" flag for lava.
 
 								ll.data[sg_incr_i] = light_data;
 

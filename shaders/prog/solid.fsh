@@ -127,7 +127,7 @@ void main() {
 
 	color.rgb = linear(color.rgb);
 
-	colortex2.r = packSnorm4x8(f16vec4(octa_w_tex_normal, octa_w_face_normal));
+	colortex2.a = packSnorm4x8(f16vec4(octa_w_tex_normal, octa_w_face_normal));
 
 	{
 		// We have to `min()` after conversion here because of `float16_t` precision at these high values.
@@ -143,7 +143,7 @@ void main() {
 			#endif
 		#endif
 
-		colortex2.g = data;
+		colortex2.b = data;
 	}
 
 	#ifdef TERRAIN
@@ -161,21 +161,17 @@ void main() {
 
 		const float16_t sss = float16_t(0.0); // TODO: labPBR SSS map support.
 
-		uint data = packUnorm4x8(f16vec4(roughness, sss, 0.0, 0.0));
+		uint data = packUnorm4x8(f16vec4(0.0, 0.0, roughness, sss));
 
 		#ifndef NETHER
-			data = bitfieldInsert(
-				data,
-				packUnorm2x16(f16vec2(v.s_screen.x, 0.0)),
-				16, 16
-			);
+			data |= packUnorm2x16(f16vec2(v.s_screen.z, 0.0));
 		#endif
 
-		colortex2.b = data;
+		colortex2.g = data;
 	}
 
 	#ifndef NETHER
-		colortex2.a = packUnorm2x16(v.s_screen.yz);
+		colortex2.r = packUnorm2x16(v.s_screen.xy);
 	#endif
 
 	#ifdef TERRAIN

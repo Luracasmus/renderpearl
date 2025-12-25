@@ -8,7 +8,7 @@
 		/* RENDERTARGETS: 1 */
 	#else
 		/* RENDERTARGETS: 1,2 */
-		layout(location = 1, component = 1) out uint colortex2;
+		layout(location = 1, component = 2) out uint colortex2;
 	#endif
 
 	layout(location = 0) out f16vec3 colortex1;
