@@ -198,7 +198,7 @@ void main() {
 				immut uint emission = uint(fma(norm_emission, float16_t(15.0), float16_t(0.5))); // bring into 4-bit-representable range and round
 				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, emission, 1, 4);
 
-				// Only rebuild the index once every LL_RATE frames, and cull chunks which completely outside LL_DIST in Chebyshev distance in uniform control flow.
+				// Only rebuild the index once every LL_RATE frames, and cull chunks which are completely outside LL_DIST in Chebyshev distance in uniform control flow.
 				if (rebuildLL && max3(chunkOffset.x, chunkOffset.y, chunkOffset.z) < float(LL_DIST + 16)) {
 					immut f16vec3 view_f16 = f16vec3(view);
 
