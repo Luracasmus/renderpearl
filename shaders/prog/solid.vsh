@@ -242,11 +242,14 @@ void main() {
 										// ...and has the same light position as we do, remove our light.
 										if (other_packed_pe == packed_pe) {
 											is_unique = false;
-											break;
+											// break;
+											// ^We can probably skip this break.
+											// It would never allow us to iterate fewer times since that would require all active invocations to be non-unique.
+											// That also lets us skip recomputing the ballot.
 										}
 									}
 
-									sg_ballot = subgroupBallot(true);
+									// sg_ballot = subgroupBallot(true);
 								}
 
 								if (is_unique)
