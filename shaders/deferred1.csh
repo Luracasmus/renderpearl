@@ -268,10 +268,12 @@ void main() {
 			immut bool view_visible = distance(v_light, clamp(v_light, bb_view_min, bb_view_max)) <= offset_intensity;
 
 			if (pe_visible && view_visible) {
-				immut uint j = atomicAdd(sh.index_len, 1u);
+				#define SG_INCR_COUNTER sh.index_len
+				uint sg_incr_i;
+				#include "/lib/sg_incr.glsl"
 
-				sh.index_data[j] = light_data;
-				sh.index_color[j] = ll.color[i];
+				sh.index_data[sg_incr_i] = light_data;
+				sh.index_color[sg_incr_i] = ll.color[i];
 			}
 		}
 
@@ -455,7 +457,7 @@ void main() {
 						);
 					}
 
-					final_light = fma(sm_light, f16vec3(3.0), final_light);
+					final_light = fma(sm_light, f16vec3(3.0), final_light); // why * 3.0?
 				}
 			#endif
 

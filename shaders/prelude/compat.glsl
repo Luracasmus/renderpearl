@@ -39,6 +39,7 @@
 	#extension GL_KHR_shader_subgroup_vote : require
 	#extension GL_KHR_shader_subgroup_arithmetic : require
 	#extension GL_KHR_shader_subgroup_ballot : require
+	#extension GL_KHR_shader_subgroup_shuffle_relative : require
 	#define SUBGROUP_ENABLED
 #else
 	#define subgroupAny(v) (v)

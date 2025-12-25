@@ -64,9 +64,12 @@ void main() {
 
 			// Copy shared list to global.
 			if (unique) {
-				immut uint i = atomicAdd(sh.culled_len, 1u);
-				ll.data[i] = data;
-				ll.color[i] = color;
+				#define SG_INCR_COUNTER sh.culled_len
+				uint sg_incr_i;
+				#include "/lib/sg_incr.glsl"
+
+				ll.data[sg_incr_i] = data;
+				ll.color[sg_incr_i] = color;
 			}
 		}
 

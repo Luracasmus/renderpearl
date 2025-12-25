@@ -105,7 +105,7 @@ void main() {
 		model += chunkOffset;
 
 		#if WAVES && defined SOLID_TERRAIN
-			if (mc_Entity.y == 1.0) model.y += wave(model.xz);
+			if (mc_Entity.y == 1.0) { model.y += wave(model.xz); }
 		#endif
 	#endif
 
@@ -150,20 +150,36 @@ void main() {
 					if (this_hand_light != uint16_t(0u) && abs(view.x) > 0.3) { // Use a margin around the center to not register e.g. a swinging sword as being on the opposite side.
 						// Scale and round to fit packing.
 						immut u16vec3 scaled_color = u16vec3(fma(
-							linear(vaColor.rgb * textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb),
-							hand_light_pack_scale.xxx,
-							vec3(0.5)
+							linear(v.tint * f16vec3(textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb)),
+							f16vec3(hand_light_pack_scale),
+							f16vec3(0.5)
 						));
 
-						immut uint rg = packUint2x16(scaled_color.rg);
-						immut uint b_count = packUint2x16(u16vec2(scaled_color.g, uint16_t(1u))); // The second component is just 1, to count the number of times we're adding to the sum.
+						uint rg = packUint2x16(scaled_color.rg);
+						uint b_count = packUint2x16(u16vec2(scaled_color.g, uint16_t(1u))); // The second component is just 1, to count the number of times we're adding to the sum.
 
 						if (is_right) {
-							atomicAdd(hand_light.right.x, rg);
-							atomicAdd(hand_light.right.y, b_count);
+							#ifdef SUBGROUP_ENABLED
+								rg = subgroupAdd(rg);
+								b_count = subgroupAdd(b_count);
+
+								if (subgroupElect())
+							#endif
+							{
+								atomicAdd(hand_light.right.x, rg);
+								atomicAdd(hand_light.right.y, b_count);
+							}
 						} else {
-							atomicAdd(hand_light.left.x, rg);
-							atomicAdd(hand_light.left.y, b_count);
+							#ifdef SUBGROUP_ENABLED
+								rg = subgroupAdd(rg);
+								b_count = subgroupAdd(b_count);
+
+								if (subgroupElect())
+							#endif
+							{
+								atomicAdd(hand_light.left.x, rg);
+								atomicAdd(hand_light.left.y, b_count);
+							}
 						}
 					}
 				#endif
@@ -182,10 +198,8 @@ void main() {
 				immut uint emission = uint(fma(norm_emission, float16_t(15.0), float16_t(0.5))); // bring into 4-bit-representable range and round
 				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, emission, 1, 4);
 
-				if (
-					rebuildLL &&
-					max3(chunkOffset.x, chunkOffset.y, chunkOffset.z) < float(LL_DIST + 16)
-				) { // Only rebuild the index once every LL_RATE frames, and cull chunks which completely outside LL_DIST in Chebyshev distance in uniform control flow.
+				// Only rebuild the index once every LL_RATE frames, and cull chunks which completely outside LL_DIST in Chebyshev distance in uniform control flow.
+				if (rebuildLL && max3(chunkOffset.x, chunkOffset.y, chunkOffset.z) < float(LL_DIST + 16)) {
 					immut f16vec3 view_f16 = f16vec3(view);
 
 					if (
@@ -209,32 +223,62 @@ void main() {
 							float16_t(LOD_FALLOFF),
 							float16_t(0.5)
 						)))) == uint8_t(0u)) {
-							#ifdef SM
-								#ifdef MC_SPECULAR_MAP
-									immut f16vec3 avg_col = f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
-								#endif
-							#endif
-
-							immut uint i = atomicAdd(ll.queue, 1u);
-
 							immut uvec3 light_pe = uvec3(clamp(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + pe + cameraPositionFract), 0.0, 511.5)); // This feels slightly cursed but it works. // somehow
+							immut uint packed_pe = bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9);
 
-							uint light_data = bitfieldInsert(
-								bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9), // Position.
-								emission, 27, 4 // Intensity.
-							);
-							if (fluid) light_data |= 0x80000000u; // Set "wide" flag for lava.
+							#ifdef SUBGROUP_ENABLED
+								// Deduplicate lights within the subgroup before pushing to the global list.
+								bool is_unique = true;
 
-							ll.data[i] = light_data;
+								uvec4 sg_ballot = subgroupBallot(true);
+								immut uint shuffles = subgroupBallotFindMSB(sg_ballot) - subgroupBallotFindLSB(sg_ballot);
 
-							immut f16vec3 scaled_color = fma(linear(color * avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5));
+								// We want to shuffle through all active invocations.
+								for (uint i = 1u; i <= shuffles; ++i) {
+									immut uint other_packed_pe = subgroupShuffleDown(packed_pe, i);
 
-							#ifdef INT16
-								ll.color[i] = uint16_t(scaled_color.g) | (uint16_t(scaled_color.r) << uint16_t(6u)) | (uint16_t(scaled_color.b) << uint16_t(11u));
-							#else
-								immut uvec3 uint_color = uvec3(scaled_color);
-								ll.color[i] = bitfieldInsert(bitfieldInsert(uint_color.g, uint_color.r, 6, 5), uint_color.b, 11, 5);
+									// If the invocation who's value we've aquired is within the subgroup and active...
+									if ((gl_SubgroupInvocationID + i < gl_SubgroupSize) && subgroupBallotBitExtract(sg_ballot, gl_SubgroupInvocationID + i)) {
+										// ...and has the same light position as we do, remove our light.
+										if (other_packed_pe == packed_pe) {
+											is_unique = false;
+											break;
+										}
+									}
+
+									sg_ballot = subgroupBallot(true);
+								}
+
+								if (is_unique)
 							#endif
+							{
+								#ifdef SM
+									#ifdef MC_SPECULAR_MAP
+										immut f16vec3 avg_col = f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
+									#endif
+								#endif
+
+								#define SG_INCR_COUNTER ll.queue
+								uint sg_incr_i;
+								#include "/lib/sg_incr.glsl"
+
+								uint light_data = bitfieldInsert(
+									packed_pe, // Position.
+									emission, 27, 4 // Intensity.
+								);
+								if (fluid) light_data |= 0x80000000u; // Set "wide" flag for lava.
+
+								ll.data[sg_incr_i] = light_data;
+
+								immut f16vec3 scaled_color = fma(linear(color * avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5));
+
+								#ifdef INT16
+									ll.color[sg_incr_i] = uint16_t(scaled_color.g) | (uint16_t(scaled_color.r) << uint16_t(6u)) | (uint16_t(scaled_color.b) << uint16_t(11u));
+								#else
+									immut uvec3 uint_color = uvec3(scaled_color);
+									ll.color[sg_incr_i] = bitfieldInsert(bitfieldInsert(uint_color.g, uint_color.r, 6, 5), uint_color.b, 11, 5);
+								#endif
+							}
 						}
 					}
 				}
