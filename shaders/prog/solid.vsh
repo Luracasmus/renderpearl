@@ -150,7 +150,7 @@ void main() {
 					if (this_hand_light != uint16_t(0u) && abs(view.x) > 0.3) { // Use a margin around the center to not register e.g. a swinging sword as being on the opposite side.
 						// Scale and round to fit packing.
 						immut u16vec3 scaled_color = u16vec3(fma(
-							linear(v.tint * f16vec3(textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb)),
+							linear(color * f16vec3(textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb)),
 							f16vec3(hand_light_pack_scale),
 							f16vec3(0.5)
 						));
