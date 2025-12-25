@@ -96,7 +96,7 @@ shared struct {
 					from.xyz *= float16_t(0.5);
 					to.xyz *= float16_t(0.5);
 
-					immut f16vec4 step = (to - from) / float(steps + 1);
+					immut f16vec4 step = (to - from) / float16_t(steps + 1);
 					f16vec4 ray_halfclip = from;
 
 					#if HAND_LIGHT_TRACE_HARDNESS != 0
