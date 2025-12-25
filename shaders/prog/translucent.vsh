@@ -81,7 +81,7 @@ void main() {
 
 		immut f16vec3 w_normal =
 			#ifdef NO_NORMAL
-				mvInv2; // == MV_INV * vec3(0.0, 0.0, 1.0)
+				f16vec3(mvInv2); // == MV_INV * vec3(0.0, 0.0, 1.0)
 			#else
 				f16vec3(MV_INV * v_normal);
 			#endif
