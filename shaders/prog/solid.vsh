@@ -14,6 +14,10 @@ uniform float farSquared;
 uniform vec3 cameraPositionFract;
 uniform mat4 modelViewMatrix, projectionMatrix, textureMatrix;
 
+// TODO: Handle these better:
+in vec2 mc_midTexCoord;
+uniform sampler2D gtexture;
+
 #ifndef NETHER
 	uniform vec3 shadowLightDirectionPlr;
 	uniform mat4 shadowModelView;
@@ -21,10 +25,6 @@ uniform mat4 modelViewMatrix, projectionMatrix, textureMatrix;
 	#include "/lib/sm/distort.glsl"
 	#include "/lib/sm/bias.glsl"
 #endif
-
-// #if defined TERRAIN || (HAND_LIGHT && defined HAND) || (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
-	uniform sampler2D gtexture;
-// #endif // TODO
 
 #ifdef HAND
 	uniform int handLightPackedLR;
@@ -53,10 +53,6 @@ uniform mat4 modelViewMatrix, projectionMatrix, textureMatrix;
 #ifdef ENTITY_COLOR
 	uniform vec4 entityColor;
 #endif
-
-// #if defined TERRAIN || (HAND_LIGHT && defined HAND) || (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP))
-	in vec2 mc_midTexCoord;
-// #endif
 
 in vec2 vaUV0;
 in vec3 vaPosition;
@@ -186,11 +182,9 @@ void main() {
 			#elif defined TERRAIN
 				v.ao = vaColor.a;
 
-				// #if !(defined SM && defined MC_SPECULAR_MAP)
-					immut f16vec3 avg_col = color * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
-					immut uint scaled_avg_luma = uint(fma(luminance(avg_col), float16_t(8191.0), float16_t(0.5)));
-					v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, scaled_avg_luma, 5, 13);
-				// #endif
+				immut f16vec3 avg_col = color * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
+				immut uint scaled_avg_luma = uint(fma(luminance(avg_col), float16_t(8191.0), float16_t(0.5)));
+				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, scaled_avg_luma, 5, 13); // TODO: This could probably be done outside of terrain too.
 
 				float16_t norm_emission = min((max(float16_t(mc_Entity.x), float16_t(0.0)) + float16_t(at_midBlock.w)) / float16_t(15.0), float16_t(1.0));
 				v.light.x = min(fma(float16_t(norm_emission), float16_t(0.3), max(v.light.x, norm_emission)), float16_t(1.0));
@@ -223,16 +217,10 @@ void main() {
 							float16_t(LOD_FALLOFF),
 							float16_t(0.5)
 						)))) == uint8_t(0u)) {
-							#ifdef SM
-								#ifdef MC_SPECULAR_MAP
-									immut f16vec3 avg_col = f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
-								#endif
-							#endif
-
 							immut uvec3 light_pe = uvec3(clamp(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + pe + cameraPositionFract), 0.0, 511.5)); // This feels slightly cursed but it works. // somehow
 							immut uint packed_pe = bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9);
 
-							immut f16vec3 scaled_color = fma(linear(color * avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5));
+							immut f16vec3 scaled_color = fma(linear(avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5));
 
 							#ifdef INT16
 								immut uint16_t packed_color = uint16_t(scaled_color.g) | (uint16_t(scaled_color.r) << uint16_t(6u)) | (uint16_t(scaled_color.b) << uint16_t(11u));
@@ -266,7 +254,7 @@ void main() {
 									}
 								}
 
-								if(is_unique) {
+								if (is_unique) {
 									sg_ballot = subgroupBallot(true);
 									shuffles = subgroupBallotFindMSB(sg_ballot) - subgroupBallotFindLSB(sg_ballot);
 
@@ -284,7 +272,6 @@ void main() {
 											is_unique = false;
 										}
 									}
-
 
 									if (is_unique)
 							#endif
