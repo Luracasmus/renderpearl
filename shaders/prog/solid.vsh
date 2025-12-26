@@ -255,9 +255,10 @@ void main() {
 
 									// If the invocation who's value we've aquired is within the subgroup and active
 									// and has the same light position as we do and greater than or equal color value, remove our light.
+									immut uint other_sg_invoc_id = gl_SubgroupInvocationID + i;
 									if (
-										(gl_SubgroupInvocationID + i < gl_SubgroupSize) &&
-										subgroupBallotBitExtract(sg_ballot, gl_SubgroupInvocationID + i) &&
+										(other_sg_invoc_id < gl_SubgroupSize) &&
+										subgroupBallotBitExtract(sg_ballot, other_sg_invoc_id) &&
 										other_packed_pe == packed_pe &&
 										other_packed_color >= packed_color
 									) {
@@ -276,8 +277,8 @@ void main() {
 										// We know that if an invocation with the same position at a lower index is still active,
 										// that means it has a greater color value, so we remove our light.
 										if (
-											(gl_SubgroupInvocationID + i < gl_SubgroupSize) &&
-											subgroupBallotBitExtract(sg_ballot, gl_SubgroupInvocationID + i) &&
+											(gl_SubgroupInvocationID >= i) &&
+											subgroupBallotBitExtract(sg_ballot, gl_SubgroupInvocationID - i) &&
 											other_packed_pe == packed_pe
 										) {
 											is_unique = false;
