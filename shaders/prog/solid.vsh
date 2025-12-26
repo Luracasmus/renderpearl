@@ -223,65 +223,87 @@ void main() {
 							float16_t(LOD_FALLOFF),
 							float16_t(0.5)
 						)))) == uint8_t(0u)) {
+							#ifdef SM
+								#ifdef MC_SPECULAR_MAP
+									immut f16vec3 avg_col = f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
+								#endif
+							#endif
+
 							immut uvec3 light_pe = uvec3(clamp(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + pe + cameraPositionFract), 0.0, 511.5)); // This feels slightly cursed but it works. // somehow
 							immut uint packed_pe = bitfieldInsert(bitfieldInsert(light_pe.x, light_pe.y, 9, 9), light_pe.z, 18, 9);
+
+							immut f16vec3 scaled_color = fma(linear(color * avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5));
+
+							#ifdef INT16
+								immut uint16_t packed_color = uint16_t(scaled_color.g) | (uint16_t(scaled_color.r) << uint16_t(6u)) | (uint16_t(scaled_color.b) << uint16_t(11u));
+							#else
+								immut uvec3 uint_color = uvec3(scaled_color);
+								immut uint16_t packed_color = uint16_t(bitfieldInsert(bitfieldInsert(uint_color.g, uint_color.r, 6, 5), uint_color.b, 11, 5));
+							#endif
 
 							#ifdef SUBGROUP_ENABLED
 								// Deduplicate lights within the subgroup before pushing to the global list.
 								bool is_unique = true;
 
 								uvec4 sg_ballot = subgroupBallot(true);
-								immut uint shuffles = subgroupBallotFindMSB(sg_ballot) - subgroupBallotFindLSB(sg_ballot);
+								uint shuffles = subgroupBallotFindMSB(sg_ballot) - subgroupBallotFindLSB(sg_ballot);
 
-								// We want to shuffle through all active invocations.
+								// Shuffle down through all active invocations.
 								for (uint i = 1u; i <= shuffles; ++i) {
 									immut uint other_packed_pe = subgroupShuffleDown(packed_pe, i);
+									immut uint16_t other_packed_color = uint16_t(subgroupShuffleDown(packed_color, i));
 
-									// If the invocation who's value we've aquired is within the subgroup and active...
-									if ((gl_SubgroupInvocationID + i < gl_SubgroupSize) && subgroupBallotBitExtract(sg_ballot, gl_SubgroupInvocationID + i)) {
-										// ...and has the same light position as we do, remove our light.
-										if (other_packed_pe == packed_pe) {
+									// If the invocation who's value we've aquired is within the subgroup and active
+									// and has the same light position as we do and greater than or equal color value, remove our light.
+									if (
+										(gl_SubgroupInvocationID + i < gl_SubgroupSize) &&
+										subgroupBallotBitExtract(sg_ballot, gl_SubgroupInvocationID + i) &&
+										other_packed_pe == packed_pe &&
+										other_packed_color >= packed_color
+									) {
+										is_unique = false;
+									}
+								}
+
+								if(is_unique) {
+									sg_ballot = subgroupBallot(true);
+									shuffles = subgroupBallotFindMSB(sg_ballot) - subgroupBallotFindLSB(sg_ballot);
+
+									// Shuffle up through all remaining invocations.
+									for (uint i = 1u; i <= shuffles; ++i) {
+										immut uint other_packed_pe = subgroupShuffleUp(packed_pe, i);
+
+										// We know that if an invocation with the same position at a lower index is still active,
+										// that means it has a greater color value, so we remove our light.
+										if (
+											(gl_SubgroupInvocationID + i < gl_SubgroupSize) &&
+											subgroupBallotBitExtract(sg_ballot, gl_SubgroupInvocationID + i) &&
+											other_packed_pe == packed_pe
+										) {
 											is_unique = false;
-											// break;
-											// ^We can probably skip this break.
-											// It would never allow us to iterate fewer times since that would require all active invocations to be non-unique.
-											// That also lets us skip recomputing the ballot.
 										}
 									}
 
-									// sg_ballot = subgroupBallot(true);
-								}
 
-								if (is_unique)
+									if (is_unique)
 							#endif
-							{
-								#ifdef SM
-									#ifdef MC_SPECULAR_MAP
-										immut f16vec3 avg_col = f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
-									#endif
-								#endif
+									{
+										#define SG_INCR_COUNTER ll.queue
+										uint sg_incr_i;
+										#include "/lib/sg_incr.glsl"
 
-								#define SG_INCR_COUNTER ll.queue
-								uint sg_incr_i;
-								#include "/lib/sg_incr.glsl"
+										uint packed_data = bitfieldInsert(
+											packed_pe, // Position.
+											emission, 27, 4 // Intensity.
+										);
+										if (fluid) { packed_data |= 0x80000000u; } // Set "wide" flag for lava.
 
-								uint light_data = bitfieldInsert(
-									packed_pe, // Position.
-									emission, 27, 4 // Intensity.
-								);
-								if (fluid) { light_data |= 0x80000000u; } // Set "wide" flag for lava.
-
-								ll.data[sg_incr_i] = light_data;
-
-								immut f16vec3 scaled_color = fma(linear(color * avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5));
-
-								#ifdef INT16
-									ll.color[sg_incr_i] = uint16_t(scaled_color.g) | (uint16_t(scaled_color.r) << uint16_t(6u)) | (uint16_t(scaled_color.b) << uint16_t(11u));
-								#else
-									immut uvec3 uint_color = uvec3(scaled_color);
-									ll.color[sg_incr_i] = bitfieldInsert(bitfieldInsert(uint_color.g, uint_color.r, 6, 5), uint_color.b, 11, 5);
-								#endif
-							}
+										ll.data[sg_incr_i] = packed_data;
+										ll.color[sg_incr_i] = packed_color;
+									}
+							#ifdef SUBGROUP_ENABLED
+								}
+							#endif
 						}
 					}
 				}
