@@ -60,32 +60,38 @@ in vec4 vaColor;
 
 #ifndef NO_NORMAL
 	uniform mat3 normalMatrix;
-
-	#include "/lib/tbn/vsh.glsl"
+	in vec3 vaNormal;
+	in vec4 at_tangent;
 #endif
 
 out VertexData {
-	layout(location = 1, component = 0) vec2 coord;
+	layout(location = 0, component = 0) vec2 coord;
+	layout(location = 1, component = 0) flat uint unorm27_1_4_luma_handedness_emission;
 
-	#ifdef HAND
-		layout(location = 5, component = 0) flat vec2 light;
-		layout(location = 2, component = 0) flat vec3 tint;
-	#else
-		layout(location = 1, component = 2) vec2 light;
+	#ifdef TERRAIN
+		layout(location = 0, component = 2) vec2 light;
+		layout(location = 1, component = 1) flat uint snorm4x8_octa_tangent_normal;
+		layout(location = 1, component = 2) flat uint mid_coord;
+		layout(location = 1, component = 3) flat uint face_tex_size;
 		layout(location = 2, component = 0) vec3 tint;
+		layout(location = 2, component = 3) float ao;
 
-		#ifdef TERRAIN
-			layout(location = 2, component = 3) float ao;
+		#ifndef NETHER
+			layout(location = 3, component = 0) vec3 s_screen;
 		#endif
-	#endif
+	#else
+		layout(location = 2, component = 0) flat vec3 tint;
+		layout(location = 3, component = 0) flat vec2 light;
+		layout(location = 4, component = 0) vec3 s_screen;
 
-	#ifndef NETHER
-		layout(location = 3, component = 0) vec3 s_screen;
-	#endif
+		#ifndef NO_NORMAL
+			layout(location = 1, component = 1) flat uint snorm4x8_octa_tangent_normal;
 
-	#if NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)
-		layout(location = 0, component = 3) flat uint mid_coord;
-		layout(location = 4, component = 0) flat uint face_tex_size;
+			#if NORMALS != 2 && !(NORMALS == 1 && defined MC_NORMAL_MAP)
+				layout(location = 1, component = 2) flat uint mid_coord;
+				layout(location = 1, component = 3) flat uint face_tex_size;
+			#endif
+		#endif
 	#endif
 } v;
 
@@ -128,7 +134,8 @@ void main() {
 			immut f16vec3 w_normal = f16vec3(normal_model_view_inverse * normalize(vaNormal));
 			immut f16vec3 w_tangent = f16vec3(normal_model_view_inverse * normalize(at_tangent.xyz));
 
-			init_tbn(w_normal, w_tangent); // this must run before writing to `v_tbn.handedness_and_misc`
+			v.snorm4x8_octa_tangent_normal = packSnorm4x8(f16vec4(octa_encode(w_tangent), octa_encode(w_normal)));
+			v.handedness_and_misc = roundEven(at_tangent.w); // Handedness is sometimes a bit off -1 or 1, so we round it.
 
 			#if NORMALS != 2 && !(NORMALS == 1 && defined MC_NORMAL_MAP)
 				immut u16vec2 texels = u16vec2(fma(abs(v.coord - mc_midTexCoord), vec2(2 * textureSize(gtexture, 0)), vec2(0.5)));
