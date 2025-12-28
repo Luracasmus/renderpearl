@@ -170,26 +170,29 @@
 #endif
 
 #ifndef TRANSMUTE_AND_PACK_INT16
-	int16_t float16BitsToInt16(float16_t v) { return int16_t(packFloat2x16(f16vec2(v, 0.0))); }
-	i16vec2 float16BitsToInt16(f16vec2 v) { return unpackInt2x16(int(packFloat2x16(v))); }
-	i16vec3 float16BitsToInt16(f16vec3 v) { return i16vec3(float16BitsToInt16(v.xy), float16BitsToInt16(v.z)); }
-	i16vec4 float16BitsToInt16(f16vec4 v) { return i16vec4(float16BitsToInt16(v.xy), float16BitsToInt16(v.zw)); }
+	#define float16BitsToInt16(v) _float16BitsToInt16(v)
+	int16_t _float16BitsToInt16(float16_t v) { return int16_t(packFloat2x16(f16vec2(v, 0.0))); }
+	i16vec2 _float16BitsToInt16(f16vec2 v) { return unpackInt2x16(int(packFloat2x16(v))); }
+	i16vec3 _float16BitsToInt16(f16vec3 v) { return i16vec3(float16BitsToInt16(v.xy), float16BitsToInt16(v.z)); }
+	i16vec4 _float16BitsToInt16(f16vec4 v) { return i16vec4(float16BitsToInt16(v.xy), float16BitsToInt16(v.zw)); }
 
-	float16_t int16BitsToFloat16(int16_t v) { return unpackFloat2x16(uint(v)).x; }
-	f16vec2 int16BitsToFloat16(i16vec2 v) { return unpackFloat2x16(uint(packInt2x16(v))); }
-	f16vec3 int16BitsToFloat16(i16vec3 v) { return f16vec3(int16BitsToFloat16(v.xy), int16BitsToFloat16(v.z)); }
-	f16vec4 int16BitsToFloat16(i16vec4 v) { return f16vec4(int16BitsToFloat16(v.xy), int16BitsToFloat16(v.zw)); }
+	#define int16BitsToFloat16(v) _int16BitsToFloat16(v)
+	float16_t _int16BitsToFloat16(int16_t v) { return unpackFloat2x16(uint(v)).x; }
+	f16vec2 _int16BitsToFloat16(i16vec2 v) { return unpackFloat2x16(uint(packInt2x16(v))); }
+	f16vec3 _int16BitsToFloat16(i16vec3 v) { return f16vec3(int16BitsToFloat16(v.xy), int16BitsToFloat16(v.z)); }
+	f16vec4 _int16BitsToFloat16(i16vec4 v) { return f16vec4(int16BitsToFloat16(v.xy), int16BitsToFloat16(v.zw)); }
 
-	uint16_t float16BitsToUint16(float16_t v) { return uint16_t(packFloat2x16(f16vec2(v, 0.0))); }
-	float16_t uint16BitsToFloat16(uint16_t v) { return unpackFloat2x16(uint(v)).x; }
+	#define float16BitsToUint16(v) _float16BitsToUint16(v)
+	uint16_t _float16BitsToUint16(float16_t v) { return uint16_t(packFloat2x16(f16vec2(v, 0.0))); }
+	u16vec2 _float16BitsToUint16(f16vec2 v) { return unpackUint2x16(packFloat2x16(v)); }
+	u16vec3 _float16BitsToUint16(f16vec3 v) { return u16vec3(float16BitsToUint16(v.xy), float16BitsToUint16(v.z)); }
+	u16vec4 _float16BitsToUint16(f16vec4 v) { return u16vec4(float16BitsToUint16(v.xy), float16BitsToUint16(v.zw)); }
 
-	u16vec2 float16BitsToUint16(f16vec2 v) { return unpackUint2x16(packFloat2x16(v)); }
-	u16vec3 float16BitsToUint16(f16vec3 v) { return u16vec3(float16BitsToUint16(v.xy), float16BitsToUint16(v.z)); }
-	u16vec4 float16BitsToUint16(f16vec4 v) { return u16vec4(float16BitsToUint16(v.xy), float16BitsToUint16(v.zw)); }
-
-	f16vec2 uint16BitsToFloat16(u16vec2 v) { return unpackFloat2x16(packUint2x16(v)); }
-	f16vec3 uint16BitsToFloat16(u16vec3 v) { return f16vec3(uint16BitsToFloat16(v.xy), uint16BitsToFloat16(v.z)); }
-	f16vec4 uint16BitsToFloat16(u16vec4 v) { return f16vec4(uint16BitsToFloat16(v.xy), uint16BitsToFloat16(v.zw)); }
+	#define uint16BitsToFloat16(v) _uint16BitsToFloat16(v)
+	float16_t _uint16BitsToFloat16(uint16_t v) { return unpackFloat2x16(uint(v)).x; }
+	f16vec2 _uint16BitsToFloat16(u16vec2 v) { return unpackFloat2x16(packUint2x16(v)); }
+	f16vec3 _uint16BitsToFloat16(u16vec3 v) { return f16vec3(uint16BitsToFloat16(v.xy), uint16BitsToFloat16(v.z)); }
+	f16vec4 _uint16BitsToFloat16(u16vec4 v) { return f16vec4(uint16BitsToFloat16(v.xy), uint16BitsToFloat16(v.zw)); }
 #endif
 
 // #extension GL_EXT_shader_integer_mix : require
