@@ -17,38 +17,6 @@
 	#define immut
 #endif
 
-// It seems like this is always supported on non-NVIDIA or Intel+Windows drivers.
-// https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_shader_trinary_minmax
-#if (MINMAX_3 >= 1 && defined MC_GL_AMD_shader_trinary_minmax) || (MINMAX_3 >= 2 && !defined MC_GL_VENDOR_NVIDIA && !(defined MC_GL_VENDOR_INTEL && defined MC_OS_WINDOWS)) || MINMAX_3 >= 3
-	#extension GL_AMD_shader_trinary_minmax : require
-#else
-	#define min3(v0, v1, v2) min(v0, min(v1, v2))
-	#define max3(v0, v1, v2) max(v0, max(v1, v2))
-#endif
-
-// It seems like this is always supported on Mesa drivers for Intel GPUs (excluding some mobile or very old GPUs).
-// https://opengl.gpuinfo.org/listreports.php?extension=GL_INTEL_shader_integer_functions2
-#if (MUL_32x16 >= 1 && defined MC_GL_INTEL_shader_integer_functions2) || (MUL_32x16 >= 2 && defined MC_GL_VENDOR_MESA && defined MC_GL_RENDERER_INTEL) || MUL_32x16 >= 3
-	#extension GL_INTEL_shader_integer_functions2 : require
-#else
-	#define multiply32x16(v0, v1) (v0 * v1)
-#endif
-
-// https://opengl.gpuinfo.org/listreports.php?extension=GL_KHR_shader_subgroup
-#if (SUBGROUP >= 1 && defined GL_KHR_shader_subgroup) || (SUBGROUP >= 2 && (defined MC_GL_VENDOR_NVIDIA || defined MC_GL_RENDERER_RADEON)) || SUBGROUP >= 3
-	#extension GL_KHR_shader_subgroup_basic : require
-	#extension GL_KHR_shader_subgroup_vote : require
-	#extension GL_KHR_shader_subgroup_arithmetic : require
-	#extension GL_KHR_shader_subgroup_ballot : require
-	#extension GL_KHR_shader_subgroup_shuffle_relative : require
-	#define SUBGROUP_ENABLED
-#else
-	#define subgroupAny(v) (v)
-	#define subgroupElect() true
-	#define subgroupBroadcastFirst(v) (v)
-	// These essentially emulate a subgroup size of 1.
-#endif
-
 #ifdef SIZED_16_8
 	// It seems like this is always supported on NVIDIA drivers.
 	// https://opengl.gpuinfo.org/listreports.php?extension=GL_NV_gpu_shader5
@@ -227,3 +195,47 @@
 // #extension GL_EXT_shader_integer_mix : require
 // #extension GL_ARB_gpu_shader_int64 : require
 // #extension GL_AMD_gpu_shader_int64 : require
+
+// It seems like this is always supported on non-NVIDIA or Intel+Windows drivers.
+// https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_shader_trinary_minmax
+#if (MINMAX_3 >= 1 && defined MC_GL_AMD_shader_trinary_minmax) || (MINMAX_3 >= 2 && !defined MC_GL_VENDOR_NVIDIA && !(defined MC_GL_VENDOR_INTEL && defined MC_OS_WINDOWS)) || MINMAX_3 >= 3
+	#extension GL_AMD_shader_trinary_minmax : require
+#else
+	#define min3(v0, v1, v2) min(v0, min(v1, v2))
+	#define max3(v0, v1, v2) max(v0, max(v1, v2))
+#endif
+
+// It seems like this is always supported on Mesa drivers for Intel GPUs (excluding some mobile or very old GPUs).
+// https://opengl.gpuinfo.org/listreports.php?extension=GL_INTEL_shader_integer_functions2
+#if (MUL_32x16 >= 1 && defined MC_GL_INTEL_shader_integer_functions2) || (MUL_32x16 >= 2 && defined MC_GL_VENDOR_MESA && defined MC_GL_RENDERER_INTEL) || MUL_32x16 >= 3
+	#extension GL_INTEL_shader_integer_functions2 : require
+#else
+	#define multiply32x16(v0, v1) (v0 * v1)
+#endif
+
+// https://opengl.gpuinfo.org/listreports.php?extension=GL_KHR_shader_subgroup
+#if (SUBGROUP >= 1 && defined GL_KHR_shader_subgroup) || (SUBGROUP >= 2 && (defined MC_GL_VENDOR_NVIDIA || defined MC_GL_RENDERER_RADEON)) || SUBGROUP >= 3
+	#extension GL_KHR_shader_subgroup_basic : require
+	#extension GL_KHR_shader_subgroup_vote : require
+	#extension GL_KHR_shader_subgroup_arithmetic : require
+	#extension GL_KHR_shader_subgroup_ballot : require
+	#extension GL_KHR_shader_subgroup_shuffle_relative : require
+	#define SUBGROUP_ENABLED
+
+	#ifdef INT16
+		#extension GL_EXT_shader_subgroup_extended_types_int16 : enable
+	#endif
+
+	#ifdef INT8
+		#extension GL_EXT_shader_subgroup_extended_types_int8 : enable
+	#endif
+
+	#ifdef FLOAT16
+		#extension GL_EXT_shader_subgroup_extended_types_float16 : enable
+	#endif
+#else
+	#define subgroupAny(v) (v)
+	#define subgroupElect() true
+	#define subgroupBroadcastFirst(v) (v)
+	// These essentially emulate a subgroup size of 1.
+#endif
