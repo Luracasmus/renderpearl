@@ -161,10 +161,10 @@
 	#define f16vec4 vec4
 
 	#define packFloat2x16(v) _packFloat2x16(v)
-	uint packFloat2x16(vec2 v) { return packHalf2x16(v); }
+	uint _packFloat2x16(vec2 v) { return packHalf2x16(v); }
 
 	#define unpackFloat2x16(v) _unpackFloat2x16(v)
-	vec2 unpackFloat2x16(uint v) { return unpackHalf2x16(v); }
+	vec2 _unpackFloat2x16(uint v) { return unpackHalf2x16(v); }
 #endif
 
 #ifndef MAT16
