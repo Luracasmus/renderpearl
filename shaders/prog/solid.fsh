@@ -33,27 +33,33 @@ uniform sampler2D gtexture;
 #include "/lib/srgb.glsl"
 
 in VertexData {
-	layout(location = 1, component = 0) vec2 coord;
+	layout(location = 0, component = 0) vec2 coord;
+	layout(location = 1, component = 0) flat uint unorm27_1_4_luma_handedness_emission;
 
-	#ifdef HAND
-		layout(location = 5, component = 0) flat vec2 light;
-		layout(location = 2, component = 0) flat vec3 tint;
-	#else
-		layout(location = 1, component = 2) vec2 light;
+	#ifdef TERRAIN
+		layout(location = 0, component = 2) vec2 light;
+		layout(location = 1, component = 1) flat uint snorm4x8_octa_tangent_normal;
+		layout(location = 1, component = 2) flat uint mid_coord;
+		layout(location = 1, component = 3) flat uint face_tex_size;
 		layout(location = 2, component = 0) vec3 tint;
+		layout(location = 2, component = 3) float ao;
 
-		#ifdef TERRAIN
-			layout(location = 2, component = 3) float ao;
+		#ifndef NETHER
+			layout(location = 3, component = 0) vec3 s_screen;
 		#endif
-	#endif
+	#else
+		layout(location = 2, component = 0) flat vec3 tint;
+		layout(location = 3, component = 0) flat vec2 light;
+		layout(location = 4, component = 0) vec3 s_screen;
 
-	#ifndef NETHER
-		layout(location = 3, component = 0) vec3 s_screen;
-	#endif
+		#ifndef NO_NORMAL
+			layout(location = 1, component = 1) flat uint snorm4x8_octa_tangent_normal;
 
-	#if NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)
-		layout(location = 0, component = 3) flat uint mid_coord;
-		layout(location = 4, component = 0) flat uint face_tex_size;
+			#if NORMALS != 2 && !(NORMALS == 1 && defined MC_NORMAL_MAP)
+				layout(location = 1, component = 2) flat uint mid_coord;
+				layout(location = 1, component = 3) flat uint face_tex_size;
+			#endif
+		#endif
 	#endif
 } v;
 
@@ -79,7 +85,9 @@ void main() {
 		immut vec3 w_face_normal = mvInv2; // == MV_INV * vec3(0.0, 0.0, 1.0)
 		immut f16vec2 octa_w_face_normal = octa_encode(f16vec3(w_face_normal));
 	#else
-		immut f16vec2 octa_w_face_normal = unpackFloat2x16(v_tbn.half2x16_octa_normal);
+		immut f16vec4 octa_tangent_normal = unpackSnorm4x8(v.snorm4x8_octa_tangent_normal);
+		immut f16vec2 octa_w_face_normal = octa_tangent_normal.zw;
+		immut f16vec3 w_face_normal = octa_decode(octa_w_face_normal);
 	#endif
 
 	#if defined NO_NORMAL || NORMALS == 2
@@ -89,13 +97,11 @@ void main() {
 			immut vec3 w_face_tangent = mvInv1; // == MV_INV * vec3(0.0, 1.0, 0.0)
 			immut mat3 w_tbn = mat3(w_face_tangent, cross(w_face_tangent, w_face_normal), w_face_normal);
 		#else
-			immut f16vec2 octa_w_face_tangent = unpackFloat2x16(v_tbn.half2x16_octa_tangent);
+			immut f16vec2 octa_w_face_tangent = octa_decode(octa_tangent_normal);
 			immut vec3 w_face_tangent = vec3(normalize(octa_decode(octa_w_face_tangent)));
 			immut vec3 w_face_normal = vec3(normalize(octa_decode(octa_w_face_normal)));
 
-			immut float handedness = fma(float(v_tbn.handedness_and_misc & 1u), 2.0, -1.0); // map least significant bit, [0u, 1u], to [-1.0, 1.0]
-
-			immut mat3 w_tbn = mat3(w_face_tangent, cross(w_face_tangent, w_face_normal) * handedness, w_face_normal);
+			immut mat3 w_tbn = mat3(w_face_tangent, cross(w_face_tangent, w_face_normal) * v.handedness, w_face_normal);
 		#endif
 
 		#if NORMALS == 1 && defined MC_NORMAL_MAP

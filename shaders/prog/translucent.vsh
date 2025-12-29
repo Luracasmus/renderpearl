@@ -77,7 +77,7 @@ void main() {
 		#ifndef NO_NORMAL
 			immut vec3 v_normal = normalMatrix * normalize(vaNormal);
 
-			init_tbn(f16vec3(v_normal), f16vec3(normalMatrix * normalize(at_tangent.xyz)));
+			set_fsh_tbn(f16vec3(v_normal), f16vec3(normalMatrix * normalize(at_tangent.xyz)));
 		#endif
 
 		immut f16vec3 w_normal =
