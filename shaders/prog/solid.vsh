@@ -37,6 +37,7 @@ uniform sampler2D gtexture;
 #ifdef TERRAIN
 	#include "/buf/ll.glsl"
 
+	// `mc_chunkFade` is patched in by Iris.
 	uniform bool rebuildLL;
 	uniform vec3 cameraPosition, chunkOffset;
 

@@ -22,7 +22,7 @@ uniform sampler2D gtexture;
 #endif
 
 in VertexData {
-	layout(location = 2, component = 0) vec3 tint;
+	layout(location = 2, component = 0) vec4 tint;
 	layout(location = 3, component = 0) vec3 light;
 	layout(location = 4, component = 0) vec2 coord;
 
@@ -68,21 +68,14 @@ void main() {
 		if (color.a < float16_t(alphaTestRef)) discard;
 	#endif
 
-	immut f16vec3 tint = f16vec3(v.tint);
-
-	#ifdef TERRAIN
-		immut bool fluid = v_tbn.handedness_and_misc >= 0x80000000u; // most significant bit is set
-		immut float16_t alpha = fluid ? float16_t(WATER_OPACITY * 0.01) : float16_t(1.0);
-		color *= f16vec4(tint, alpha);
-	#else
-		color.rgb *= tint;
-	#endif
+	immut f16vec4 tint = f16vec4(v.tint);
+	color *= tint;
 
 	#if defined SM && defined MC_SPECULAR_MAP
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
 		#ifdef TERRAIN
-			immut float16_t avg_luma = unpackFloat2x16(v_tbn.handedness_and_misc >> 1u).x;
+			immut float16_t avg_luma = unpackFloat2x16(v_tbn.handedness_and_misc).y;
 		#else
 			const float16_t avg_luma = float16_t(0.8);
 		#endif
@@ -108,7 +101,7 @@ void main() {
 		#elif NORMALS == 2
 			immut f16vec3 v_tex_normal = f16vec3(v_tbn[2]);
 		#else
-			immut f16vec3 v_tex_normal = f16vec3(v_tbn * gen_normal(gtexture, tint, v.coord, v.mid_coord, v.face_tex_size, luminance(color.rgb)));
+			immut f16vec3 v_tex_normal = f16vec3(v_tbn * gen_normal(gtexture, tint.rgb, v.coord, v.mid_coord, v.face_tex_size, luminance(color.rgb)));
 		#endif
 	#endif
 

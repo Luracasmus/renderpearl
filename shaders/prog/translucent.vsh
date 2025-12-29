@@ -16,6 +16,7 @@ uniform mat4 modelViewMatrix, projectionMatrix, shadowModelView, textureMatrix;
 #ifdef TERRAIN
 	uniform vec3 chunkOffset;
 
+	// `mc_chunkFade` is patched in by Iris.
 	in vec2 mc_Entity;
 	in vec4 at_midBlock;
 
@@ -38,7 +39,7 @@ in vec3 vaPosition;
 in vec4 vaColor;
 
 out VertexData {
-	layout(location = 2, component = 0) vec3 tint;
+	layout(location = 2, component = 0) vec4 tint;
 	layout(location = 3, component = 0) vec3 light;
 	layout(location = 4, component = 0) vec2 coord;
 
@@ -86,8 +87,29 @@ void main() {
 				f16vec3(MV_INV * v_normal);
 			#endif
 
-		immut f16vec4 color = f16vec4(vaColor);
-		v.light = indexed_block_light(MV_INV * view, w_normal, color.a);
+		#ifdef TERRAIN
+			f16vec4 tint = f16vec4(
+				vaColor.rgb,
+				mc_chunkFade
+			);
+			immut float16_t ao = float16_t(vaColor.a);
+
+			#if !WAVES
+				immut bool fluid = mc_Entity.y == 1.0;
+			#endif
+
+			if (fluid) {
+				tint.a *= float16_t(WATER_OPACITY * 0.01);
+			}
+		#else
+			immut f16vec4 tint = f16vec4(
+				vaColor.rgb,
+				vaColor.a * mc_chunkFade
+			); // The alpha component is actual tint alpha outside of terrain.
+			const float16_t ao = float16_t(1.0);
+		#endif
+
+		v.light = indexed_block_light(MV_INV * view, w_normal, ao);
 
 		#ifndef NETHER
 			immut float16_t n_dot_l = dot(w_normal, f16vec3(shadowLightDirectionPlr));
@@ -108,27 +130,23 @@ void main() {
 		#endif
 
 		#ifdef TERRAIN
-			#if !WAVES
-				immut bool fluid = mc_Entity.y == 1.0;
-			#endif
-			if (fluid) v_tbn.handedness_and_misc |= 0x80000000u; // "fluid" flag. // Set most significant bit to 1.
-
 			immut float16_t emission = min((max(float16_t(mc_Entity.x), float16_t(0.0)) + float16_t(at_midBlock.w)) / float16_t(15.0), float16_t(1.0));
 			v.light.x = float(min(fma(emission, float16_t(0.3), max(float16_t(v.light.x), emission)), float16_t(1.0))); // TODO: check this
 
 			#if !(SM && defined MC_SPECULAR_MAP)
-				float16_t avg_luma = luminance(color.rgb * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb));
+				float16_t avg_luma = luminance(tint.rgb * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb));
 
-				if (fluid) avg_luma -= float16_t(0.75);
+				if (fluid) {
+					avg_luma -= float16_t(0.75);
+				}
 
-				immut uint half2x16_avg_luma_and_zero = packFloat2x16(f16vec2(avg_luma, 0.0));
-				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, half2x16_avg_luma_and_zero, 1, 16);
+				v_tbn.handedness_and_misc |= packFloat2x16(f16vec2(0.0, avg_luma));
 			#endif
 		#endif
 
-		v.tint = vec3(color.rgb);
+		v.tint = vec4(tint);
 		#ifdef ENTITY_COLOR
-			v.tint = mix(v.tint, entityColor.rgb, entityColor.a);
+			v.tint.rgb = mix(v.tint.rgb, entityColor.rgb, entityColor.a);
 		#endif
 
 		v.coord = rot_trans_mmul(textureMatrix, vaUV0);
