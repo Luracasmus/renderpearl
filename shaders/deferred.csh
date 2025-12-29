@@ -38,7 +38,15 @@ void main() {
 
 		// if (ll.queue > ll.data.length()) { ll.len = uint16_t(0u); return; }
 
-		immut uint16_t len = min(uint16_t(subgroupBroadcastFirst(ll.queue)), uint16_t(ll.data.length()));
+		#if !defined SUBGROUP_ENABLED && defined AMD_INT16
+			// Work around very strange AMD compiler bug.
+			// Casting to `uint16_t` before the `min` causes incorrect behavior
+			// if `GL_EXT_shader_subgroup_extended_types_int16` is disabled.
+			immut uint16_t len = uint16_t(min(ll.queue, ll.data.length()));
+		#else
+			immut uint16_t len = min(uint16_t(subgroupBroadcastFirst(ll.queue)), uint16_t(ll.data.length()));
+		#endif
+
 		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
 			sh.index_data[i] = ll.data[i];
 			sh.index_color[i] = ll.color[i];
