@@ -1,5 +1,5 @@
 name: Enhancement / feature request
-type: "enhancement"
+type: enhancement
 labels: ["enhancement"]
 body:
     - type: markdown
