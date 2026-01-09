@@ -89,23 +89,42 @@ Most significant <-> Least significant
 └16┴16┴16┴16┘
  |  |  |  |
  |  └[color (RGB)] (float)
- └[AO] (float)
+ └[block light] (float)
 ```
 
 ```
-┌ colortex2 -----------------┐
-|A    |B        |G     |R    |
-└16 16┴1 1 15 15┴8 8 16┴16 16┘
- |  |  | | |  |  | | |  |  |
- |  |  | | |  |  | | └[biased shadow screen space position (XYZ)] (unorm)
- |  |  | | |  |  | └[roughness] (unorm)
- |  |  | | |  |  └[subsurface scattering] (unorm)
- |  |  | | |  └[block light] (unorm)
- |  |  | | └[sky light] (unorm)
- |  |  | └["pure light" flag] (bool)
+┌ colortex2 -------------------┐
+|A    |B        |G      |R     |
+└16 16┴1 3 13 15┴8 8 8 8┴24 4 4┘
+ |  |  | | |  |  | | | | |  | |
+ |  |  | | |  |  | | | | |  └[biased shadow screen space position XY] (unorm lower bits)
+ |  |  | | |  |  | | | | └[biased shadow screen space position Z] (unorm)
+ |  |  | | |  |  | | | └[roughness] (unorm)
+ |  |  | | |  |  | | └[subsurface scattering] (unorm)
+ |  |  | | |  |  | └[emissiveness] (unorm)
+ |  |  | | |  |  └[f0 (enum)] (uint)
+ |  |  | | |  └[sky light] (ufloat)
+ |  |  | | └[AO] (unorm)
+ |  |  | └[AO direction in 2D across the face (enum)] (uint)
  |  |  └["hand" flag] (bool)
- |  └[octahedron encoded texture normal] (snorm)
- └[octahedron encoded face normal] (snorm)
+ |  └[octahedron encoded texture normal (XY)] (snorm)
+ └[octahedron encoded face normal (XY)] (snorm)
+```
+
+```
+┌ colortex3 ┐
+|G |R       |
+└16┴16------┘
+ |  |
+ └[biased shadow screen space position XY] (unorm higher bits)
+```
+
+```
+┌ f0 (enum) ┐
+[0, 229] - f0
+230      - "pure light" flag
+231      - "metal" flag
+232      - "water" flag
 ```
 
 ```
@@ -117,51 +136,6 @@ Most significant <-> Least significant
  | | └[player feet space position (XYZ)] (uint)
  | └[intensity] (uint)
  └["wide" flag] (bool)
-```
-
-### Proposed
-
-These are in reverse bit order and a bit outdated.
-
-```
-┌ colortex1 ┐
-|R |G |B |A |
-└16┴16┴16┴16┘
- |  |  |  └[block light] (float)
- └[color (RGB)] (float)
-```
-
-```
-┌ colortex2 ----------------┐
-|R    |G      |B      |A    |
-└16 16┴16 13 3┴8 8 8 8┴31 1 ┘
- |  |  |  |  | | | | | |  └["hand" flag] (bool)
- |  |  |  |  | | | | | └[biased shadow screen space position Z] (unsigned float)
- |  |  |  |  | | | | └[f0/flag enum] (uint)
- |  |  |  |  | | | └[emissiveness] (unorm)
- |  |  |  |  | | └[subsurface scattering] (unorm)
- |  |  |  |  | └[roughness] (unorm)
- |  |  |  |  └[AO direction in 2D across the face] (uint)
- |  |  |  └[AO] (unorm)
- |  |  └[sky light] (float)
- |  └[octahedron encoded texture normal] (snorm)
- └[octahedron encoded face normal] (snorm)
-```
-
-```
-┌ f0/flag enum ┐
-[0, 229] - f0
-230      - "pure light" flag
-231      - "metal" flag
-232      - "water" flag
-```
-
-```
-┌ colortex3 ┐
-|R |G       |
-└32┴32------┘
- |  |
- └[biased shadow screen space position XY] (float)
 ```
 
 ## Code

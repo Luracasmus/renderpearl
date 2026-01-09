@@ -67,13 +67,13 @@ in vec4 vaColor;
 
 out VertexData {
 	layout(location = 0, component = 0) vec2 coord;
-	layout(location = 1, component = 0) flat uint unorm27_1_4_luma_handedness_emission;
+	layout(location = 1, component = 0) flat uint uint4_bool1_unorm11_float16_emission_handedness_alpha_luma;
 
 	#ifdef TERRAIN
 		layout(location = 0, component = 2) vec2 light;
 		layout(location = 1, component = 1) flat uint snorm4x8_octa_tangent_normal;
-		layout(location = 1, component = 2) flat uint mid_coord;
-		layout(location = 1, component = 3) flat uint face_tex_size;
+		layout(location = 1, component = 2) flat uint unorm2x16_mid_coord;
+		layout(location = 1, component = 3) flat uint uint2x16_face_tex_size;
 		layout(location = 2, component = 0) vec3 tint;
 		layout(location = 2, component = 3) float ao;
 
@@ -81,16 +81,19 @@ out VertexData {
 			layout(location = 3, component = 0) vec3 s_screen;
 		#endif
 	#else
-		layout(location = 2, component = 0) flat vec3 tint;
-		layout(location = 3, component = 0) flat vec2 light;
-		layout(location = 4, component = 0) vec3 s_screen;
+		layout(location = 1, component = 1) flat uint unorm4x8_tint_zero;
+		layout(location = 1, component = 2) flat uint float2x16_light;
+
+		#ifndef NETHER
+			layout(location = 2, component = 0) vec3 s_screen;
+		#endif
 
 		#ifndef NO_NORMAL
-			layout(location = 1, component = 1) flat uint snorm4x8_octa_tangent_normal;
+			layout(location = 1, component = 3) flat uint snorm4x8_octa_tangent_normal;
 
 			#if NORMALS != 2 && !(NORMALS == 1 && defined MC_NORMAL_MAP)
-				layout(location = 1, component = 2) flat uint mid_coord;
-				layout(location = 1, component = 3) flat uint face_tex_size;
+				layout(location = 3, component = 0) flat uint unorm2x16_mid_coord;
+				layout(location = 3, component = 1) flat uint uint2x16_face_tex_size;
 			#endif
 		#endif
 	#endif
@@ -118,13 +121,11 @@ void main() {
 		gl_Position = clip;
 
 		v.coord = rot_trans_mmul(textureMatrix, vaUV0);
-		v.light = norm_uv2();
 
 		f16vec3 color = f16vec3(vaColor.rgb);
 		#ifdef ENTITY_COLOR
 			color = mix(color, f16vec3(entityColor.rgb), float16_t(entityColor.a));
 		#endif
-		v.tint = vec3(color);
 
 		immut vec3 pe = MV_INV * view;
 		immut f16vec3 abs_pe = abs(f16vec3(pe));
@@ -140,65 +141,29 @@ void main() {
 
 			#if NORMALS != 2 && !(NORMALS == 1 && defined MC_NORMAL_MAP)
 				immut u16vec2 texels = u16vec2(fma(abs(v.coord - mc_midTexCoord), vec2(2 * textureSize(gtexture, 0)), vec2(0.5)));
-				v.face_tex_size = packUint2x16(texels);
-				v.mid_coord = packUnorm2x16(mc_midTexCoord);
+				v.uint2x16_face_tex_size = packUint2x16(texels);
+				v.unorm2x16_mid_coord = packUnorm2x16(mc_midTexCoord);
 			#endif
 
-			#ifdef HAND
-				immut bool is_right = view.x > 0.0;
-				immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
-				immut uint16_t this_hand_light = is_right ? hand_light_lr.y : hand_light_lr.x;
-				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, this_hand_light, 1, 4);
+			immut f16vec3 avg_col = color * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
+			immut float16_t avg_luma = luminance(avg_col);
+			v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma = packFloat2x16(float16_t(0.0), avg_luma);
 
-				#if HAND_LIGHT
-					if (this_hand_light != uint16_t(0u) && abs(view.x) > 0.3) { // Use a margin around the center to not register e.g. a swinging sword as being on the opposite side.
-						// Scale and round to fit packing.
-						immut u16vec3 scaled_color = u16vec3(fma(
-							linear(color * f16vec3(textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb)),
-							f16vec3(hand_light_pack_scale),
-							f16vec3(0.5)
-						));
-
-						uint rg = packUint2x16(scaled_color.rg);
-						uint b_count = packUint2x16(u16vec2(scaled_color.g, uint16_t(1u))); // The second component is just 1, to count the number of times we're adding to the sum.
-
-						if (is_right) {
-							#ifdef SUBGROUP_ENABLED
-								rg = subgroupAdd(rg);
-								b_count = subgroupAdd(b_count);
-
-								if (subgroupElect())
-							#endif
-							{
-								atomicAdd(hand_light.right.x, rg);
-								atomicAdd(hand_light.right.y, b_count);
-							}
-						} else {
-							#ifdef SUBGROUP_ENABLED
-								rg = subgroupAdd(rg);
-								b_count = subgroupAdd(b_count);
-
-								if (subgroupElect())
-							#endif
-							{
-								atomicAdd(hand_light.left.x, rg);
-								atomicAdd(hand_light.left.y, b_count);
-							}
-						}
-					}
-				#endif
-			#elif defined TERRAIN
+			#ifdef TERRAIN
+				v.tint = vec3(color);
+				v.light = norm_uv2();
 				v.ao = vaColor.a;
 
-				immut f16vec3 avg_col = color * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
-				immut uint scaled_avg_luma = uint(fma(luminance(avg_col), float16_t(8191.0), float16_t(0.5)));
-				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, scaled_avg_luma, 5, 13); // TODO: This could probably be done outside of terrain too.
+				immut float16_t emission = max(float16_t(mc_Entity.x), float16_t(at_midBlock.w));
+				v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma |= uint(emission + float16_t(0.5));
+				// float16_t norm_emission = min(emission / float16_t(15.0), float16_t(1.0));
+				// v.light.x = float(min(fma(float16_t(norm_emission), float16_t(0.3), max(float16_t(v.light.x), norm_emission)), float16_t(1.0)));
 
-				float16_t norm_emission = min((max(float16_t(mc_Entity.x), float16_t(0.0)) + float16_t(at_midBlock.w)) / float16_t(15.0), float16_t(1.0));
-				v.light.x = float(min(fma(float16_t(norm_emission), float16_t(0.3), max(float16_t(v.light.x), norm_emission)), float16_t(1.0)));
-
-				immut uint emission = uint(fma(norm_emission, float16_t(15.0), float16_t(0.5))); // bring into 4-bit-representable range and round
-				v_tbn.handedness_and_misc = bitfieldInsert(v_tbn.handedness_and_misc, emission, 1, 4);
+				v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma = bitfieldInsert(
+					v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma,
+					uint(fma(mc_chunkFade, 2047.0, 0.5)), // Scale and round from (0.0, 1.0] to [0, 2047].
+					5, 11
+				); // Pack alpha.
 
 				// Only rebuild the index once every LL_RATE frames, and cull chunks which are completely outside LL_DIST in Chebyshev distance in uniform control flow.
 				if (rebuildLL && max3(chunkOffset.x, chunkOffset.y, chunkOffset.z) < float(LL_DIST + 16)) {
@@ -208,11 +173,11 @@ void main() {
 						// Run once per face.
 						(gl_VertexID & 3) == 1 && // gl_VertexID % 4 == 1
 						// Cull too weak or non-lights.
-						emission >= MIN_LL_INTENSITY &&
+						emission >= float16_t(MIN_LL_INTENSITY) &&
 						// Cull vertices outside LL_DIST using Chebyshev distance.
 						chebyshev_dist < float16_t(LL_DIST) &&
 						// Cull behind camera outside of illumination range.
-						(view_f16.z < float16_t(0.0) || dot(abs_pe, f16vec3(1.0)) <= float16_t(emission))
+						(view_f16.z < float16_t(0.0) || dot(abs_pe, f16vec3(1.0)) <= emission)
 					) {
 						immut bool fluid = mc_Entity.y == 1.0;
 						immut uvec3 seed = uvec3(ivec3((0.5 + cameraPosition) + pe));
@@ -290,7 +255,7 @@ void main() {
 
 										uint packed_data = bitfieldInsert(
 											packed_pe, // Position.
-											emission, 27, 4 // Intensity.
+											v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 27, 4 // Intensity.
 										);
 										if (fluid) { packed_data |= 0x80000000u; } // Set "wide" flag for lava.
 
@@ -303,7 +268,59 @@ void main() {
 						}
 					}
 				}
+			#else
+				v.light = packFloat2x16(norm_uv2());
+				v.unorm4x8_tint_zero = packUnorm4x8(f16vec4(color, 0.0));
+
+				#ifdef HAND
+					immut bool is_right = view.x > 0.0;
+					immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
+					immut uint16_t this_hand_light = is_right ? hand_light_lr.y : hand_light_lr.x;
+					v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma |= uint(this_hand_light);
+
+					#if HAND_LIGHT
+						if (this_hand_light != uint16_t(0u) && abs(view.x) > 0.3) { // Use a margin around the center to not register e.g. a swinging sword as being on the opposite side.
+							// Scale and round to fit packing.
+							immut u16vec3 scaled_color = u16vec3(fma(
+								linear(color * f16vec3(textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb)),
+								f16vec3(hand_light_pack_scale),
+								f16vec3(0.5)
+							));
+
+							uint rg = packUint2x16(scaled_color.rg);
+							uint b_count = packUint2x16(u16vec2(scaled_color.g, uint16_t(1u))); // The second component is just 1, to count the number of times we're adding to the sum.
+
+							if (is_right) {
+								#ifdef SUBGROUP_ENABLED
+									rg = subgroupAdd(rg);
+									b_count = subgroupAdd(b_count);
+
+									if (subgroupElect())
+								#endif
+								{
+									atomicAdd(hand_light.right.x, rg);
+									atomicAdd(hand_light.right.y, b_count);
+								}
+							} else {
+								#ifdef SUBGROUP_ENABLED
+									rg = subgroupAdd(rg);
+									b_count = subgroupAdd(b_count);
+
+									if (subgroupElect())
+								#endif
+								{
+									atomicAdd(hand_light.left.x, rg);
+									atomicAdd(hand_light.left.y, b_count);
+								}
+							}
+						}
+					#endif
+				#endif
 			#endif
+
+			if (at_tangent.w > 0.0) { // Pack handedness.
+				v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma |= 1u << 4u;
+			}
 		#endif
 
 		#ifndef NETHER
