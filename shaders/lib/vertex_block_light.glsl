@@ -5,12 +5,7 @@ uniform vec3 cameraPositionFract;
 	#include "/lib/llv.glsl"
 #endif
 
-readonly
-#include "/buf/ll.glsl"
-
-#include "/lib/luminance.glsl"
 #include "/lib/brdf.glsl"
-#include "/lib/norm_uv2.glsl"
 #include "/lib/skylight.glsl"
 
 // Slightly less cool version of the lighting done in `deferred1_a.csh`, adapted to work in vertex shaders.

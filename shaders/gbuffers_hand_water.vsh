@@ -1,1 +1,3 @@
-#include "/prog/translucent.vsh"
+#define TRANSLUCENT
+#define HAND
+#include "/prog/solid.vsh"

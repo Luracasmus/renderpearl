@@ -18,26 +18,15 @@ uniform sampler2D gtexture;
 #ifdef NO_NORMAL
 	uniform mat3 normalMatrix;
 #else
-	#include "/lib/tbn/fsh.glsl"
+	#include "/lib/octa_normal.glsl"
 #endif
 
-in VertexData {
-	layout(location = 2, component = 0) vec4 tint;
-	layout(location = 3, component = 0) vec3 light;
-	layout(location = 4, component = 0) vec2 coord;
-
-	#ifndef NETHER
-		layout(location = 5, component = 0) vec3 s_screen;
-	#endif
-
-	#if !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)
-		layout(location = 0, component = 3) flat uint mid_coord;
-		layout(location = 6, component = 0) flat uint face_tex_size;
-	#endif
-} v;
+#define TRANSLUCENT
+in
+#include "/lib/lit_v_data.glsl"
 
 #ifndef NETHER
-	uniform vec3 shadowLightDirection;
+	uniform vec3 shadowLightDirectionPlr;
 
 	#include "/lib/skylight.glsl"
 	#include "/lib/sm/distort.glsl"
@@ -68,40 +57,47 @@ void main() {
 		if (color.a < float16_t(alphaTestRef)) discard;
 	#endif
 
-	immut f16vec4 tint = f16vec4(v.tint);
-	color *= tint;
+	immut f16vec3 tint = f16vec3(
+		#ifdef TERRAIN
+			v.tint
+		#else
+			unpackUnorm4x8(v.unorm4x8_tint_zero).rgb
+		#endif
+	);
+	color.rgb *= tint;
+
+	immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 5, 11));
+	color.a *= float16_t(1.0/2047.0) * float16_t(packed_alpha);
 
 	#if defined SM && defined MC_SPECULAR_MAP
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
-		#ifdef TERRAIN
-			immut float16_t avg_luma = unpackFloat2x16(v_tbn.handedness_and_misc).y;
-		#else
-			const float16_t avg_luma = float16_t(0.8);
-		#endif
+		immut float16_t avg_luma = unpackFloat2x16(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma).y;
 
 		immut float16_t roughness = gen_roughness(luminance(color.rgb), avg_luma);
 	#endif
 
-	#if defined NO_NORMAL
-		immut f16vec3 v_tex_normal = f16vec3(0.0, 0.0, 1.0);
+	#ifdef NO_NORMAL
+		immut f16vec3 w_face_normal = f16vec3(mvInv2);
+		immut f16vec3 w_tex_normal = w_face_normal;
 	#else
-		immut f16vec2 octa_v_face_normal = f16vec2(unpackFloat2x16(v_tbn.half2x16_octa_normal));
-		immut f16vec2 octa_v_face_tangent = f16vec2(unpackFloat2x16(v_tbn.half2x16_octa_tangent));
+		immut f16vec4 octa_tangent_normal = unpackSnorm4x8(v.snorm4x8_octa_tangent_normal);
 
-		immut vec3 v_face_normal = vec3(normalize(octa_decode(octa_v_face_normal)));
-		immut vec3 v_face_tangent = vec3(normalize(octa_decode(octa_v_face_tangent)));
+		immut f16vec3 w_face_tangent = normalize(octa_decode(octa_tangent_normal.xy));
+		immut f16vec3 w_face_normal = normalize(octa_decode(octa_tangent_normal.zw));
 
-		immut float handedness = fma(float(v_tbn.handedness_and_misc & 1u), 2.0, -1.0); // map least significant bit, [0u, 1u], to [-1.0, 1.0]
-
-		immut mat3 v_tbn = mat3(v_face_tangent, cross(v_face_tangent, v_face_normal) * handedness, v_face_normal);
-
-		#if NORMALS == 1 && defined MC_NORMAL_MAP
-			immut f16vec3 v_tex_normal = f16vec3(v_tbn * sample_normal(texture(normals, v.coord).rg));
-		#elif NORMALS == 2
-			immut f16vec3 v_tex_normal = f16vec3(v_tbn[2]);
+		#if NORMALS == 2
+			immut f16vec3 w_tex_normal = w_face_normal;
 		#else
-			immut f16vec3 v_tex_normal = f16vec3(v_tbn * gen_normal(gtexture, tint.rgb, v.coord, v.mid_coord, v.face_tex_size, luminance(color.rgb)));
+			immut float16_t handedness = fma(float16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 4, 1)), float16_t(2.0), float16_t(-1.0));
+
+			immut mat3 w_tbn = mat3(w_face_tangent, vec3(cross(w_face_tangent, w_face_normal) * handedness), w_face_normal);
+
+			#if NORMALS == 1 && defined MC_NORMAL_MAP
+				immut f16vec3 w_tex_normal = f16vec3(w_tbn * sample_normal(texture(normals, v.coord).rg));
+			#else
+				immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, v.unorm2x16_mid_coord, v.uint2x16_face_tex_size, luminance(color.rgb)));
+			#endif
 		#endif
 	#endif
 
@@ -114,14 +110,14 @@ void main() {
 
 	#ifndef NETHER
 		immut f16vec3 skylight = skylight();
-		immut f16vec3 shadow_light_dir = f16vec3(shadowLightDirection);
+		immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
 
 		#ifdef NO_NORMAL
 			const float16_t face_n_dot_l = float16_t(1.0);
 			const float16_t tex_n_dot_l = float16_t(1.0);
 		#else
-			immut float16_t face_n_dot_l = dot(f16vec3(v_tbn[2]), shadow_light_dir);
-			immut float16_t tex_n_dot_l = dot(v_tex_normal, shadow_light_dir);
+			immut float16_t face_n_dot_l = dot(w_face_normal, n_w_shadow_light);
+			immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_shadow_light);
 		#endif
 
 		#if SSS
@@ -134,7 +130,7 @@ void main() {
 			#endif
 
 			if (dot(light, f16vec3(1.0)) > float16_t(0.0)) {
-				immut f16vec2 specular_diffuse = brdf(face_n_dot_l, v_tex_normal, f16vec3(normalize(view)), shadow_light_dir, roughness);
+				immut f16vec2 specular_diffuse = brdf(face_n_dot_l, w_tex_normal, f16vec3(normalize(view)), n_w_shadow_light, roughness);
 
 				light *= float16_t(3.0) * (specular_diffuse.y + specular_diffuse.x / max(color.rgb, float16_t(1.0e-5)));
 

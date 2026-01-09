@@ -1,2 +1,3 @@
+#define TRANSLUCENT
 #define NO_NORMAL
-#include "/prog/translucent.vsh"
+#include "/prog/solid.vsh"

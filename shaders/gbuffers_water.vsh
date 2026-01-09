@@ -1,2 +1,3 @@
+#define TRANSLUCENT
 #define TERRAIN
-#include "/prog/translucent.vsh"
+#include "/prog/solid.vsh"

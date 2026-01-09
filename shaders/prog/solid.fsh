@@ -22,48 +22,17 @@ uniform sampler2D gtexture;
 
 #ifdef NO_NORMAL
 	#include "/lib/mv_inv.glsl"
-	#include "/lib/octa_normal.glsl"
 #endif
 
+#include "/lib/octa_normal.glsl"
 #include "/lib/ao_curve.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/material/specular.glsl"
 #include "/lib/material/normal.glsl"
 #include "/lib/srgb.glsl"
 
-in VertexData {
-	layout(location = 0, component = 0) vec2 coord;
-	layout(location = 1, component = 0) flat uint uint4_bool1_unorm11_float16_emission_handedness_alpha_luma;
-
-	#ifdef TERRAIN
-		layout(location = 0, component = 2) vec2 light;
-		layout(location = 1, component = 1) flat uint snorm4x8_octa_tangent_normal;
-		layout(location = 1, component = 2) flat uint unorm2x16_mid_coord;
-		layout(location = 1, component = 3) flat uint uint2x16_face_tex_size;
-		layout(location = 2, component = 0) vec3 tint;
-		layout(location = 2, component = 3) float ao;
-
-		#ifndef NETHER
-			layout(location = 3, component = 0) vec3 s_screen;
-		#endif
-	#else
-		layout(location = 1, component = 1) flat uint unorm4x8_tint_zero;
-		layout(location = 1, component = 2) flat uint float2x16_light;
-
-		#ifndef NETHER
-			layout(location = 2, component = 0) vec3 s_screen;
-		#endif
-
-		#ifndef NO_NORMAL
-			layout(location = 1, component = 3) flat uint snorm4x8_octa_tangent_normal;
-
-			#if NORMALS != 2 && !(NORMALS == 1 && defined MC_NORMAL_MAP)
-				layout(location = 3, component = 0) flat uint unorm2x16_mid_coord;
-				layout(location = 3, component = 1) flat uint uint2x16_face_tex_size;
-			#endif
-		#endif
-	#endif
-} v;
+in
+#include "/lib/lit_v_data.glsl"
 
 void main() {
 	#ifdef TEX_ALPHA
@@ -83,6 +52,7 @@ void main() {
 			unpackUnorm4x8(v.unorm4x8_tint_zero).rgb
 		#endif
 	);
+	color.rgb *= tint;
 
 	#ifdef TERRAIN
 		immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 5, 11));
@@ -93,8 +63,6 @@ void main() {
 		}
 	#endif
 
-	color.rgb *= tint;
-
 	// #if (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)) || !(defined SM && defined MC_SPECULAR_MAP)
 		immut float16_t luma = luminance(color.rgb);
 	// #endif
@@ -103,34 +71,27 @@ void main() {
 
 	{
 		#ifdef NO_NORMAL
-			immut vec3 w_face_normal = mvInv2; // == MV_INV * vec3(0.0, 0.0, 1.0)
+			immut f16vec3 w_face_normal = f16vec3(mvInv2); // == MV_INV * vec3(0.0, 0.0, 1.0)
 			immut f16vec2 octa_w_face_normal = octa_encode(f16vec3(w_face_normal));
 		#else
 			immut f16vec4 octa_tangent_normal = unpackSnorm4x8(v.snorm4x8_octa_tangent_normal);
 			immut f16vec2 octa_w_face_normal = octa_tangent_normal.zw;
-			immut f16vec3 w_face_normal = octa_decode(octa_w_face_normal);
 		#endif
 
 		#if defined NO_NORMAL || NORMALS == 2
 			immut f16vec2 octa_w_tex_normal = octa_w_face_normal;
 		#else
-			#ifdef NO_NORMAL
-				immut vec3 w_face_tangent = mvInv1; // == MV_INV * vec3(0.0, 1.0, 0.0)
-				immut mat3 w_tbn = mat3(w_face_tangent, cross(w_face_tangent, w_face_normal), w_face_normal);
-			#else
-				immut f16vec2 octa_w_face_tangent = octa_decode(octa_tangent_normal);
-				immut vec3 w_face_tangent = vec3(normalize(octa_decode(octa_w_face_tangent)));
-				immut vec3 w_face_normal = vec3(normalize(octa_decode(octa_w_face_normal)));
+			immut f16vec3 w_face_tangent = normalize(octa_decode(octa_tangent_normal.xy));
+			immut f16vec3 w_face_normal = normalize(octa_decode(octa_w_face_normal));
 
-				immut float16_t handedness = fma(float16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 4, 1)), float16_t(2.0), float16_t(-1.0));
+			immut float16_t handedness = fma(float16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 4, 1)), float16_t(2.0), float16_t(-1.0));
 
-				immut mat3 w_tbn = mat3(w_face_tangent, cross(w_face_tangent, w_face_normal) * handedness, w_face_normal);
-			#endif
+			immut mat3 w_tbn = mat3(w_face_tangent, vec3(cross(w_face_tangent, w_face_normal) * handedness), w_face_normal);
 
 			#if NORMALS == 1 && defined MC_NORMAL_MAP
 				immut f16vec3 w_tex_normal = f16vec3(w_tbn * sample_normal(texture(normals, v.coord).rg));
 			#else
-				immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, v.mid_coord, v.face_tex_size, luma));
+				immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, v.unorm2x16_mid_coord, v.uint2x16_face_tex_size, luma));
 
 				/*
 					immut ivec2 half_texels = ivec2(
@@ -160,9 +121,9 @@ void main() {
 	color.rgb = linear(color.rgb);
 
 	{
-		immut uint data = (
+		uint data = (
 			#ifdef TERRAIN
-				packHalf2x16(vec2(v.light.y, 0.0));
+				packHalf2x16(vec2(v.light.y, 0.0))
 			#else
 				v.float2x16_light >> 16u
 			#endif
@@ -181,7 +142,7 @@ void main() {
 		// TODO: labPBR AO map support.
 
 		data = bitfieldInsert(
-			data, fma(ao, float16_t(8192.0), float16_t(0.5)),
+			data, uint(fma(ao, float16_t(8192.0), float16_t(0.5))),
 			15, 13
 		);
 
@@ -206,7 +167,7 @@ void main() {
 		uint data = packUnorm4x8(f16vec4(roughness, sss, 0.0, 0.0));
 
 		#if defined TERRAIN || defined HAND
-			immut uint8_t emission = uint8_t(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma) & uint8_t(15u);
+			uint8_t emission = uint8_t(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma) & uint8_t(15u);
 			color *= fma(float16_t(emission), float16_t(2.0/15.0), float16_t(1.0)); // TODO: We should just add to the lighting in deferred instead of multiplying the color.
 
 			emission *= uint8_t(17u); // Scale to full uint8_t range.
@@ -237,5 +198,13 @@ void main() {
 		}
 	#endif
 
-	colortex1 = f16vec4(color.rgb, float16_t(ao));
+	immut float16_t block_light = (
+		#ifdef TERRAIN
+			float16_t(v.light.x)
+		#else
+			unpackFloat2x16(v.float2x16_light).x
+		#endif
+	);
+
+	colortex1 = f16vec4(color.rgb, block_light);
 }

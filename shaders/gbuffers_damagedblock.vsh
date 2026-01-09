@@ -1,1 +1,2 @@
-#include "/prog/translucent.vsh"
+#define TRANSLUCENT
+#include "/prog/solid.vsh"

@@ -1,2 +1,3 @@
+#define TRANSLUCENT
 #define ENTITY_COLOR
-#include "/prog/translucent.vsh"
+#include "/prog/solid.vsh"
