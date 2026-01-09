@@ -1,10 +1,10 @@
 # RenderPearl
 
-![Banner](https://cdn.modrinth.com/data/BrRak9pu/images/9d2f33b85447099c25b6291b680608bc47c1f5e1.png)
+![Banner](/banner.webp)
 
 RenderPearl is an incredibly lightweight shader pack using the latest Iris features and optional extensions on various graphics drivers, aiming to deliver pleasant visuals with excellent performance on modern hardware.
 
-It is currently **only** tested with up-to-date AMD+Mesa and NVIDIA graphics drivers on Linux. If you want to report a bug or give feedback/suggestions, the best way to do so is by opening an issue on the [GitHub issue tracker](https://github.com/Luracasmus/renderpearl/issues) or leaving a comment on the [PMC page](https://www.planetminecraft.com/mod/luracasmus-s-shaders/) or [CurseForge page](https://www.curseforge.com/minecraft/shaders/renderpearl/comments). I rely heavily on user feedback in bug fixing and design.
+If you want to report a bug or give feedback/suggestions, the best way to do so is by opening an issue on the [GitHub issue tracker](https://github.com/Luracasmus/renderpearl/issues). I rely heavily on user feedback in bug fixing and design.
 
 <details>
 <summary>Trivia</summary>
@@ -42,13 +42,14 @@ The name "RenderPearl" is inspired by the Bedrock Edition [RenderDragon](https:/
 
 * Smooth, colored real-time shadows and volumetric light using distorted shadow mapping.
 * Colored block light with physically based reflections using a light list combined with vanilla lighting and average texture color.
-* A wide range of highly optimized post-processing effects, including compute shader ports of [FidelityFX Contrast Adaptive Sharpening](https://gpuopen.com/fidelityfx-cas/), [SMAA](https://www.iryoku.com/smaa/) 1x from [SMAA-MC](https://modrinth.com/shader/smaa-mc), automatic exposure and a variety of tone mapping operators.
+* Ray traced, per-hand hand light.
+* A wide range of highly optimized post-processing effects, including compute shader implementations of [FidelityFX Contrast Adaptive Sharpening](https://gpuopen.com/fidelityfx-cas/), [SMAA](https://www.iryoku.com/smaa/) 1x from [SMAA-MC](https://modrinth.com/shader/smaa-mc), automatic exposure and a variety of tone mapping operators.
 * Customizable waves and water opacity.
 * Built-in utility features such as light level visualization and a compass overlay.
 
 ## Mod & Resource Pack Compatibility
 
-Most built-in PBR information, including light colors, material normals and roughness, are almost entirely procedurally generated and should therefore work with almost any resource pack or mod.
+Most built-in PBR information, including light colors, material normals and roughness, are almost entirely procedurally generated and should therefore work perfectly with most resource packs and mods.
 
 Support for mods that modify the Iris shader pipeline, such as Chunks Fade In, is experimental and may have issues, such as the shader pack failing to compile.
 
@@ -58,7 +59,7 @@ Distant Horizons should be compatible in the sense that everything loads, but th
 
 > If you have a decently modern non-macOS device it probably supports everything you need, but you might have to update your Iris and graphics drivers.
 
-* **Iris 1.9.2+** with support for features:
+* **Iris** with support for features:
   * `BLOCK_EMISSION_ATTRIBUTE`
   * `COMPUTE_SHADERS`
   * `CUSTOM_IMAGES`
@@ -66,6 +67,23 @@ Distant Horizons should be compatible in the sense that everything loads, but th
   * `SEPARATE_HARDWARE_SAMPLERS`
   * `SSBO`
 * **Graphics drivers** with support for **GLSL 4.60.8+**.
+* **Minecraft** of a version that is listed as supported by the RenderPearl release.
+
+<details>
+<summary>Driver Support</summary>
+
+| OS      | Drivers           | Support   |
+| ------- | ----------------- | --------- |
+| Linux   | Mesa RadeonSI     | Perfect   |
+| Linux   | Nvidia            | Very Good |
+| Linux   | Mesa Zink/RADV    | Good      |
+| Linux   | Mesa Zink/Nvidia  | Unstable  |
+| Windows | AMD Adrenalin     | Good      |
+| Windows | Nvidia Game Ready | Very Good |
+
+Only the latest stable versions are tested. All other drivers are untested. Please report any issues that occur.
+
+</details>
 
 ## Tuning & The Compatibility Menu
 
@@ -76,7 +94,7 @@ The default configuration and all values selectable with profiles are intended t
 
 > The usable values and effects of these options depend on your graphics drivers.
 
-* **Light List Capacity** is limited by the amound of Local Data Share memory usable per work group on your GPU. Depending on your GPU and graphics drivers, and the features enabled by the 16/8-Bit Types option, you may be able to set this significantly higher than the maximum value selectable with profiles (though there is no reason to do so if the light list isn't being filled completely, usually indicated by lights flickering, as it impacts performance negatively).
+* **Light List Capacity** is limited by the amount of Local Data Share memory usable per work group on your GPU. Depending on your GPU and graphics drivers, and the features enabled by the 16/8-Bit Types option, you may be able to set this significantly higher than the maximum value selectable with profiles (though there is no reason to do so if the light list isn't being filled completely, usually indicated by lights flickering, as it impacts performance negatively).
 
 * **16/8-Bit Types** uses optional OpenGL/GLSL extension-provided half- and/or quarter-sized data types to reduce register, LDS and VRAM usage. Performance impact varies depending on hardware and drivers, as conversion between types has a cost, but operations with smaller types can be significantly faster.
 
@@ -96,4 +114,11 @@ Technical information can be found in [DEV.md](/DEV.md).
 
 ---
 
-> **This, [the Modrinth page](https://modrinth.com/shader/renderpearl), [the CurseForge page](https://www.curseforge.com/minecraft/shaders/renderpearl) and [the PMC page](https://www.planetminecraft.com/mod/luracasmus-s-shaders/) are the only RenderPearl project pages made by me.** If you want to distribute RenderPearl, or just spread the word of it, I would greatly appreciate if you would link to at least one of them, preferrably Modrinth.
+**These are the only RenderPearl project pages made by me:**
+
+* [Modrinth](https://modrinth.com/shader/renderpearl)
+* [CurseForge](https://www.curseforge.com/minecraft/shaders/renderpearl)
+* [Planet Minecraft](https://www.planetminecraft.com/mod/luracasmus-s-shaders/)
+* [GitHub](https://github.com/Luracasmus/renderpearl)
+
+If you want to distribute RenderPearl, or just spread the word of it, I would greatly appreciate if you would link to at least one of them, Modrinth being the most important one.
