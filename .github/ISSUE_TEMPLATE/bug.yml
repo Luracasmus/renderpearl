@@ -14,11 +14,19 @@ body:
           placeholder: RenderPearl crashes my computer when rendering a pearl :/ Please help!
       validations:
           required: true
-    - type: textarea
-      id: logs
+    - type: input
+      id: log
       attributes:
-          label: Logs and crash reports
-          description: Please link or attach a **complete** client log file, and a crash report if applicable. It is recommended to use a service like [mclo.gs](https://mclo.gs/) to upload the files, as it removes some personal/irrelevant information such as IP addresses automatically if present. You can also do this manually if you want. The relevant log file will be `latest.log` in your Minecraft logs folder (next to the resource packs folder) when you have just ran the game and encountered the bug. Crash reports are located in another folder next to the logs folder, and named after the dates they were created. **Do not run the game without triggering the bug before getting the latest log, as it will then be missing relevant information.**
+          label: Log
+          description: Please link or attach a **complete** client log file. It is recommended to use a service like [mclo.gs](https://mclo.gs/) to upload the file, since it removes some personal/irrelevant information such as IP addresses automatically if present. You can also do this manually if you want. The relevant log file will be `latest.log` in your Minecraft logs folder (next to the resource packs folder) when you have just ran the game and encountered the bug. **Do not run the game without triggering the bug before getting the latest log, as it will then be missing relevant information.**
           placeholder: https://mclo.gs/dQw4w9WgXcQ
       validations:
           required: true
+    - type: input
+      id: crash
+      attributes:
+          label: Crash Report
+          description: Please link or attach a **complete** client crash report if the bug is related to a crash. It is recommended to use a service like [mclo.gs](https://mclo.gs/) to upload the file, since it removes some personal/irrelevant information such as IP addresses automatically if present. You can also do this manually if you want. Crash reports are located your Minecraft crash reports folder (next to the resource packs folder), and named after when they were created.
+          placeholder: https://mclo.gs/xvFZjo5PgG0
+      validations:
+          required: false
