@@ -115,7 +115,12 @@ void main() {
 			immut f16vec2 octa_w_tex_normal = octa_encode(w_tex_normal);
 		#endif
 
-		colortex2.a = packSnorm4x8(f16vec4(octa_w_tex_normal, octa_w_face_normal));
+		#ifdef NETHER
+			colortex2.b
+		#else
+			colortex2.a
+		#endif
+			= packSnorm4x8(f16vec4(octa_w_tex_normal, octa_w_face_normal));
 	}
 
 	color.rgb = linear(color.rgb);
@@ -152,7 +157,12 @@ void main() {
 			data |= 0x80000000u; // Set most significant bit to 1.
 		#endif
 
-		colortex2.b = data;
+		#ifdef NETHER
+			colortex2.g
+		#else
+			colortex2.b
+		#endif
+			= data;
 	}
 
 	{
@@ -179,7 +189,12 @@ void main() {
 
 		// TODO: f0 enum.
 
-		colortex2.g = data;
+		#ifdef NETHER
+			colortex2.r
+		#else
+			colortex2.g
+		#endif
+			= data;
 	}
 
 	#ifndef NETHER
