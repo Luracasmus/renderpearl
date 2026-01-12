@@ -47,7 +47,7 @@ void main() {
 
 	// `modelViewMatrix` can be cut to a `mat3` since `shadowIntervalSize == 0.0`, as long as model -> view conversion only needs rotation and/or scale, which seems to always be the case in Iris.
 	immut vec3 clip = shadow_proj_scale * (mat3(modelViewMatrix) * model);
-	gl_Position = vec4(distort(clip.xy), clip.z, 1.0);
+	gl_Position = vec4(clip.xy * distortion(clip.xy), clip.z, 1.0);
 	// RDNA4 ISA documentation states `.w` is optional, but the fallback value doesn't seem to be `1.0` on AMD drivers, so we write to it anyways.
 
 	#ifdef TEXTURED

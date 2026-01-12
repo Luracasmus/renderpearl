@@ -24,6 +24,9 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 writeonly
 #include "/buf/ll.glsl"
 
+writeonly
+#include "/buf/llq.glsl"
+
 #if AUTO_EXP
 	writeonly
 	#include "/buf/auto_exp.glsl"
@@ -40,7 +43,7 @@ void main() {
 		auto_exp.exposure = float16_t(1.0);
 	#endif
 
-	ll.queue = 0u;
+	llq.len = 0u;
 	ll.len = uint16_t(0u);
 
 	#if HAND_LIGHT

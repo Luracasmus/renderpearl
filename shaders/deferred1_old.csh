@@ -19,6 +19,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	uniform vec3 shadowLightDirectionPlr;
 	uniform mat4 shadowModelView;
 	uniform float frameTimeCounter;
+	uniform usampler2D colortex3;
 
 	#include "/lib/prng/pcg.glsl"
 
@@ -171,7 +172,14 @@ void main() {
 	immut i16vec2 texel = i16vec2(gl_GlobalInvocationID.xy);
 	immut float depth = texelFetch(depthtex0, texel, 0).r;
 	immut bool is_geo = depth < 1.0;
-	immut uvec4 gbuf = is_geo ? texelFetch(colortex2, texel, 0) : uvec4(0u);
+
+	immut uvec3 gbuf2_gba = is_geo ? (
+		#ifdef NETHER
+			texelFetch(colortex2, texel, 0).rgb
+		#else
+			texelFetch(colortex2, texel, 0).gba
+		#endif
+	) : uvec3(0u);
 
 	immut vec2 texel_size = 1.0 / vec2(view_size());
 	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
@@ -436,6 +444,9 @@ void main() {
 			);
 
 			#ifndef NETHER
+				immut uint gbuf2_r = texelFetch(colortex2, texel, 0).r;
+				immut uvec2 gbuf3 = texelFetch(colortex3, texel, 0).rg;
+
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
 				immut float16_t tex_n_dot_shadow_l = dot(w_tex_normal, n_w_shadow_light);
 

@@ -1,2 +1,3 @@
 #define NO_NORMAL
-#include "/prog/translucent.fsh"
+#define TRANSLUCENT
+#include "/prog/lit.fsh"

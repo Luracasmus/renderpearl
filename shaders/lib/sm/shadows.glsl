@@ -1,5 +1,4 @@
 #include "/lib/sm/sample.glsl"
-#include "/lib/brdf.glsl"
 #include "/lib/sm/bias.glsl"
 
 #if SM_BLUR == 2

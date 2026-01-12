@@ -1,2 +1,3 @@
 #define ALPHA_CHECK
-#include "/prog/translucent.fsh"
+#define TRANSLUCENT
+#include "/prog/lit.fsh"

@@ -1,1 +1,2 @@
-#include "/prog/translucent.fsh"
+#define TRANSLUCENT
+#include "/prog/lit.fsh"

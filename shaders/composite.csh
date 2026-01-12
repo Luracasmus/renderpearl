@@ -69,7 +69,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 				immut vec3 sample_pe = mix(pe_zero, pe, dist);
 
 				immut vec3 sample_s_ndc = shadow_proj_scale * (mat3(shadowModelView) * (sample_pe + mvInv3));
-				immut vec3 s_scrn = fma(vec3(distort(sample_s_ndc.xy), sample_s_ndc.z), vec3(0.5), vec3(0.5));
+				immut vec3 s_scrn = fma(vec3(sample_s_ndc.xy * distortion(sample_s_ndc.xy), sample_s_ndc.z), vec3(0.5), vec3(0.5));
 
 				ray += sample_sm(float16_t(1.0) - float16_t(exp(-0.1 / pbrFogDensity * pe_dist * dist)), s_scrn);
 			}

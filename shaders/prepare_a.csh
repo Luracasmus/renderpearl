@@ -15,10 +15,14 @@
 const ivec3 workGroups = ivec3(1, 1, 1);
 
 uniform bool rebuildLL;
-uniform vec3 cameraPositionFract, invCameraPositionDeltaInt, mvInv3;
+uniform vec3 cameraPositionFract, invCameraPositionDeltaInt;
+
+#include "/buf/llq.glsl"
 
 coherent
 #include "/buf/ll.glsl"
+
+#include "/lib/mv_inv.glsl"
 
 shared struct {
 	uint culled_len;
@@ -36,20 +40,20 @@ void main() {
 	if (rebuildLL) {
 		if (is_first_invoc) { sh.culled_len = 0u; }
 
-		// if (ll.queue > ll.data.length()) { ll.len = uint16_t(0u); return; }
+		// if (llq.len > ll.data.length()) { llq.len = uint16_t(0u); return; }
 
 		#if !defined SUBGROUP_ENABLED && defined AMD_INT16
 			// Work around very strange AMD compiler bug.
 			// Casting to `uint16_t` before the `min` causes incorrect behavior
 			// if `GL_EXT_shader_subgroup_extended_types_int16` is disabled.
-			immut uint16_t len = uint16_t(min(ll.queue, ll.data.length()));
+			immut uint16_t len = uint16_t(min(llq.len, ll.data.length()));
 		#else
-			immut uint16_t len = min(uint16_t(subgroupBroadcastFirst(ll.queue)), uint16_t(ll.data.length()));
+			immut uint16_t len = min(uint16_t(subgroupBroadcastFirst(llq.len)), uint16_t(ll.data.length()));
 		#endif
 
 		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
-			sh.index_data[i] = ll.data[i];
-			sh.index_color[i] = ll.color[i];
+			sh.index_data[i] = llq.data[i];
+			sh.index_color[i] = llq.color[i];
 		}
 
 		barrier();
@@ -93,30 +97,29 @@ void main() {
 
 		barrier();
 
-		immut vec3 index_offset = -255.5 - cameraPositionFract - mvInv3;
+		immut vec3 ll_offset = -255.5 - cameraPositionFract - mvInv3;
 
-		// Copy shared list into global, with lights enumeration sorted closest to furthest.
+		// Copy shared list into global, with lights enumeration sorted from left to right in view space to improve locality when sampling.
+		// TODO: We might want to do something on the Y axis too.
 		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {
 			uint16_t k = uint16_t(0u);
 
 			immut uint data = sh.index_data[i];
-			immut vec3 pe = vec3(
+			immut float view_x = ((vec3(
 				data & 511u,
 				bitfieldExtract(data, 9, 9),
 				bitfieldExtract(data, 18, 9)
-			) + index_offset;
-			immut float sq_dist = dot(pe, pe);
+			) + ll_offset) * MV_INV).x;
 
 			for (uint16_t j = uint16_t(0u); j < culled_len; ++j) if (j != i) {
 				immut uint other_data = sh.index_data[j];
-				immut vec3 other_pe = vec3(
+				immut float other_view_x = ((vec3(
 					other_data & 511u,
 					bitfieldExtract(other_data, 9, 9),
 					bitfieldExtract(other_data, 18, 9)
-				) + index_offset;
+				) + ll_offset) * MV_INV).x; // TODO: Optimize
 
-				immut float other_sq_dist = dot(other_pe, other_pe);
-				if (other_sq_dist < sq_dist || (other_sq_dist == sq_dist && i < j)) { ++k; }
+				if (other_view_x < view_x || (other_view_x == view_x && i < j)) { ++k; }
 			}
 
 			ll.data[k] = data;
@@ -124,7 +127,7 @@ void main() {
 		}
 
 		if (is_first_invoc) {
-			ll.queue = 0u;
+			llq.len = 0u;
 			ll.offset = vec3(0.0);
 			ll.len = culled_len;
 		}

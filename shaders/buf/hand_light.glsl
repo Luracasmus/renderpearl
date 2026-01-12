@@ -1,5 +1,5 @@
 // Each side is 4 packed 16-bit values, the R, G and B sums and the vertex count, in that order.
-layout(std430, binding = 2) restrict buffer handLight {
+layout(std430, binding = 3) restrict buffer handLight {
 	uvec2 left;
 	uvec2 right;
 } hand_light;

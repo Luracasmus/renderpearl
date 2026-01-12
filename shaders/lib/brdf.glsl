@@ -36,6 +36,8 @@ float16_t v_smith_ggx_correlated(float16_t roughness, float16_t n_dot_v, float16
 
 	immut float16_t ggx_v_l_sum = dot(f16vec2(n_dot_l, n_dot_v), sqrt(f16vec2(n_dot_v, n_dot_l) * f16vec2(n_dot_v, n_dot_l) * (float16_t(1.0) - a_2) + a_2));
 	return float16_t(0.5) / ggx_v_l_sum;
+	// immut float16_t rcp_ggx_v_l_sum = dot(float16_t(1.0) / f16vec2(n_dot_l, n_dot_v), inversesqrt(f16vec2(n_dot_v, n_dot_l) * f16vec2(n_dot_v, n_dot_l) * (float16_t(1.0) - a_2) + a_2));
+	// return float16_t(0.5) * rcp_ggx_v_l_sum;
 }
 
 float16_t f_schlick(float16_t f0, float16_t f90, float16_t u) {

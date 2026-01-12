@@ -1,1 +1,1 @@
-#include "/prog/solid.vsh"
+#include "/prog/lit.vsh"

@@ -93,12 +93,10 @@ Most significant <-> Least significant
 ```
 
 ```
-┌ colortex2 -------------------┐
-|A    |B        |G      |R     |
-└16 16┴1 3 13 15┴8 8 8 8┴24 4 4┘
- |  |  | | |  |  | | | | |  | |
- |  |  | | |  |  | | | | |  └[biased shadow screen space position XY] (unorm lower bits)
- |  |  | | |  |  | | | | └[biased shadow screen space position Z] (unorm)
+┌ colortex2 ---------------┐
+|A    |B        |G      |R |
+└16 16┴1 3 13 15┴8 8 8 8┴32┘
+ |  |  | | |  |  | | | | └[shadow distortion] (float)
  |  |  | | |  |  | | | └[roughness] (unorm)
  |  |  | | |  |  | | └[subsurface scattering] (unorm)
  |  |  | | |  |  | └[emissiveness] (unorm)
@@ -110,14 +108,7 @@ Most significant <-> Least significant
  |  └[octahedron encoded texture normal (XY)] (snorm)
  └[octahedron encoded face normal (XY)] (snorm)
 ```
-
-```
-┌ colortex3 ┐
-|G |R       |
-└16┴16------┘
- |  |
- └[biased shadow screen space position XY] (unorm higher bits)
-```
+> In the nether, the ABG components above are shifted to BGR and the A component left uninitialized.
 
 ```
 ┌ f0 (enum) ┐
