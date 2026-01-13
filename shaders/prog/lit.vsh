@@ -173,9 +173,9 @@ void main() {
 						float16_t(LOD_FALLOFF),
 						float16_t(0.5)
 					)))) == uint8_t(0u)) {
-						immut ivec3 signed_floor_pe = clamp(ivec3(fma(at_midBlock.xyz, vec3(1.0/64.0), pe + cameraPositionFract)), -256, 255);
-						immut uvec3 offset_floor_pe = uvec3(256 + signed_floor_pe);
-						immut uint packed_pe = bitfieldInsert(bitfieldInsert(offset_floor_pe.x, offset_floor_pe.y, 9, 9), offset_floor_pe.z, 18, 9);
+						immut vec3 pf = pe + mvInv3;
+						immut uvec3 offset_floor_pf = clamp(uvec3(fma(at_midBlock.xyz, vec3(1.0/64.0), 255.5 + cameraPositionFract + pf)), 0u, 511u);
+						immut uint packed_pf = bitfieldInsert(bitfieldInsert(offset_floor_pf.x, offset_floor_pf.y, 9, 9), offset_floor_pf.z, 18, 9);
 
 						immut f16vec3 scaled_color = fma(linear(avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5));
 
@@ -195,7 +195,7 @@ void main() {
 
 							// Shuffle down through all active invocations.
 							for (uint i = 1u; i <= shuffles; ++i) {
-								immut uint other_packed_pe = subgroupShuffleDown(packed_pe, i);
+								immut uint other_packed_pf = subgroupShuffleDown(packed_pf, i);
 								immut uint16_t other_packed_color = uint16_t(subgroupShuffleDown(packed_color, i));
 
 								// If the invocation who's value we've aquired is within the subgroup and active
@@ -204,7 +204,7 @@ void main() {
 								if (
 									(other_sg_invoc_id < gl_SubgroupSize) &&
 									subgroupBallotBitExtract(sg_ballot, other_sg_invoc_id) &&
-									other_packed_pe == packed_pe &&
+									other_packed_pf == packed_pf &&
 									other_packed_color >= packed_color
 								) {
 									is_unique = false;
@@ -217,14 +217,14 @@ void main() {
 
 								// Shuffle up through all remaining invocations.
 								for (uint i = 1u; i <= shuffles; ++i) {
-									immut uint other_packed_pe = subgroupShuffleUp(packed_pe, i);
+									immut uint other_packed_pf = subgroupShuffleUp(packed_pf, i);
 
 									// We know that if an invocation with the same position at a lower index is still active,
 									// that means it has a greater color value, so we remove our light.
 									if (
 										(gl_SubgroupInvocationID >= i) &&
 										subgroupBallotBitExtract(sg_ballot, gl_SubgroupInvocationID - i) &&
-										other_packed_pe == packed_pe
+										other_packed_pf == packed_pf
 									) {
 										is_unique = false;
 									}
@@ -238,7 +238,7 @@ void main() {
 									#include "/lib/sg_incr.glsl"
 
 									uint packed_data = bitfieldInsert(
-										packed_pe, // Position.
+										packed_pf, // Position.
 										v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 27, 4 // Intensity from emission.
 									);
 									if (fluid) { packed_data |= 0x80000000u; } // Set "wide" flag for lava.
