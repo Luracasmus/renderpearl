@@ -4,7 +4,7 @@
 layout(location = 0) out f16vec4 colortex1; // Does this work outside of NVIDIA drivers? (the f16*)
 
 #ifdef NETHER
-	layout(location = 1) out uvec3 colortex2;
+	layout(location = 1, component = 1) out uvec3 colortex2;
 #else
 	layout(location = 1) out uvec4 colortex2;
 #endif
@@ -127,7 +127,12 @@ void main() {
 
 	color.rgb = linear(color.rgb);
 
-	colortex2.a = packSnorm4x8(f16vec4(octa_w_tex_normal, octa_w_face_normal));
+	#ifdef NETHER
+		colortex2.b
+	#else
+		colortex2.a
+	#endif
+		= packSnorm4x8(f16vec4(octa_w_tex_normal, octa_w_face_normal));
 
 	{
 		// We have to `min()` after conversion here because of `float16_t` precision at these high values.
@@ -143,7 +148,12 @@ void main() {
 			#endif
 		#endif
 
-		colortex2.b = data;
+		#ifdef NETHER
+			colortex2.g
+		#else
+			colortex2.b
+		#endif
+			= data;
 	}
 
 	#ifdef TERRAIN
@@ -167,7 +177,12 @@ void main() {
 			data |= packUnorm2x16(f16vec2(v.s_screen.z, 0.0));
 		#endif
 
-		colortex2.g = data;
+		#ifdef NETHER
+			colortex2.r
+		#else
+			colortex2.g
+		#endif
+			= data;
 	}
 
 	#ifndef NETHER

@@ -283,15 +283,17 @@ void main() {
 	if (bitfieldExtract(gbuf.b, 30, 1) == 0u) { // Exit on "pure light" flag.
 		immut f16vec3 n_pe = f16vec3(normalize(pe));
 
-		#ifdef NETHER
-			immut f16vec3 fog_col = linear(f16vec3(fogColor));
-		#elif defined END
-			immut f16vec3 fog_col = sky(n_pe);
-		#else
-			immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
-			immut f16vec3 fog_col = sky(sky_fog_val, n_pe, sunDirectionPlr);
-
+		#ifndef NETHER
 			immut f16vec3 skylight_color = skylight();
+
+			#ifdef END
+				immut f16vec3 fog_col = sky(n_pe);
+			#else
+				immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
+				immut f16vec3 fog_col = sky(sky_fog_val, n_pe, sunDirectionPlr);
+			#endif
+		#else
+			immut f16vec3 fog_col = linear(f16vec3(fogColor));
 		#endif
 
 		f16vec3 color;
