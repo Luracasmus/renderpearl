@@ -17,9 +17,12 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 uniform bool rebuildLL;
 uniform vec3 cameraPositionFract, invCameraPositionDeltaInt;
 
+coherent
 #include "/buf/llq.glsl"
 
-coherent
+#ifndef INT16
+	coherent
+#endif
 #include "/buf/ll.glsl"
 
 #include "/lib/mv_inv.glsl"
@@ -80,22 +83,29 @@ void main() {
 				uint sg_incr_i;
 				#include "/lib/sg_incr.glsl"
 
-				ll.data[sg_incr_i] = data;
-				ll.color[sg_incr_i] = color;
+				llq.data[sg_incr_i] = data;
+				llq.color[sg_incr_i] = color;
 			}
 		}
 
 		barrier();
-		groupMemoryBarrier(); // Requires 'coherent' SSBO.
+		groupMemoryBarrier(); // Requires 'coherent' SSBOs.
 
 		// Copy back global list to shared.
 		immut uint16_t culled_len = uint16_t(subgroupBroadcastFirst(sh.culled_len));
 		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {
-			sh.index_data[i] = ll.data[i];
-			sh.index_color[i] = ll.color[i];
+			sh.index_data[i] = llq.data[i];
+			sh.index_color[i] = llq.color[i];
+
+			#ifndef INT16
+				if (i < culled_len / 2) {
+					ll.color[i] = 0u;
+				}
+			#endif
 		}
 
 		barrier();
+		groupMemoryBarrier(); // Requires 'coherent' SSBOs.
 
 		immut vec3 ll_offset = -255.5 - cameraPositionFract - mvInv3;
 
@@ -123,7 +133,14 @@ void main() {
 			}
 
 			ll.data[k] = data;
-			ll.color[k] = sh.index_color[i];
+
+			immut uint16_t color = sh.index_color[i];
+
+			#ifdef INT16
+				ll.color[k] = color;
+			#else
+				atomicOr(ll.color[k/2], color << (16u * (k & 1u)));
+			#endif
 		}
 
 		if (is_first_invoc) {

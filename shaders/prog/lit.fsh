@@ -75,15 +75,18 @@ void add_ll_light(
 	inout f16vec3 specular, inout f16vec3 diffuse,
 	f16vec3 w_face_normal, f16vec3 w_tex_normal,
 	vec3 pe, f16vec3 n_pe, float16_t roughness, float16_t ind_bl,
-	uint light_data, f16vec3 pe_light, uint i // `i` must be subgroup uniform.
+	float16_t intensity, uint light_data, f16vec3 pe_light, uint i // `i` must be subgroup uniform.
 ) {
 	immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
 
-	immut float16_t intensity = float16_t(bitfieldExtract(light_data.x, 27, 4));
 	immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
 
-	if (mhtn_dist < intensity + float16_t(0.5)) {
-		immut uint16_t light_color = subgroupBroadcastFirst(ll.color[i]);
+	if (mhtn_dist < intensity) {
+		#ifdef INT16
+			immut uint16_t light_color = subgroupBroadcastFirst(ll.color[i]);
+		#else
+			immut uint light_color = bitfieldExtract(subgroupBroadcastFirst(ll.color[i/2u]), int(16u * (i & 1u)), 16);
+		#endif
 
 		immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
 		immut f16vec3 n_w_rel_light = w_rel_light * inversesqrt(sq_dist_light);
@@ -93,7 +96,7 @@ void add_ll_light(
 			light_data >= 0x80000000u ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
 		);
 
-		immut float16_t light_level = intensity - mhtn_dist + float16_t(0.5);
+		immut float16_t light_level = intensity - mhtn_dist;
 		float16_t brightness = intensity * falloff;
 		brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
 		brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible.
@@ -219,37 +222,45 @@ void main() {
 		const float16_t ao = float16_t(0.9);
 	#endif
 
-	// Light list stuff.
-	immut bool is_block_lit = (block_sky_light.x != float16_t(0.0) && !will_discard && !gl_HelperInvocation);
-	if (subgroupAny(is_block_lit)) {
-		#ifdef LIGHT_LEVELS
-			f16vec3 block_light = f16vec3(visualize_ll(block_sky_light.x));
-		#else
-			f16vec3 block_light = block_sky_light.x * f16vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B);
-		#endif
+	immut bool is_maybe_ll_lit = (
+		block_sky_light.x != float16_t(0.0) && chebyshev_dist < float16_t(LL_DIST) && !will_discard && !gl_HelperInvocation
+	);
 
-		vec3 lit_max_pe, lit_max_view, lit_min_pe, lit_min_view;
-		if (is_block_lit) {
-			lit_max_pe = pe;
-			lit_max_view = view;
+	#ifdef LIGHT_LEVELS
+		f16vec3 block_light = f16vec3(visualize_ll(block_sky_light.x));
+	#else
+		f16vec3 block_light = block_sky_light.x * f16vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B);
+	#endif
 
-			lit_min_pe = pe;
-			lit_min_view = view;
+	if (subgroupAny(is_maybe_ll_lit)) {
+		f16vec3 lit_max_pe, lit_max_view, lit_min_pe, lit_min_view;
+		if (is_maybe_ll_lit) {
+			lit_max_pe = f16vec3(pe);
+			lit_max_view = f16vec3(view);
+
+			lit_min_pe = lit_max_pe;
+			lit_min_view = lit_max_view;
 		} else { // We don't want unlit or helper invocations making the bounding boxes bigger but we still need them to be active.
-			const float minus_inf = uintBitsToFloat(0xFF800000u);
+			#ifdef FLOAT16
+				const float16_t minus_inf = uint16BitsToFloat16(uint16_t(0xFC00u));
+				const float16_t inf = uint16BitsToFloat16(uint16_t(0x7C00u));
+			#else
+				const float minus_inf = uintBitsToFloat(0xFF800000u);
+				const float inf = uintBitsToFloat(0x7F800000u);
+			#endif
+
 			lit_max_pe = minus_inf.xxx;
 			lit_max_view = minus_inf.xxx;
 
-			const float inf = uintBitsToFloat(0x7F800000u);
 			lit_min_pe = inf.xxx;
 			lit_min_view = inf.xxx;
 		}
 
-		immut vec3 chunk_pe_min = subgroupMin(lit_min_pe);
-		immut vec3 chunk_pe_max = subgroupMax(lit_max_pe);
+		immut f16vec3 chunk_pe_min = f16vec3(subgroupMin(lit_min_pe));
+		immut f16vec3 chunk_pe_max = f16vec3(subgroupMax(lit_max_pe));
 
-		immut vec3 chunk_view_min = subgroupMin(lit_min_view);
-		immut vec3 chunk_view_max = subgroupMax(lit_max_view);
+		immut f16vec3 chunk_view_min = f16vec3(subgroupMin(lit_min_view));
+		immut f16vec3 chunk_view_max = f16vec3(subgroupMax(lit_max_view));
 
 		immut f16vec3 ll_offset = f16vec3(vec3(-255.5) + subgroupBroadcastFirst(ll.offset) - cameraPositionFract - mvInv3);
 		immut uint16_t global_len = uint16_t(subgroupBroadcastFirst(ll.len));
@@ -266,6 +277,7 @@ void main() {
 		for (uint16_t chunk_i = uint16_t(0u); chunk_i < global_len; chunk_i += chunk_invs) {
 			bool is_in_bb;
 			uint light_data;
+			float16_t light_intensity;
 			f16vec3 pe_light;
 
 			// Check if light is inside the subgroup bounding boxes.
@@ -280,18 +292,18 @@ void main() {
 					bitfieldExtract(light_data, 18, 9)
 				) + ll_offset;
 
-				// Add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
-				immut float16_t offset_intensity = float16_t(bitfieldExtract(light_data.x, 27, 4)) + float16_t(0.5);
+				// We add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
+				light_intensity = float16_t(bitfieldExtract(light_data, 27, 4)) + float16_t(0.5);
 
 				// Distance between light and closest point on bounding box.
 				// In world-aligned space (player-eye) we can use Manhattan distance.
 				immut float16_t mhtn_dist_from_pe_bb = dot(abs(pe_light - clamp(pe_light, chunk_pe_min, chunk_pe_max)), f16vec3(1.0));
 
 				immut f16vec3 v_light = f16vec3(pe_light * MV_INV);
-				immut float16_t = euclid_dist_from_view_bb = distance(v_light, clamp(v_light, chunk_view_min, chunk_view_max));
+				immut float16_t euclid_dist_from_view_bb = distance(v_light, clamp(v_light, chunk_view_min, chunk_view_max));
 
-				is_in_bb = min(mhtn_dist_from_pe_bb, euclid_dist_from_view_bb) <= offset_intensity;
-				// TODO: Flag for when the light is
+				is_in_bb = min(mhtn_dist_from_pe_bb, euclid_dist_from_view_bb) <= light_intensity;
+				// TODO: Maybe check for when the light is closer than the size of the bounding box, meaning it will be applying to all invocations.
 			} else {
 				is_in_bb = false;
 			}
@@ -305,15 +317,16 @@ void main() {
 
 				for (uint16_t i = lsb; i <= msb; ++i) {
 					if (subgroupBallotBitExtract(in_bb_ballot, i)) { // This is always true when `i == lsb` or `i == msb`.
-						immut uint chunk_light_data = subgroupBroadcast(light_data, i);
+						immut float16_t chunk_light_intensity = float16_t(subgroupBroadcast(light_intensity, i));
 						immut f16vec3 chunk_pe_light = f16vec3(subgroupBroadcast(pe_light, i));
+						immut uint chunk_light_data = subgroupBroadcast(light_data, i);
 
-						if (is_block_lit) {
+						if (is_maybe_ll_lit) {
 							add_ll_light(
 								specular, diffuse,
 								w_face_normal, w_tex_normal,
 								pe, n_pe, roughness, ind_bl,
-								chunk_light_data, chunk_pe_light, i + chunk_i
+								chunk_light_intensity, chunk_light_data, chunk_pe_light, i + chunk_i
 							);
 						}
 					}
@@ -324,7 +337,23 @@ void main() {
 		/*
 			// Equivalent to the above but without subgroup optimizations.
 			for (uint16_t i = uint16_t(0u); i < global_len; ++i) {
-				add_ll_light(specular, diffuse, w_face_normal, w_tex_normal, n_pe, roughness, ind_bl, ll_and_pe_offset, i);
+				immut uint light_data = ll.data[i];
+
+				immut f16vec3 pe_light = f16vec3(
+					light_data & 511u,
+					bitfieldExtract(light_data, 9, 9),
+					bitfieldExtract(light_data, 18, 9)
+				) + ll_offset;
+
+				// We add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
+				immut float16_t light_intensity = float16_t(bitfieldExtract(light_data, 27, 4)) + float16_t(0.5);
+
+				add_ll_light(
+					specular, diffuse,
+					w_face_normal, w_tex_normal,
+					pe, n_pe, roughness, ind_bl,
+					light_intensity, light_data, pe_light, i
+				);
 			}
 		*/
 
