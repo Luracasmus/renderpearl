@@ -1,16 +1,13 @@
 #include "/prelude/core.glsl"
 
-/* Deferred Lighting */
+/* Sky Rendering */
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 #include "/lib/mv_inv.glsl"
-uniform vec3 cameraPositionFract;
 uniform mat4 gbufferProjectionInverse;
-uniform sampler2D depthtex0;
-uniform usampler2D colortex2;
-uniform layout(rgba16f) restrict image2D colorimg1;
+uniform layout(rgba16f) restrict writeonly image2D colorimg1;
 
 #include "/lib/mmul.glsl"
 #include "/lib/view_size.glsl"

@@ -49,11 +49,11 @@ in
 #define SKY_FSH
 #include "/lib/fog.glsl"
 #include "/lib/material/specular.glsl"
+#include "/lib/brdf.glsl"
 
 readonly
 #include "/buf/ll.glsl"
 uniform vec3 cameraPositionFract;
-#include "/lib/brdf.glsl"
 
 #ifndef NO_NORMAL
 	#include "/lib/material/normal.glsl"
@@ -93,14 +93,17 @@ void add_ll_light(
 
 		// Make falloff start a block away of the light source when the "wide" flag (most significant bit) is set.
 		immut float16_t falloff = float16_t(1.0) / (
-			light_data >= 0x80000000u ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
+			(light_data >= 0x80000000u) ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
 		);
 
 		immut float16_t light_level = intensity - mhtn_dist;
 		float16_t brightness = intensity * falloff;
 		brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
 		brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible.
-		brightness = min(brightness, float16_t(48.0)); // Prevent `float16_t` overflow later on.
+
+		#ifdef FLOAT16
+			brightness = min(brightness, float16_t(48.0)); // Prevent `float16_t` overflow later on.
+		#endif
 
 		#ifdef INT16
 			immut f16vec3 illum = brightness * f16vec3(
@@ -136,16 +139,6 @@ void main() {
 	#else
 		f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
 	#endif
-
-	/*
-		color.rgb = vec3(subgroupBallotBitCount(subgroupBallot(true)) < 8);
-		colortex1.rgb = color.rgb;
-
-		#ifdef TRANSLUCENT
-			colortex1.a = 1.0;
-		#endif
-		return;
-	*/
 
 	#ifdef ALPHA_CHECK
 		immut bool will_discard = color.a < float16_t(alphaTestRef);
@@ -362,116 +355,120 @@ void main() {
 		immut f16vec3 ll_block_light = f16vec3(float(DIR_BL * 3) / packing_scale) * block_sky_light.x * fma(specular, rcp_color, diffuse);
 
 		block_light = mix(ll_block_light, block_light, smoothstep(float16_t(LL_DIST - 15), float16_t(LL_DIST), chebyshev_dist));
-
-		light += block_light;
 	}
 
-	#ifdef ALPHA_CHECK
-		if (gl_HelperInvocation) { return; } // TODO: Benchmark this.
-		else if (will_discard) { discard; } // TODO: We may want to move more stuff after this that doesn't require derivatives or SG stuff.
-	#endif
-
-	color.rgb *= tint;
-
-	#ifdef TRANSLUCENT
-		immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 5, 11));
-		color.a *= float16_t(1.0/2047.0) * float16_t(packed_alpha);
-	#endif
-
-	#ifndef NETHER
-		immut f16vec3 sky_light_color = skylight();
-	#endif
-
-	#ifdef LIGHT_LEVELS
-		const float16_t ind_sky = float16_t(0.0);
-	#else
-		#ifdef NETHER
-			const f16vec3 ind_sky = f16vec3(0.3, 0.15, 0.2);
-		#elif defined END
-			const f16vec3 ind_sky = f16vec3(0.15, 0.075, 0.2);
-		#else
-			immut float16_t ind_sky = luminance(sky_light_color) / float16_t(DIR_SL) * smoothstep(float16_t(0.0), float16_t(1.0), block_sky_light.y);
+	// We probably want to have everything in this that doesn't require derivatives or SG stuff.
+	// I think (?) it should usually be slightly faster.
+	if (!gl_HelperInvocation) {
+		#ifdef ALPHA_CHECK
+			if (will_discard) { discard; } else
 		#endif
-	#endif
+		{
+			light += block_light;
 
-	light += ao * fma(f16vec3(ind_sky), f16vec3(IND_SL), f16vec3(AMBIENT * 0.1));
+			color.rgb *= tint;
 
-	#ifndef NETHER
-		immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
+			#ifdef TRANSLUCENT
+				immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 5, 11));
+				color.a *= float16_t(1.0/2047.0) * float16_t(packed_alpha);
+			#endif
 
-		#ifdef NO_NORMAL
-			const float16_t face_n_dot_l = float16_t(1.0);
-			const float16_t tex_n_dot_l = float16_t(1.0);
-		#else
-			immut float16_t face_n_dot_l = dot(w_face_normal, n_w_shadow_light);
-			immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_shadow_light);
-		#endif
+			#ifndef NETHER
+				immut f16vec3 sky_light_color = skylight();
+			#endif
 
-		/*#if SSS
-			f16vec3 dir_sky_light = sample_shadow(v.s_screen);
-		#endif*/
-
-		if (min(face_n_dot_l, tex_n_dot_l) > float16_t(0.0)) {
-			const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
-			immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_shadow_light, roughness);
-
-			f16vec3 dir_sky_light = sky_light_color * fma(specular_diffuse.xxx, rcp_color, specular_diffuse.yyy);
-
-			if (chebyshev_dist < sm_dist) {
-				dir_sky_light *= mix(
-					sample_shadow(v.s_screen),
-					f16vec3(1.0),
-					smoothstep(float16_t(sm_dist * (1.0 - SM_FADE_DIST)), sm_dist, chebyshev_dist)
-				);
-			}
-
-			light += float16_t(3.0) * dir_sky_light;
-		}
-
-		/*#if SSS
-			else light = fma(dir_sky_light, sky_light_color, light);  // TODO: We should use AO here.
-		#endif*/
-	#endif
-
-	color.rgb *= light;
-
-	#ifdef TRANSLUCENT
-		/*
-			immut float solid_depth = texelFetch(depthtex1, ivec2(gl_FragCoord.xy), 0).r;
-
-			if (solid_depth < 1.0) {
-				immut vec3 solid_ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size()), solid_depth), vec3(2.0), vec3(-1.0));
-				immut vec3 solid_pe = mat3(gbufferModelViewInverse) * proj_inv(gbufferProjectionInverse, solid_ndc);
-				immut float16_t fog = min(fog(solid_pe) + float16_t(1.0 - exp(-0.0125 / fogState.y * length(solid_pe))), float16_t(1.0)); // TODO: Make this less cursed.
-
-				#if defined END || defined NETHER
-					color.rgb = mix(color.rgb, color.rgb * linear(f16vec3(fogColor)), fog);
+			#ifdef LIGHT_LEVELS
+				const float16_t ind_sky = float16_t(0.0);
+			#else
+				#ifdef NETHER
+					const f16vec3 ind_sky = f16vec3(0.3, 0.15, 0.2);
+				#elif defined END
+					const f16vec3 ind_sky = f16vec3(0.15, 0.075, 0.2);
 				#else
-					immut vec3 n_pe = normalize(solid_pe);
-					immut float16_t sky_fog = sky_fog(float16_t(n_pe.y));
-					immut f16vec3 fog_col = sky(sky_fog, n_pe, mat3(gbufferModelViewInverse) * shadowLightDirection);
-					color.rgb = mix(color.rgb, mix(color.rgb * fog_col, fog_col, fog), fog);
+					immut float16_t ind_sky = luminance(sky_light_color) / float16_t(DIR_SL) * smoothstep(float16_t(0.0), float16_t(1.0), block_sky_light.y);
+				#endif
+			#endif
+
+			light += ao * fma(f16vec3(ind_sky), f16vec3(IND_SL), f16vec3(AMBIENT * 0.1));
+
+			#ifndef NETHER
+				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
+
+				#ifdef NO_NORMAL
+					const float16_t face_n_dot_l = float16_t(1.0);
+					const float16_t tex_n_dot_l = float16_t(1.0);
+				#else
+					immut float16_t face_n_dot_l = dot(w_face_normal, n_w_shadow_light);
+					immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_shadow_light);
 				#endif
 
-				color.a = saturate(color.a + fog);
-			} // TODO: Self-colored fog should be based on the distance between the current surface and the solid one behind it, not the distance from the camera to the solid surface.
-		*/
+				/*#if SSS
+					f16vec3 dir_sky_light = sample_shadow(v.s_screen);
+				#endif*/
 
-		color.a *= float16_t(1.0) - vanilla_fog(MV_INV * view + mvInv3);
+				if (min(face_n_dot_l, tex_n_dot_l) > float16_t(0.0)) {
+					const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
+					immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_shadow_light, roughness);
 
-		colortex1 = color;
-	#else
-		#ifdef NETHER
-			immut f16vec3 srgb_fog_col = srgb(f16vec3(fogColor));
-		#elif defined END
-			immut f16vec3 srgb_fog_col = srgb(sky(n_pe));
-		#else
-			immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
-			immut f16vec3 srgb_fog_col = srgb(sky(sky_fog_val, n_pe, sunDirectionPlr));
-		#endif
+					f16vec3 dir_sky_light = sky_light_color * fma(specular_diffuse.xxx, rcp_color, specular_diffuse.yyy);
 
-		color.rgb = linear(mix(srgb(color.rgb), srgb_fog_col, vanilla_fog(pe)));
+					if (chebyshev_dist < sm_dist) {
+						dir_sky_light *= mix(
+							sample_shadow(v.s_screen),
+							f16vec3(1.0),
+							smoothstep(float16_t(sm_dist * (1.0 - SM_FADE_DIST)), sm_dist, chebyshev_dist)
+						);
+					}
 
-		colortex1 = color.rgb;
-	#endif
+					light += float16_t(3.0) * dir_sky_light;
+				}
+
+				/*#if SSS
+					else light = fma(dir_sky_light, sky_light_color, light);  // TODO: We should use AO here.
+				#endif*/
+			#endif
+
+			color.rgb *= light;
+
+			#ifdef TRANSLUCENT
+				/*
+					immut float solid_depth = texelFetch(depthtex1, ivec2(gl_FragCoord.xy), 0).r;
+
+					if (solid_depth < 1.0) {
+						immut vec3 solid_ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size()), solid_depth), vec3(2.0), vec3(-1.0));
+						immut vec3 solid_pe = mat3(gbufferModelViewInverse) * proj_inv(gbufferProjectionInverse, solid_ndc);
+						immut float16_t fog = min(fog(solid_pe) + float16_t(1.0 - exp(-0.0125 / fogState.y * length(solid_pe))), float16_t(1.0)); // TODO: Make this less cursed.
+
+						#if defined END || defined NETHER
+							color.rgb = mix(color.rgb, color.rgb * linear(f16vec3(fogColor)), fog);
+						#else
+							immut vec3 n_pe = normalize(solid_pe);
+							immut float16_t sky_fog = sky_fog(float16_t(n_pe.y));
+							immut f16vec3 fog_col = sky(sky_fog, n_pe, mat3(gbufferModelViewInverse) * shadowLightDirection);
+							color.rgb = mix(color.rgb, mix(color.rgb * fog_col, fog_col, fog), fog);
+						#endif
+
+						color.a = saturate(color.a + fog);
+					} // TODO: Self-colored fog should be based on the distance between the current surface and the solid one behind it, not the distance from the camera to the solid surface.
+				*/
+
+				color.a *= float16_t(1.0) - vanilla_fog(MV_INV * view + mvInv3);
+
+				colortex1 = color;
+			#else
+				#ifdef NETHER
+					immut f16vec3 srgb_fog_col = srgb(f16vec3(fogColor));
+				#elif defined END
+					immut f16vec3 srgb_fog_col = srgb(sky(n_pe));
+				#else
+					immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
+					immut f16vec3 srgb_fog_col = srgb(sky(sky_fog_val, n_pe, sunDirectionPlr));
+				#endif
+
+				color.rgb = linear(mix(srgb(color.rgb), srgb_fog_col, vanilla_fog(pe)));
+
+				colortex1 = color.rgb;
+			#endif
+		}
+	}
 }

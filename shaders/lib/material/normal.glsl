@@ -15,15 +15,15 @@
 		#endif
 	}
 
-	vec3 gen_normal(sampler2D source, f16vec3 tint, vec2 coord, uint mid_coord, uint face_tex_size, float16_t srgb_luma) {
+	vec3 gen_normal(sampler2D source, f16vec3 tint, vec2 coord, uint unorm2x16_mid_coord, uint uint2x16_face_tex_size, float16_t srgb_luma) {
 		const float16_t scale = float16_t(1.1); // TODO: make this configurable
 
-		immut vec2 local_coord = coord - unpackUnorm2x16(mid_coord);
+		immut vec2 local_coord = coord - unpackUnorm2x16(unorm2x16_mid_coord);
 		immut ivec2 local_texel = ivec2(local_coord * vec2(textureSize(source, 0)));
 
 		immut float lod = textureQueryLod(source, coord).x;
 		immut ivec2 half_texels = ivec2(
-			unpackUint2x16(face_tex_size) / (uint16_t(2u) << uint16_t(ceil(lod))) - uint16_t(1u)
+			unpackUint2x16(uint2x16_face_tex_size) / (uint16_t(2u) << uint16_t(ceil(lod))) - uint16_t(1u)
 		);
 
 		immut f16vec4 bump = f16vec4(
