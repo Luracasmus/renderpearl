@@ -148,9 +148,16 @@ void main() {
 		#endif
 
 	#ifdef TERRAIN
-		immut float16_t ao = float16_t(v.ao);
+		// The actual lowest AO level seems to be a bit above, around `0.19607`. This feels safer if precision changes. We saturate too for safety.
+		const float min_vanilla_ao = 0.1875;
+
+		float16_t ao = saturate(fma(float16_t(v.ao), float16_t(1.0 / (1.0 - min_vanilla_ao)), float16_t(-min_vanilla_ao))); // Scale AO range to full [0, 1].
 	#else
-		const float16_t ao = float16_t(0.9);
+		float16_t ao = float16_t(0.9);
+	#endif
+
+	#ifdef DIR_SHADING
+		ao *= clamp(dot(f16vec3(abs(w_tex_normal.xz), w_tex_normal.y), f16vec3(0.75, 0.5, 1.0)), 0.25, 1.0);
 	#endif
 
 	immut bool is_maybe_ll_lit = (

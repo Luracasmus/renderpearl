@@ -8,8 +8,6 @@
 #endif
 #ifdef SM
 #endif
-#ifdef VANILLA_SHADING
-#endif
 
 out gl_PerVertex { vec4 gl_Position; };
 
@@ -132,7 +130,6 @@ void main() {
 		#ifdef TERRAIN
 			v.tint = vec3(color);
 			v.ao = vaColor.a;
-			immut float16_t ao = float16_t(v.ao);
 
 			immut float16_t emission = max(float16_t(mc_Entity.x), float16_t(at_midBlock.w));
 			v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma |= uint(emission + float16_t(0.5));
@@ -255,8 +252,6 @@ void main() {
 				}
 			}
 		#else
-			const float16_t ao = float16_t(1.0);
-
 			#ifdef TRANSLUCENT
 				immut float16_t alpha = float16_t(vaColor.a);
 			#endif
