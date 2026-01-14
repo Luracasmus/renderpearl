@@ -82,7 +82,7 @@ f16vec3 indexed_block_light(vec3 pe, f16vec3 w_face_normal, float16_t ao) {
 
 				float16_t light_diffuse = ind_bl; // Very fake GI.
 
-				if (face_n_dot_l > float16_t(0.0)) {
+				if (face_n_dot_l > min_n_dot_l) {
 					light_diffuse += brdf(face_n_dot_l, w_face_normal, normalize(f16vec3(pe)), n_w_rel_light, float16_t(1.0)).y;
 				}
 

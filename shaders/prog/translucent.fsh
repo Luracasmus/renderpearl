@@ -135,7 +135,7 @@ void main() {
 			f16vec3 light = sample_shadow(v.s_screen);
 		#endif
 
-		if (min(face_n_dot_l, tex_n_dot_l) > float16_t(0.0)) {
+		if (min(face_n_dot_l, tex_n_dot_l) > min_n_dot_l) {
 			#if !SSS
 				f16vec3 light = sample_shadow(v.s_screen);
 			#endif

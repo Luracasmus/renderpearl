@@ -79,7 +79,7 @@ shared struct {
 
 		f16vec3 light;
 
-		if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > float16_t(0.0)) {
+		if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > min_n_dot_l) {
 			f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness);
 
 			#if HAND_LIGHT_TRACE_STEPS != 0
@@ -382,7 +382,7 @@ void main() {
 
 						float16_t light_diffuse = ind_bl; // Very fake GI.
 
-						if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > float16_t(0.0)) {
+						if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > min_n_dot_l) {
 							immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness_sss.r);
 							specular = fma(specular_diffuse.xxx, illum, specular);
 							light_diffuse += specular_diffuse.y;
@@ -441,7 +441,7 @@ void main() {
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
 				immut float16_t tex_n_dot_shadow_l = dot(w_tex_normal, n_w_shadow_light);
 
-				if (min(dot(w_face_normal, n_w_shadow_light), tex_n_dot_shadow_l) > float16_t(0.0)) { // TODO: Handle `roughness_sss.g`.
+				if (min(dot(w_face_normal, n_w_shadow_light), tex_n_dot_shadow_l) > min_n_dot_l) { // TODO: Handle `roughness_sss.g`.
 					const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
 					immut f16vec2 specular_diffuse = brdf(tex_n_dot_shadow_l, w_tex_normal, n_pe, n_w_shadow_light, roughness_sss.r);
 
