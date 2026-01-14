@@ -12,5 +12,5 @@ f16vec3 non_block_light(f16vec3 sky_light_color, float16_t sky_light_level) {
 		#endif
 	#endif
 
-	return fma(color, f16vec3(IND_SL), f16vec3(AMBIENT * 0.1)));
+	return fma(f16vec3(color), f16vec3(IND_SL), f16vec3(AMBIENT * 0.1));
 }

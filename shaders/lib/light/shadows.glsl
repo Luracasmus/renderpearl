@@ -81,10 +81,10 @@ f16vec3 smooth_sample_sm(vec3 s_scrn) {
 // Sample the shadow map with bias,
 // applying BRDF-based lighting and a fade at the edges of the shadow distance.
 void sample_shadow(
-	inout light,
+	inout f16vec3 light,
 	float16_t chebyshev_dist, float s_distortion,
 	f16vec3 sky_light_color, f16vec3 rcp_color, float16_t roughness,
-	f16vec3 face_n_dot_l, f16vec3 tex_n_dot_l,
+	float16_t face_n_dot_l, float16_t tex_n_dot_l, f16vec3 n_w_shadow_light,
 	f16vec3 w_tex_normal, f16vec3 n_pe, vec3 pe
 ) {
 	if (min(face_n_dot_l, tex_n_dot_l) > min_n_dot_l) {

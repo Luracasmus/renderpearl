@@ -15,6 +15,17 @@ uniform sampler2D depthtex0;
 uniform usampler2D colortex2;
 uniform layout(rgba16f) restrict image2D colorimg1;
 
+#include "/lib/mmul.glsl"
+#include "/lib/view_size.glsl"
+#include "/lib/luminance.glsl"
+#include "/lib/octa_normal.glsl"
+#include "/lib/skylight.glsl"
+#include "/lib/srgb.glsl"
+#include "/lib/fog.glsl"
+#include "/lib/brdf.glsl"
+#include "/lib/light/non_block.glsl"
+#include "/lib/light/sample_ll_block.glsl"
+
 #ifndef NETHER
 	uniform vec3 shadowLightDirectionPlr;
 	uniform mat4 shadowModelView;
@@ -27,17 +38,9 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	#else
 		uniform vec3 sunDirectionPlr;
 	#endif
-#endif
 
-#include "/lib/mmul.glsl"
-#include "/lib/view_size.glsl"
-#include "/lib/luminance.glsl"
-#include "/lib/octa_normal.glsl"
-#include "/lib/skylight.glsl"
-#include "/lib/sm/shadows.glsl"
-#include "/lib/srgb.glsl"
-#include "/lib/fog.glsl"
-#include "/lib/ind_sky.glsl"
+	#include "/lib/light/shadows.glsl"
+#endif
 
 #ifdef LIGHT_LEVELS
 	#include "/lib/llv.glsl"
@@ -59,98 +62,7 @@ shared struct {
 	readonly
 	#include "/buf/hand_light.glsl"
 
-	uniform int handLightPackedLR;
-
-	#if HAND_LIGHT_TRACE_STEPS != 0
-		uniform mat4 gbufferProjection;
-		uniform sampler2D depthtex2;
-	#endif
-
-	f16vec3 get_hand_light(uint16_t light_level, uvec2 buf_data, vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, bool is_hand) {
-		immut f16vec3 pe_to_light = f16vec3(MV_INV * origin_view - pe);
-		immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
-		immut f16vec3 n_w_rel_light = pe_to_light * inversesqrt(sq_dist);
-
-		immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
-
-		immut u16vec2 rg = unpackUint2x16(buf_data.x);
-		immut u16vec2 b_count = unpackUint2x16(buf_data.y);
-		immut f16vec3 illum = float16_t(light_level) * float16_t(float(HAND_LIGHT) / hand_light_pack_scale) / max(float16_t(b_count.y) * sq_dist, float16_t(0.0078125)) * f16vec3(rg, b_count.x);
-
-		f16vec3 light;
-
-		if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > min_n_dot_l) {
-			f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness);
-
-			#if HAND_LIGHT_TRACE_STEPS != 0
-				const float trace_dist = float(MAX_HAND_LIGHT_TRACE_DIST);
-				if (sq_dist < float16_t(trace_dist*trace_dist) && !is_hand) { // Ray trace if not hand and within tracing range.
-					immut vec3 abs_pe = abs(pe);
-					// immut uint steps = clamp(uint(log2(max3(abs_pe.x, abs_pe.y, abs_pe.z)) * HAND_LIGHT_TRACE_STEPS), 8u, HAND_LIGHT_TRACE_STEPS * 4);
-					const uint steps = uint(HAND_LIGHT_TRACE_STEPS);
-
-					f16vec4 from = f16vec4(proj_mmul(gbufferProjection, origin_view));
-					f16vec4 to = f16vec4(proj_mmul(gbufferProjection, view));
-
-					// Do multiplication part of ndc -> screen out here.
-					from.xyz *= float16_t(0.5);
-					to.xyz *= float16_t(0.5);
-
-					immut f16vec4 step = (to - from) / float16_t(steps + 1);
-					f16vec4 ray_halfclip = from;
-
-					#if HAND_LIGHT_TRACE_HARDNESS != 0
-						float16_t visibility = float16_t(steps);
-					#else
-						bool occluded = false;
-					#endif
-
-					for (uint i = 0u; i < steps; ++i) {
-						ray_halfclip += step;
-
-						immut f16vec2 ray_screen_undiv_xy = fma(ray_halfclip.ww, f16vec2(0.5), ray_halfclip.xy);
-						// immut ivec2 texel = ivec2(ray_screen.xy * view_size());
-
-						// immut vec4 depth_samples = textureGather(depthtex2, trace_screen.xy, 0);
-						// immut bvec4 visible_samples = greaterThan(trace_screen.zzzz, depth_samples); // step just doesn't work here on AMD Mesa for some reason
-
-						immut float16_t sampled = float16_t(textureProjLod(depthtex2, f16vec3(ray_screen_undiv_xy, ray_halfclip.w), 0.0).r);
-
-						#if HAND_LIGHT_TRACE_HARDNESS != 0
-							// TODO: Maybe reduce visibility less when the sample is further behind the blocker (as to not assume every blocker is infinitely deep).
-							visibility -= float16_t((sampled - float16_t(0.5)) * ray_halfclip.w < ray_halfclip.z);
-							// ^Equivalent to, but faster than, converting the ray position to screen space:
-							// visibility -= float16_t(sampled < ray_halfclip.z / ray_halfclip.w + float16_t(0.5));
-						#else
-							if ((sampled - float16_t(0.5)) * ray_halfclip.w < ray_halfclip.z) {
-								occluded = true;
-							}
-						#endif
-					}
-
-					#if HAND_LIGHT_TRACE_HARDNESS != 0
-						/*
-							if (visibility <= float16_t(steps) * float16_t(0.5)) { // Adjust this to make shadows soft or hard
-								return ind_bl * illum;
-							}
-						*/
-
-						specular_diffuse *= pow(visibility / float16_t(steps), float16_t(float(steps * uint(HAND_LIGHT_TRACE_HARDNESS)) / 8.0));
-					#else
-						if (occluded) {
-							specular_diffuse = f16vec2(0.0);
-						}
-					#endif
-				}
-			#endif
-
-			light = fma(specular_diffuse.xxx, rcp_color, (specular_diffuse.y + ind_bl).xxx);
-		} else {
-			light = ind_bl.xxx;
-		}
-
-		return light * illum;
-	}
+	#include "/lib/light/hand.glsl"
 #endif
 
 void main() {
@@ -350,50 +262,35 @@ void main() {
 					) + offset);
 
 					immut float16_t intensity = float16_t(bitfieldExtract(light_data.x, 27, 4));
+					immut float16_t offset_intensity = intensity + float16_t(0.5);
 					immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
 
-					if (mhtn_dist < intensity + float16_t(0.5)) {
-						immut uint16_t light_color = sh.index_color[i];
-
-						immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
-						immut f16vec3 n_w_rel_light = w_rel_light * inversesqrt(sq_dist_light);
-
-						// Make falloff start a block away of the light source when the "wide" flag (most significant bit) is set.
-						immut float16_t falloff = float16_t(1.0) / (
-							light_data >= 0x80000000u ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
-						);
-
-						immut float16_t light_level = intensity - mhtn_dist + float16_t(0.5);
-						float16_t brightness = intensity * falloff;
-						brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
-						brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible.
-						brightness = min(brightness, float16_t(48.0)); // Prevent `float16_t` overflow later on.
+					if (mhtn_dist < offset_intensity) { // We add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
+						immut bool is_wide = light_data >= 0x80000000u;
 
 						#ifdef INT16
-							immut f16vec3 illum = brightness * f16vec3(
-								(light_color >> uint16_t(6u)) & uint16_t(31u),
-								light_color & uint16_t(63u),
-								(light_color >> uint16_t(11u))
+							immut uint16_t packed_light_color = sh.index_color[i];
+							immut f16vec3 light_color = f16vec3(
+								(packed_light_color >> uint16_t(6u)) & uint16_t(31u),
+								packed_light_color & uint16_t(63u),
+								(packed_light_color >> uint16_t(11u))
 							);
 						#else
-							immut f16vec3 illum = brightness * f16vec3(
-								bitfieldExtract(uint(light_color), 6, 5),
-								light_color & uint16_t(63u),
-								(light_color >> uint16_t(11u))
+							immut uint packed_light_color = bitfieldExtract(sh.index_color[collab_inv_i/2u], int(16u * (collab_inv_i & 1u)), 16);
+							immut f16vec3 light_color = f16vec3(
+								bitfieldExtract(uint(packed_light_color), 6, 5),
+								packed_light_color & uint16_t(63u),
+								(packed_light_color >> uint16_t(11u))
 							);
 						#endif
 
-						immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
-
-						float16_t light_diffuse = ind_bl; // Very fake GI.
-
-						if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > min_n_dot_l) {
-							immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness_sss.r);
-							specular = fma(specular_diffuse.xxx, illum, specular);
-							light_diffuse += specular_diffuse.y;
-						}
-
-						diffuse = fma(light_diffuse.xxx, illum, diffuse);
+						sample_ll_block_light(
+							specular, diffuse,
+							intensity, offset_intensity,
+							w_tex_normal, w_face_normal, n_pe,
+							roughness, ind_bl,
+							w_rel_light, mhtn_dist, light_color, is_wide
+						);
 					}
 				}
 
@@ -431,12 +328,16 @@ void main() {
 			);
 
 			#ifndef NETHER
+				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
+				immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
+				immut float16_t face_n_dot_l = dot(w_face_normal, n_w_rel_light);
+
 				immut uint s_distortion = texelFetch(colortex2, texel, 0).r;
 				sample_shadow(
 					final_light,
 					chebyshev_dist, s_distortion,
 					sky_light_color, rcp_color, roughness,
-					face_n_dot_l, tex_n_dot_l,
+					face_n_dot_l, tex_n_dot_l, n_w_shadow_light,
 					w_tex_normal, n_pe, pe
 				);
 			#endif

@@ -18,6 +18,8 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 #endif
 
 void main() {
+	// TODO: Test merging this into prepare.csh
+
 	#if HAND_LIGHT
 		hand_light.left = uvec2(0u);
 		hand_light.right = uvec2(0u);
