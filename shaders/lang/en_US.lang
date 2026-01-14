@@ -59,6 +59,7 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 
 		option.DIR_SHADING=§b⌚§r Directional Shading
 			option.DIR_SHADING.comment=Enables directional shading similar to Vanilla
+			value.DIR_SHADING.0=§cOff
 
 	screen.LIGHT_LIST=§6◀§r Light List §6▶
 		option.LL_DIST=§c⌚§r Distance

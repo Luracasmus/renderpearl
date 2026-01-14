@@ -156,8 +156,9 @@ void main() {
 		float16_t ao = float16_t(0.9);
 	#endif
 
-	#ifdef DIR_SHADING
-		ao *= clamp(dot(f16vec3(abs(w_tex_normal.xz), w_tex_normal.y), f16vec3(0.75, 0.5, 1.0)), 0.25, 1.0);
+	#if DIR_SHADING != 0
+		const float dir_shading = 0.1 * float(10 - DIR_SHADING);
+		ao *= clamp(dot(f16vec3(abs(w_tex_normal.xz), w_tex_normal.y), f16vec3(dir_shading, 0.5 * dir_shading, 1.0)), 0.25 * dir_shading, 1.0);
 	#endif
 
 	immut bool is_maybe_ll_lit = (
