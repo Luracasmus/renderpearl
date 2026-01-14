@@ -47,7 +47,7 @@ uniform sampler2D gtexture;
 
 	#include "/lib/prng/pcg.glsl"
 
-	#if defined TRANSLUCENT || (WAVES != && defined SOLID_TERRAIN)
+	#if defined TRANSLUCENT || (WAVES != 0 && defined SOLID_TERRAIN)
 		#include "/lib/waves/offset.glsl"
 	#endif
 #endif
