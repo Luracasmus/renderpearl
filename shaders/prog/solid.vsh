@@ -6,6 +6,8 @@
 #endif
 #ifdef EMISSIVE_LAPIS_BLOCK
 #endif
+#ifdef VANILLA_DIR_LIGHT
+#endif
 
 out gl_PerVertex { vec4 gl_Position; };
 

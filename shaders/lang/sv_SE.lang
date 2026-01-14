@@ -38,6 +38,9 @@ screen.LIGHTING=§6◀§r Ljus §6▶
 		option.SM_PLR.comment=§b🛈§r Alltid aktiva när §l§6⌚§r §lEntitetsskuggor§r är aktiverade
 	option.SM_BLOCK_ENTITY=§e⌚§r Blockentitetsskuggor
 
+	option.VANILLA_DIR_LIGHT=§b⌚§r Vanilla-Skuggning
+		option.VANILLA_DIR_LIGHT.comment=Aktiverar den riktningsbaserade skuggningen från Vanilla
+
 	screen.LIGHT_LIST=§6◀§r Ljuslista §6▶
 		option.LL_DIST=§c⌚§r Avstånd
 			option.LL_DIST.comment=Chebyshev-avstånd inom vilket ljus läggs till i ljuslistan\n\n§6⚠§r Att ändra detta kräver ibland modifiering av §l§c⌚§r§l Kapacitet§r och/eller §l§6⌚§r§l LDS-förhållande§r för att undvika artefakter och bibehålla optimal prestanda - Det rekommenderas därför att använda Profil-inställningen istället
@@ -61,18 +64,18 @@ screen.LIGHTING=§6◀§r Ljus §6▶
 		option.LDS_RATIO=§6⌚§r LDS-förhållande
 			option.LDS_RATIO.comment=Mängden Local Data Share-minne som allokeras per ruta (work group) som en andel av §l§c⌚§r§l Kapacitet§r\n\nDetta påverkar den maximala mängden ljus som kan bearbetas §oefter utsortering§r innan artifakter uppstår
 
+		screen.FALLBACK_BLOCK=§6◀§r Reserv-Blockljus §6▶
+			screen.FALLBACK_BLOCK.comment=Reserv-blockljusfärg för ljus utanför ljuslistans avstånd
+
+			option.BL_FALLBACK_R=§b⌚§c Röd Intensitet
+			option.BL_FALLBACK_G=§b⌚§a Grön Intensitet
+			option.BL_FALLBACK_B=§b⌚§9 Blå Intensitet
+
 	screen.HAND_LIGHT=§6◀§r Hand Light §6▶
 		option.HAND_LIGHT=§e⌚§r Ljusstyrka
 		option.MAX_HAND_LIGHT_TRACE_DIST=§c⌚§r Max. Strålavstånd
 		option.HAND_LIGHT_TRACE_STEPS=§c⌚§r Strålföljningssteg
 		option.HAND_LIGHT_TRACE_HARDNESS=§e⌚§r Skugghårdhet
-
-	screen.FALLBACK_BLOCK=§6◀§r Reserv-Blockljus §6▶
-		screen.FALLBACK_BLOCK.comment=Reserv-blockljusfärg för ljus utanför ljuslistans avstånd
-
-		option.BL_FALLBACK_R=§b⌚§c Röd Intensitet
-		option.BL_FALLBACK_G=§b⌚§a Grön Intensitet
-		option.BL_FALLBACK_B=§b⌚§9 Blå Intensitet
 
 	screen.CUSTOM_EMISSIVE_BLOCKS=§6◀§r Extra Emitterande Block §6▶
 		option.EMISSIVE_REDSTONE_BLOCK=§e⌚§c Emitterande Redstoneblock
