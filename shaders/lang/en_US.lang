@@ -190,6 +190,11 @@ screen.ATMOSPHERICS=§6◀§r Atmosphere §6▶
 	option.CLOUD_FOG_END=§b⌚§r Cloud Fog End
 		suffix.CLOUD_FOG_END=\ chunks
 
+	screen.CEL_BODIES=§6◀§r Celestial Bodies §6▶
+		option.SUN_SIZE=§b⌚§r Sun Size
+		option.MOON_SIZE=§b⌚§r Moon Size
+		option.MOON_PHASE_DIFF=§b⌚§r Moon Phase Difference
+
 screen.SURFACE=§6◀§r Surface §6▶
 	option.WATER_OPACITY=§b⌚§r Water Opacity
 		suffix.WATER_OPACITY=%

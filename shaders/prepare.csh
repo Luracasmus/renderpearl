@@ -70,8 +70,8 @@ void main() {
 		color = stars + fog_col;
 
 		immut vec3 sun_abs_dist = abs(n_pe - sunDirectionPlr);
-		immut bool sun = max3(sun_abs_dist.x, sun_abs_dist.y, sun_abs_dist.z) < 0.04;
-		immut bool moon = all(lessThan(abs(n_pe + sunDirectionPlr), fma(skyState.z, 0.0025, 0.02).xxx));
+		immut bool sun = max3(sun_abs_dist.x, sun_abs_dist.y, sun_abs_dist.z) < SUN_SIZE;
+		immut bool moon = all(lessThan(abs(n_pe + sunDirectionPlr), fma(skyState.z, MOON_PHASE_DIFF, MOON_SIZE).xxx));
 
 		if (sun || moon) {
 			color += skylight_color;
