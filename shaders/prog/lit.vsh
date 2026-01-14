@@ -8,6 +8,8 @@
 #endif
 #ifdef SM
 #endif
+#ifdef VANILLA_DIR_LIGHT
+#endif
 
 out gl_PerVertex { vec4 gl_Position; };
 

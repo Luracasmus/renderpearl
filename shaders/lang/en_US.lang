@@ -57,6 +57,9 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 			option.SM_PLR.comment=§b🛈§r Always active when §l§6⌚§r §lEntity Shadows§r are enabled
 		option.SM_BLOCK_ENTITY=§e⌚§r Block Entity Shadows
 
+		option.VANILLA_DIR_LIGHT=§b⌚§r Vanilla Shading
+			option.VANILLA_DIR_LIGHT.comment=Enables the directional shading from Vanilla
+
 	screen.LIGHT_LIST=§6◀§r Light List §6▶
 		option.LL_DIST=§c⌚§r Distance
 			option.LL_DIST.comment=Chebychev distance within which lights are added to the light list\n\n§6⚠§r Changing this sometimes requires modifying §l§c⌚§r§l Capacity§r and/or §l§6⌚§r§l LDS Ratio§r to avoid artifacts and maintain optimal performance - It is therefore recommended to use the Profile option instead
@@ -95,6 +98,13 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 		option.LDS_RATIO=§6⌚§r LDS Ratio
 			option.LDS_RATIO.comment=The amount of Local Data Share memory allocated per tile (work group) as a ratio of §l§c⌚§r§l Capacity§r\n\nThis affects the maximum amount of lights that can be processed §oafter culling§r before artifacts occur
 
+		screen.FALLBACK_BLOCK=§6◀§r Fallback Block Light §6▶
+			screen.FALLBACK_BLOCK.comment=Fallback block light color for lights outside the range of the light list
+
+			option.BL_FALLBACK_R=§b⌚§c Red Intensity
+			option.BL_FALLBACK_G=§b⌚§a Green Intensity
+			option.BL_FALLBACK_B=§b⌚§9 Blue Intensity
+
 	screen.HAND_LIGHT=§6◀§r Hand Light §6▶
 		option.HAND_LIGHT=§e⌚§r Brightness
 			value.HAND_LIGHT.0=§cOff
@@ -105,13 +115,6 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 
 		option.HAND_LIGHT_TRACE_HARDNESS=§e⌚§r Traced Shadow Hardness
 			value.HAND_LIGHT_TRACE_HARDNESS.0=§cOff
-
-	screen.FALLBACK_BLOCK=§6◀§r Fallback Block Light §6▶
-		screen.FALLBACK_BLOCK.comment=Fallback block light color for lights outside the range of the light list
-
-		option.BL_FALLBACK_R=§b⌚§c Red Intensity
-		option.BL_FALLBACK_G=§b⌚§a Green Intensity
-		option.BL_FALLBACK_B=§b⌚§9 Blue Intensity
 
 	screen.CUSTOM_EMISSIVE_BLOCKS=§6◀§r Custom Emissive Blocks §6▶
 		option.EMISSIVE_REDSTONE_BLOCK=§e⌚§c Emissive Redstone Block
