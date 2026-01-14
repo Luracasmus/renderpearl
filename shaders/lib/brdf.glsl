@@ -22,14 +22,25 @@
 	SOFTWARE.
 */
 
-// `float16_t` adaptation from https://google.github.io/filament/Filament.html#listing_speculardfp16
-float16_t d_ggx(float16_t roughness, float16_t n_dot_h, f16vec3 normal, f16vec3 half_dir) {
-	immut f16vec3 n_x_h = cross(normal, half_dir);
-	immut float16_t a = n_dot_h * roughness;
-	immut float16_t k = roughness / fma(a, a, dot(n_x_h, n_x_h));
-	immut float16_t d = k * k * float16_t(1.0/PI);
-	return min(d, float16_t(65504.0));
-}
+#ifdef FLOAT16
+	// `float16_t` adaptation from https://google.github.io/filament/Filament.html#listing_speculardfp16
+	float16_t d_ggx(float16_t roughness, float16_t n_dot_h, f16vec3 normal, f16vec3 half_dir) {
+		const float16_t f16_max = float16_t(65504.0);
+
+		immut f16vec3 n_x_h = cross(normal, half_dir);
+		immut float16_t a = n_dot_h * roughness;
+		immut float16_t k = roughness / fma(a, a, dot(n_x_h, n_x_h));
+		immut float16_t d = k * k * float16_t(1.0/PI);
+		return min(d, f16_max);
+	}
+#else
+	float d_ggx(float roughness, float n_dot_h, f16vec3 _normal, f16vec3 _half_dir) {
+		immut float a = n_dot_h * roughness;
+		immut float k = roughness / (1.0 - n_dot_h * n_dot_h + a * a);
+		immut float d = k * k * (1.0/PI);
+		return d;
+	}
+#endif
 
 float16_t v_smith_ggx_correlated(float16_t roughness, float16_t n_dot_v, float16_t n_dot_l) {
 	immut float16_t a_2 = roughness * roughness;
