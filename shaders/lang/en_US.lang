@@ -57,8 +57,8 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 			option.SM_PLR.comment=§b🛈§r Always active when §l§6⌚§r §lEntity Shadows§r are enabled
 		option.SM_BLOCK_ENTITY=§e⌚§r Block Entity Shadows
 
-		option.VANILLA_DIR_LIGHT=§b⌚§r Vanilla Shading
-			option.VANILLA_DIR_LIGHT.comment=Enables the directional shading from Vanilla
+		option.VANILLA_SHADING=§b⌚§r Vanilla Shading
+			option.VANILLA_SHADING.comment=Enables the directional shading from Vanilla
 
 	screen.LIGHT_LIST=§6◀§r Light List §6▶
 		option.LL_DIST=§c⌚§r Distance

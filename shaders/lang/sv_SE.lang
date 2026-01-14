@@ -38,8 +38,8 @@ screen.LIGHTING=§6◀§r Ljus §6▶
 		option.SM_PLR.comment=§b🛈§r Alltid aktiva när §l§6⌚§r §lEntitetsskuggor§r är aktiverade
 	option.SM_BLOCK_ENTITY=§e⌚§r Blockentitetsskuggor
 
-	option.VANILLA_DIR_LIGHT=§b⌚§r Vanilla-Skuggning
-		option.VANILLA_DIR_LIGHT.comment=Aktiverar den riktningsbaserade skuggningen från Vanilla
+	option.VANILLA_SHADING=§b⌚§r Vanilla-Skuggning
+		option.VANILLA_SHADING.comment=Aktiverar den riktningsbaserade skuggningen från Vanilla
 
 	screen.LIGHT_LIST=§6◀§r Ljuslista §6▶
 		option.LL_DIST=§c⌚§r Avstånd
