@@ -306,7 +306,7 @@ void main() {
 
 								float16_t light_diffuse = ind_bl; // Very fake GI.
 
-								if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > float16_t(0.0)) {
+								if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > min_n_dot_l) {
 									immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness);
 									specular = fma(specular_diffuse.xxx, illum, specular);
 									light_diffuse += specular_diffuse.y;
@@ -399,7 +399,7 @@ void main() {
 					f16vec3 dir_sky_light = sample_shadow(v.s_screen);
 				#endif*/
 
-				if (min(face_n_dot_l, tex_n_dot_l) > float16_t(0.0)) {
+				if (min(face_n_dot_l, tex_n_dot_l) > min_n_dot_l) {
 					const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
 					immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_shadow_light, roughness);
 
