@@ -71,68 +71,6 @@ uniform vec3 cameraPositionFract;
 	#endif
 #endif
 
-void add_ll_light(
-	inout f16vec3 specular, inout f16vec3 diffuse,
-	f16vec3 w_face_normal, f16vec3 w_tex_normal,
-	vec3 pe, f16vec3 n_pe, float16_t roughness, float16_t ind_bl,
-	float16_t intensity, uint light_data, f16vec3 pe_light, uint i // `i` must be subgroup uniform.
-) {
-	immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
-
-	immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
-
-	if (mhtn_dist < intensity) {
-		#ifdef INT16
-			immut uint16_t light_color = subgroupBroadcastFirst(ll.color[i]);
-		#else
-			immut uint light_color = bitfieldExtract(subgroupBroadcastFirst(ll.color[i/2u]), int(16u * (i & 1u)), 16);
-		#endif
-
-		immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
-		immut f16vec3 n_w_rel_light = w_rel_light * inversesqrt(sq_dist_light);
-
-		// Make falloff start a block away of the light source when the "wide" flag (most significant bit) is set.
-		immut float16_t falloff = float16_t(1.0) / (
-			(light_data >= 0x80000000u) ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
-		);
-
-		immut float16_t light_level = intensity - mhtn_dist;
-		float16_t brightness = intensity * falloff;
-		brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
-		brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible.
-
-		#ifdef FLOAT16
-			brightness = min(brightness, float16_t(48.0)); // Prevent `float16_t` overflow later on.
-		#endif
-
-		#ifdef INT16
-			immut f16vec3 illum = brightness * f16vec3(
-				(light_color >> uint16_t(6u)) & uint16_t(31u),
-				light_color & uint16_t(63u),
-				(light_color >> uint16_t(11u))
-			);
-		#else
-			immut f16vec3 illum = brightness * f16vec3(
-				bitfieldExtract(uint(light_color), 6, 5),
-				light_color & uint16_t(63u),
-				(light_color >> uint16_t(11u))
-			);
-		#endif
-
-		immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
-
-		float16_t light_diffuse = ind_bl; // Very fake GI.
-
-		if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > float16_t(0.0)) {
-			immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness);
-			specular = fma(specular_diffuse.xxx, illum, specular);
-			light_diffuse += specular_diffuse.y;
-		}
-
-		diffuse = fma(light_diffuse.xxx, illum, diffuse);
-	}
-}
-
 void main() {
 	#if defined TRANSLUCENT || defined ALPHA_CHECK
 		f16vec4 color = f16vec4(texture(gtexture, v.coord));
@@ -268,41 +206,66 @@ void main() {
 		f16vec3 specular = f16vec3(0.0);
 
 		for (uint16_t chunk_i = uint16_t(0u); chunk_i < global_len; chunk_i += chunk_invs) {
-			bool is_in_bb;
-			uint light_data;
-			float16_t light_intensity;
-			f16vec3 pe_light;
+			bool inv_is_in_bb;
+			float16_t inv_light_intensity;
+			f16vec3 inv_pe_light;
+			f16vec3 inv_illum;
+			bool inv_is_wide;
 
 			// Check if light is inside the subgroup bounding boxes.
 			immut uint16_t collab_inv_i = chunk_i + chunk_inv_id;
 
 			if (collab_inv_i < global_len) {
-				light_data = ll.data[collab_inv_i];
+				immut uint light_data = ll.data[collab_inv_i];
 
-				pe_light = f16vec3(
+				inv_pe_light = f16vec3(
 					light_data & 511u,
 					bitfieldExtract(light_data, 9, 9),
 					bitfieldExtract(light_data, 18, 9)
 				) + ll_offset;
 
 				// We add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
-				light_intensity = float16_t(bitfieldExtract(light_data, 27, 4)) + float16_t(0.5);
+				inv_light_intensity = float16_t(bitfieldExtract(light_data, 27, 4)) + float16_t(0.5);
 
 				// Distance between light and closest point on bounding box.
 				// In world-aligned space (player-eye) we can use Manhattan distance.
-				immut float16_t mhtn_dist_from_pe_bb = dot(abs(pe_light - clamp(pe_light, chunk_pe_min, chunk_pe_max)), f16vec3(1.0));
+				immut float16_t mhtn_dist_from_pe_bb = dot(abs(inv_pe_light - clamp(inv_pe_light, chunk_pe_min, chunk_pe_max)), f16vec3(1.0));
 
-				immut f16vec3 v_light = f16vec3(pe_light * MV_INV);
-				immut float16_t euclid_dist_from_view_bb = distance(v_light, clamp(v_light, chunk_view_min, chunk_view_max));
+				inv_is_in_bb = mhtn_dist_from_pe_bb <= inv_light_intensity;
 
-				is_in_bb = min(mhtn_dist_from_pe_bb, euclid_dist_from_view_bb) <= light_intensity;
-				// TODO: Maybe check for when the light is closer than the size of the bounding box, meaning it will be applying to all invocations.
+				if (inv_is_in_bb) {
+					immut f16vec3 v_light = f16vec3(inv_pe_light * MV_INV);
+					immut float16_t euclid_dist_from_view_bb = distance(v_light, clamp(v_light, chunk_view_min, chunk_view_max));
+
+					inv_is_in_bb = euclid_dist_from_view_bb <= inv_light_intensity;
+					// TODO: Maybe check for when the light is closer than the size of the bounding box, meaning it will be applying to all invocations.
+
+					if (inv_is_in_bb) {
+						inv_is_wide = light_data >= 0x80000000u;
+
+						#ifdef INT16
+							immut uint16_t light_color = ll.color[collab_inv_i];
+							inv_illum = f16vec3(
+								(light_color >> uint16_t(6u)) & uint16_t(31u),
+								light_color & uint16_t(63u),
+								(light_color >> uint16_t(11u))
+							);
+						#else
+							immut uint light_color = bitfieldExtract(ll.color[collab_inv_i/2u], int(16u * (collab_inv_i & 1u)), 16);
+							inv_illum = f16vec3(
+								bitfieldExtract(uint(light_color), 6, 5),
+								light_color & uint16_t(63u),
+								(light_color >> uint16_t(11u))
+							);
+						#endif
+					}
+				}
 			} else {
-				is_in_bb = false;
+				inv_is_in_bb = false;
 			}
 
-			if (subgroupAny(is_in_bb)) {
-				immut uvec4 in_bb_ballot = subgroupBallot(is_in_bb);
+			if (subgroupAny(inv_is_in_bb)) {
+				immut uvec4 in_bb_ballot = subgroupBallot(inv_is_in_bb);
 				immut uint16_t lsb = uint16_t(subgroupBallotFindLSB(in_bb_ballot));
 				immut uint16_t msb = uint16_t(subgroupBallotFindMSB(in_bb_ballot));
 
@@ -310,17 +273,47 @@ void main() {
 
 				for (uint16_t i = lsb; i <= msb; ++i) {
 					if (subgroupBallotBitExtract(in_bb_ballot, i)) { // This is always true when `i == lsb` or `i == msb`.
-						immut float16_t chunk_light_intensity = float16_t(subgroupBroadcast(light_intensity, i));
-						immut f16vec3 chunk_pe_light = f16vec3(subgroupBroadcast(pe_light, i));
-						immut uint chunk_light_data = subgroupBroadcast(light_data, i);
+						immut float16_t intensity = float16_t(subgroupBroadcast(inv_light_intensity, i));
+						immut f16vec3 pe_light = f16vec3(subgroupBroadcast(inv_pe_light, i));
+						immut bool is_wide = subgroupBroadcast(inv_is_wide, i);
+						f16vec3 illum = f16vec3(subgroupBroadcast(inv_illum, i));
 
 						if (is_maybe_ll_lit) {
-							add_ll_light(
-								specular, diffuse,
-								w_face_normal, w_tex_normal,
-								pe, n_pe, roughness, ind_bl,
-								chunk_light_intensity, chunk_light_data, chunk_pe_light, i + chunk_i
-							);
+							immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
+							immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
+
+							if (mhtn_dist < intensity) {
+								immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
+								immut f16vec3 n_w_rel_light = w_rel_light * inversesqrt(sq_dist_light);
+
+								// Make falloff start a block away of the light source when the "wide" flag (most significant bit) is set.
+								immut float16_t falloff = float16_t(1.0) / (
+									is_wide ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
+								);
+
+								immut float16_t light_level = intensity - mhtn_dist;
+								float16_t brightness = intensity * falloff;
+								brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
+								brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible.
+
+								#ifdef FLOAT16
+									brightness = min(brightness, float16_t(48.0)); // Prevent `float16_t` overflow later on.
+								#endif
+
+								illum *= brightness;
+
+								immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
+
+								float16_t light_diffuse = ind_bl; // Very fake GI.
+
+								if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > float16_t(0.0)) {
+									immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness);
+									specular = fma(specular_diffuse.xxx, illum, specular);
+									light_diffuse += specular_diffuse.y;
+								}
+
+								diffuse = fma(light_diffuse.xxx, illum, diffuse);
+							}
 						}
 					}
 				}
