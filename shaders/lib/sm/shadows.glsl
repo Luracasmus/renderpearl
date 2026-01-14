@@ -1,5 +1,4 @@
 #include "/lib/sm/sample.glsl"
-#include "/lib/sm/bias.glsl"
 
 #if SM_BLUR == 2
 	// Terrible generated versions of 'sample_sm' from '/lib/sm/sample.glsl' with offsets.
@@ -32,7 +31,7 @@
 	f16vec3 sample_sm_2_2(SAMPLE_SM_ARGS) { SAMPLE_SM(2, 2) }
 #endif
 
-f16vec3 sample_shadow(vec3 s_scrn) {
+f16vec3 smooth_sample_sm(vec3 s_scrn) {
 	#if SM_BLUR < 2
 		#if !SM_BLUR
 			/*
@@ -77,4 +76,44 @@ f16vec3 sample_shadow(vec3 s_scrn) {
 			)
 		) / float16_t(144.0);
 	#endif
+}
+
+// Sample the shadow map with bias,
+// applying BRDF-based lighting and a fade at the edges of the shadow distance.
+void sample_shadow(
+	inout light,
+	float16_t chebyshev_dist, float s_distortion,
+	f16vec3 sky_light_color, f16vec3 rcp_color, float16_t roughness,
+	f16vec3 face_n_dot_l, f16vec3 tex_n_dot_l,
+	f16vec3 w_tex_normal, f16vec3 n_pe, vec3 pe
+) {
+	if (min(face_n_dot_l, tex_n_dot_l) > min_n_dot_l) {
+		const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
+		immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_shadow_light, roughness);
+
+		f16vec3 dir_sky_light = sky_light_color * fma(specular_diffuse.xxx, rcp_color, specular_diffuse.yyy);
+
+		if (chebyshev_dist < sm_dist) {
+			vec3 s_view = rot_trans_mmul(shadowModelView, pe + mvInv3);
+
+			immut float16_t sine = sqrt(fma(face_n_dot_l, -face_n_dot_l, float16_t(1.0))); // Using the Pythagorean identity.
+			immut float16_t tangent = sine / face_n_dot_l;
+			immut float bias = tangent / (shadowMapResolution * shadow_proj_scale.x) / s_distortion * 9;
+
+			s_view.z += bias.x;
+
+			vec3 s_ndc = shadow_proj_scale * s_view;
+			s_ndc.xy *= s_distortion;
+
+			vec3 s_screen = fma(s_ndc, vec3(0.5), vec3(0.5));
+
+			dir_sky_light *= mix(
+				smooth_sample_sm(s_screen),
+				f16vec3(1.0),
+				smoothstep(float16_t(sm_dist * (1.0 - SM_FADE_DIST)), sm_dist, chebyshev_dist)
+			);
+		}
+
+		light += float16_t(3.0) * dir_sky_light;
+	}
 }

@@ -1,3 +1,3 @@
 #define TERRAIN
 #define TRANSLUCENT
-#include "/prog/lit.fsh"
+#include "/prog/lit_forward.fsh"

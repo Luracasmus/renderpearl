@@ -19,7 +19,6 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	uniform vec3 shadowLightDirectionPlr;
 	uniform mat4 shadowModelView;
 	uniform float frameTimeCounter;
-	uniform usampler2D colortex3;
 
 	#include "/lib/prng/pcg.glsl"
 
@@ -38,7 +37,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #include "/lib/sm/shadows.glsl"
 #include "/lib/srgb.glsl"
 #include "/lib/fog.glsl"
-// #include "/lib/u16_unpack3.glsl"
+#include "/lib/ind_sky.glsl"
 
 #ifdef LIGHT_LEVELS
 	#include "/lib/llv.glsl"
@@ -410,18 +409,6 @@ void main() {
 			// block_light.rgb += distance(max(float16_t(sh.bb_view_min), float16_t(0.0)), max(float16_t(sh.bb_view_max), float16_t(0.0))) * float16_t(0.01);
 			// if (sh.index_len > local_index_size) block_light *= 10;
 
-			#ifdef LIGHT_LEVELS
-				const float16_t ind_sky = float16_t(0.0);
-			#else
-				#ifdef NETHER
-					const f16vec3 ind_sky = f16vec3(0.3, 0.15, 0.2);
-				#elif defined END
-					const f16vec3 ind_sky = f16vec3(0.15, 0.075, 0.2);
-				#else
-					immut float16_t ind_sky = luminance(skylight_color) / float16_t(DIR_SL) * smoothstep(float16_t(0.0), float16_t(1.0), light.y);
-				#endif
-			#endif
-
 			#if HAND_LIGHT
 				if (handLightPackedLR != 0) {
 					immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
@@ -438,38 +425,20 @@ void main() {
 			#endif
 
 			f16vec3 final_light = fma(
-				fma(f16vec3(ind_sky), f16vec3(IND_SL), f16vec3(AMBIENT * 0.1)),
+				ind_sky(skylight_color, light.y),
 				color_ao.aaa,
 				block_light
 			);
 
 			#ifndef NETHER
-				immut uint gbuf2_r = texelFetch(colortex2, texel, 0).r;
-				immut uvec2 gbuf3 = texelFetch(colortex3, texel, 0).rg;
-
-				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
-				immut float16_t tex_n_dot_shadow_l = dot(w_tex_normal, n_w_shadow_light);
-
-				if (min(dot(w_face_normal, n_w_shadow_light), tex_n_dot_shadow_l) > min_n_dot_l) { // TODO: Handle `roughness_sss.g`.
-					const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
-					immut f16vec2 specular_diffuse = brdf(tex_n_dot_shadow_l, w_tex_normal, n_pe, n_w_shadow_light, roughness_sss.r);
-
-					f16vec3 sm_light = skylight_color * fma(specular_diffuse.xxx, rcp_color, specular_diffuse.yyy);
-					if (chebyshev_dist < sm_dist) {
-						vec3 s_screen = vec3(
-							unpackUnorm2x16(gbuf.r),
-							unpackUnorm2x16(gbuf.g).x
-						);
-
-						sm_light *= mix(
-							sample_shadow(s_screen),
-							f16vec3(1.0),
-							smoothstep(float16_t(sm_dist * (1.0 - SM_FADE_DIST)), sm_dist, chebyshev_dist)
-						);
-					}
-
-					final_light = fma(sm_light, f16vec3(3.0), final_light); // why * 3.0?
-				}
+				immut uint s_distortion = texelFetch(colortex2, texel, 0).r;
+				sample_shadow(
+					final_light,
+					chebyshev_dist, s_distortion,
+					sky_light_color, rcp_color, roughness,
+					face_n_dot_l, tex_n_dot_l,
+					w_tex_normal, n_pe, pe
+				);
 			#endif
 
 			color = linear(mix(srgb(color_ao.rgb * final_light), srgb(fog_col), vanilla_fog(pe)));
@@ -493,8 +462,8 @@ void main() {
 				color = stars + fog_col;
 
 				immut vec3 sun_abs_dist = abs(n_pe - sunDirectionPlr);
-				immut bool sun = max3(sun_abs_dist.x, sun_abs_dist.y, sun_abs_dist.z) < 0.04;
-				immut bool moon = all(lessThan(abs(n_pe + sunDirectionPlr), fma(skyState.z, 0.0025, 0.02).xxx));
+				immut bool sun = max3(sun_abs_dist.x, sun_abs_dist.y, sun_abs_dist.z) < SUN_SIZE;
+				immut bool moon = all(lessThan(abs(n_pe + sunDirectionPlr), fma(skyState.z, MOON_PHASE_DIFF, MOON_SIZE).xxx));
 
 				if (sun || moon) {
 					color += skylight_color;

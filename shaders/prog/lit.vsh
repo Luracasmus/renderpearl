@@ -20,11 +20,9 @@ in vec2 mc_midTexCoord;
 uniform sampler2D gtexture;
 
 #ifndef NETHER
-	uniform vec3 shadowLightDirectionPlr;
 	uniform mat4 shadowModelView;
 
 	#include "/lib/sm/distort.glsl"
-	#include "/lib/sm/bias.glsl"
 #endif
 
 #ifdef HAND
@@ -320,20 +318,8 @@ void main() {
 
 		#ifndef NETHER
 			if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
-				#ifdef NO_NORMAL
-					immut f16vec3 w_normal = f16vec3(mvInv2); // == f16vec3(MV_INV * vec3(0.0, 0.0, 1.0))
-				#endif
-
-				// TODO: This bias is better than before but it would probably be best to do it in shadow screen space and offset a scaled amount of texels.
-				immut f16vec2 bias = shadow_bias(dot(w_normal, f16vec3(shadowLightDirectionPlr)));
-
-				vec3 s_ndc = shadow_proj_scale * (mat3(shadowModelView) * rot_trans_mmul(mat4(mat4x3(mvInv0, mvInv1, mvInv2, mvInv3)), view));
-				s_ndc.xy *= distortion(s_ndc.xy);
-
-				s_ndc = fma(mat3(shadowModelView) * vec3(bias.y * w_normal), shadow_proj_scale, s_ndc);
-				// s_ndc.z += float(bias.x); // Doesn't really seem to help :/
-
-				v.s_screen = fma(s_ndc, vec3(0.5), vec3(0.5));
+				immut vec2 s_ndc = shadow_proj_scale.xy * (mat3x2(shadowModelView) * (pe + mvInv3));
+				v.s_distortion = distortion(s_ndc);
 			}
 		#endif
 	} else {

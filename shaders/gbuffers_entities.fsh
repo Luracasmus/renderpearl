@@ -1,3 +1,3 @@
 #define TEX_ALPHA
 #define ALPHA_CHECK
-#include "/prog/lit.fsh"
+#include "/prog/lit_forward.fsh"

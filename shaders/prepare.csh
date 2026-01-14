@@ -1,82 +1,152 @@
 #include "/prelude/core.glsl"
 
-/* Sky Rendering */
+/* Light Index Deduplication */
 
-layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
-const vec2 workGroupsRender = vec2(1.0, 1.0);
-
-#include "/lib/mv_inv.glsl"
-uniform mat4 gbufferProjectionInverse;
-uniform layout(rgba16f) restrict writeonly image2D colorimg1;
-
-#include "/lib/mmul.glsl"
-#include "/lib/view_size.glsl"
-#include "/lib/skylight.glsl"
-#include "/lib/srgb.glsl"
-#include "/lib/fog.glsl"
-
-#ifndef NETHER
-	uniform float frameTimeCounter;
-
-	#include "/lib/prng/pcg.glsl"
-
-	#ifdef END
-		#include "/lib/prng/fast_rand.glsl"
-	#else
-		uniform vec3 sunDirectionPlr;
-	#endif
+// Work around compiler bug on Intel drivers.
+#ifndef MC_GL_VENDOR_INTEL
+	layout(local_size_x = min(gl_MaxComputeWorkGroupSize.x, LL_CAPACITY), local_size_y = 1, local_size_z = 1) in;
+#elif LL_CAPACITY < 1024
+	layout(local_size_x = LL_CAPACITY, local_size_y = 1, local_size_z = 1) in;
+#else
+	// We assume GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS >= 1024 && GL_MAX_COMPUTE_WORK_GROUP_SIZE[0] >= 1024.
+	layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 #endif
 
+const ivec3 workGroups = ivec3(1, 1, 1);
+
+uniform bool rebuildLL;
+uniform vec3 cameraPositionFract, invCameraPositionDeltaInt;
+
+coherent
+#include "/buf/llq.glsl"
+
+#ifndef INT16
+	coherent
+#endif
+#include "/buf/ll.glsl"
+
+#include "/lib/mv_inv.glsl"
+
+shared struct {
+	uint culled_len;
+	uint[ll.data.length()] index_data;
+	uint16_t[ll.data.length()] index_color;
+} sh;
+
 void main() {
-	immut i16vec2 texel = i16vec2(gl_GlobalInvocationID.xy);
-	immut vec2 texel_size = 1.0 / vec2(view_size());
-	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
-	vec3 ndc = fma(vec3(coord, 1.0), vec3(2.0), vec3(-1.0));
+	// Maybe we could average all the light colors here for ambient light color.
 
-	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
-	immut vec3 pe = MV_INV * view;
+	immut uint16_t local_invocation_i = uint16_t(gl_LocalInvocationIndex);
+	immut bool is_first_invoc = local_invocation_i == uint16_t(0u);
+	const uint16_t wg_size = uint16_t(gl_WorkGroupSize.x);
 
-	immut f16vec3 n_pe = f16vec3(normalize(pe));
+	if (rebuildLL) {
+		if (is_first_invoc) { sh.culled_len = 0u; }
 
-	#ifdef NETHER
-		immut f16vec3 fog_col = linear(f16vec3(fogColor));
-	#elif defined END
-		immut f16vec3 fog_col = sky(n_pe);
-	#else
-		immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
-		immut f16vec3 fog_col = sky(sky_fog_val, n_pe, sunDirectionPlr);
+		// if (llq.len > ll.data.length()) { llq.len = uint16_t(0u); return; }
 
-		immut f16vec3 skylight_color = skylight();
-	#endif
+		#if !defined SUBGROUP_ENABLED && defined AMD_INT16
+			// Work around very strange AMD compiler bug.
+			// Casting to `uint16_t` before the `min` causes incorrect behavior
+			// if `GL_EXT_shader_subgroup_extended_types_int16` is disabled.
+			immut uint16_t len = uint16_t(min(llq.len, ll.data.length()));
+		#else
+			immut uint16_t len = min(uint16_t(subgroupBroadcastFirst(llq.len)), uint16_t(ll.data.length()));
+		#endif
 
-	vec3 color;
-
-	#if defined NETHER || defined END
-		color = fog_col;
-	#else
-		immut uvec2 seed = uvec2(ivec2(n_pe.xz * 1000.0 + sin(frameTimeCounter * 1000.0) * 0.2));
-
-		immut float16_t stars = max(
-			float16_t(1.0) - sky_fog_val - float16_t(skyState.x),
-			float16_t(0.0)
-		) * smoothstep(
-			float16_t(0.9995),
-			float16_t(1.0),
-			float16_t(
-				float(pcg(seed.x + pcg(seed.y))) / float(0xFFFFFFFFu)
-			)
-		);
-
-		color = stars + fog_col;
-
-		immut vec3 sun_abs_dist = abs(n_pe - sunDirectionPlr);
-		immut bool sun = max3(sun_abs_dist.x, sun_abs_dist.y, sun_abs_dist.z) < SUN_SIZE;
-		immut bool moon = all(lessThan(abs(n_pe + sunDirectionPlr), fma(skyState.z, MOON_PHASE_DIFF, MOON_SIZE).xxx));
-
-		if (sun || moon) {
-			color += skylight_color;
+		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
+			sh.index_data[i] = llq.data[i];
+			sh.index_color[i] = llq.color[i];
 		}
-	#endif
 
-	imageStore(colorimg1, texel, vec4(color, 0.0));
+		barrier();
+
+		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
+			immut uint data = sh.index_data[i];
+			immut uint16_t color = sh.index_color[i];
+
+			bool unique = true;
+
+			// Remove our light if there is another one at the same position with a higher color value,
+			// or there is an identical light at a lower index.
+			for (uint16_t j = uint16_t(0u); unique && j < len; ++j) {
+				immut uint16_t other_color = sh.index_color[j];
+
+				if (sh.index_data[j] == data && ((other_color > color) || ((other_color == color) && (j < i)))) {
+					unique = false;
+				}
+			}
+
+			// Copy shared list to global.
+			if (unique) {
+				#define SG_INCR_COUNTER sh.culled_len
+				uint sg_incr_i;
+				#include "/lib/sg_incr.glsl"
+
+				llq.data[sg_incr_i] = data;
+				llq.color[sg_incr_i] = color;
+			}
+		}
+
+		barrier();
+		groupMemoryBarrier(); // Requires 'coherent' SSBOs.
+
+		// Copy back global list to shared.
+		immut uint16_t culled_len = uint16_t(subgroupBroadcastFirst(sh.culled_len));
+		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {
+			sh.index_data[i] = llq.data[i];
+			sh.index_color[i] = llq.color[i];
+
+			#ifndef INT16
+				if (i < culled_len / 2) {
+					ll.color[i] = 0u;
+				}
+			#endif
+		}
+
+		barrier();
+		groupMemoryBarrier(); // Requires 'coherent' SSBOs.
+
+		immut vec3 ll_offset = -255.5 - cameraPositionFract - mvInv3;
+
+		// Copy shared list into global, with lights enumeration sorted from left to right in view space to improve locality when sampling.
+		// TODO: We might want to do something on the Y axis too.
+		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {
+			uint16_t k = uint16_t(0u);
+
+			immut uint data = sh.index_data[i];
+			immut float view_x = ((vec3(
+				data & 511u,
+				bitfieldExtract(data, 9, 9),
+				bitfieldExtract(data, 18, 9)
+			) + ll_offset) * MV_INV).x;
+
+			for (uint16_t j = uint16_t(0u); j < culled_len; ++j) if (j != i) {
+				immut uint other_data = sh.index_data[j];
+				immut float other_view_x = ((vec3(
+					other_data & 511u,
+					bitfieldExtract(other_data, 9, 9),
+					bitfieldExtract(other_data, 18, 9)
+				) + ll_offset) * MV_INV).x; // TODO: Optimize
+
+				if (other_view_x < view_x || (other_view_x == view_x && i < j)) { ++k; }
+			}
+
+			ll.data[k] = data;
+
+			immut uint16_t color = sh.index_color[i];
+
+			#ifdef INT16
+				ll.color[k] = color;
+			#else
+				atomicOr(ll.color[k/2], color << (16u * (k & 1u)));
+			#endif
+		}
+
+		if (is_first_invoc) {
+			llq.len = 0u;
+			ll.offset = vec3(0.0);
+			ll.len = culled_len;
+		}
+	} else if (is_first_invoc) { ll.offset += invCameraPositionDeltaInt; }
 }

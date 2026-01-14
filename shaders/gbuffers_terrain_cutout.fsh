@@ -2,4 +2,4 @@
 #define ALPHA_CHECK
 #define TERRAIN
 #define MAYBE_EMISSIVE
-#include "/prog/lit.fsh"
+#include "/prog/lit_forward.fsh"

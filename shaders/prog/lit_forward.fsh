@@ -31,6 +31,7 @@ in
 
 #ifndef NETHER
 	uniform vec3 shadowLightDirectionPlr;
+	uniform mat4 shadowModelView;
 
 	#include "/lib/skylight.glsl"
 	#include "/lib/sm/distort.glsl"
@@ -50,6 +51,7 @@ in
 #include "/lib/fog.glsl"
 #include "/lib/material/specular.glsl"
 #include "/lib/brdf.glsl"
+#include "/lib/ind_sky.glsl"
 
 readonly
 #include "/buf/ll.glsl"
@@ -328,29 +330,6 @@ void main() {
 			}
 		}
 
-		/*
-			// Equivalent to the above but without subgroup optimizations.
-			for (uint16_t i = uint16_t(0u); i < global_len; ++i) {
-				immut uint light_data = ll.data[i];
-
-				immut f16vec3 pe_light = f16vec3(
-					light_data & 511u,
-					bitfieldExtract(light_data, 9, 9),
-					bitfieldExtract(light_data, 18, 9)
-				) + ll_offset;
-
-				// We add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
-				immut float16_t light_intensity = float16_t(bitfieldExtract(light_data, 27, 4)) + float16_t(0.5);
-
-				add_ll_light(
-					specular, diffuse,
-					w_face_normal, w_tex_normal,
-					pe, n_pe, roughness, ind_bl,
-					light_intensity, light_data, pe_light, i
-				);
-			}
-		*/
-
 		// Undo the multiplication from packing light color and brightness.
 		const vec3 packing_scale = vec3(15u * uvec3(31u, 63u, 31u));
 		immut f16vec3 ll_block_light = f16vec3(float(DIR_BL * 3) / packing_scale) * block_sky_light.x * fma(specular, rcp_color, diffuse);
@@ -374,23 +353,13 @@ void main() {
 				color.a *= float16_t(1.0/2047.0) * float16_t(packed_alpha);
 			#endif
 
-			#ifndef NETHER
+			#ifdef NETHER
+				const f16vec3 _sky_light_color = f16vec3(0.0);
+			#else
 				immut f16vec3 sky_light_color = skylight();
 			#endif
 
-			#ifdef LIGHT_LEVELS
-				const float16_t ind_sky = float16_t(0.0);
-			#else
-				#ifdef NETHER
-					const f16vec3 ind_sky = f16vec3(0.3, 0.15, 0.2);
-				#elif defined END
-					const f16vec3 ind_sky = f16vec3(0.15, 0.075, 0.2);
-				#else
-					immut float16_t ind_sky = luminance(sky_light_color) / float16_t(DIR_SL) * smoothstep(float16_t(0.0), float16_t(1.0), block_sky_light.y);
-				#endif
-			#endif
-
-			light += ao * fma(f16vec3(ind_sky), f16vec3(IND_SL), f16vec3(AMBIENT * 0.1));
+			light += ao * ind_sky(_sky_light_color, block_sky_light.y);
 
 			#ifndef NETHER
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
@@ -403,30 +372,13 @@ void main() {
 					immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_shadow_light);
 				#endif
 
-				/*#if SSS
-					f16vec3 dir_sky_light = sample_shadow(v.s_screen);
-				#endif*/
-
-				if (min(face_n_dot_l, tex_n_dot_l) > min_n_dot_l) {
-					const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
-					immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_shadow_light, roughness);
-
-					f16vec3 dir_sky_light = sky_light_color * fma(specular_diffuse.xxx, rcp_color, specular_diffuse.yyy);
-
-					if (chebyshev_dist < sm_dist) {
-						dir_sky_light *= mix(
-							sample_shadow(v.s_screen),
-							f16vec3(1.0),
-							smoothstep(float16_t(sm_dist * (1.0 - SM_FADE_DIST)), sm_dist, chebyshev_dist)
-						);
-					}
-
-					light += float16_t(3.0) * dir_sky_light;
-				}
-
-				/*#if SSS
-					else light = fma(dir_sky_light, sky_light_color, light);  // TODO: We should use AO here.
-				#endif*/
+				sample_shadow(
+					light,
+					chebyshev_dist, s_distortion,
+					sky_light_color, rcp_color, roughness,
+					face_n_dot_l, tex_n_dot_l,
+					w_tex_normal, n_pe, pe
+				);
 			#endif
 
 			color.rgb *= light;

@@ -2,4 +2,4 @@
 #define ALPHA_CHECK
 #define HAND
 #define MAYBE_EMISSIVE
-#include "/prog/lit.fsh"
+#include "/prog/lit_forward.fsh"

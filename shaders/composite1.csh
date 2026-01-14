@@ -46,7 +46,7 @@ float16_t redmean(f16vec3 a, f16vec3 b) {
 	immut float16_t r = step(float16_t(0.5), mix(a.r, b.r, float16_t(0.5)));
 	immut f16vec3 d = a - b;
 
-	return sqrt(dot(d*d, f16vec3(
+	return sqrt(dot(d*d, f16vec3( // TODO: Make this an inversesqrt and invert everything.
 		float16_t(2.0) + r,
 		float16_t(4.0),
 		float16_t(3.0) - r
