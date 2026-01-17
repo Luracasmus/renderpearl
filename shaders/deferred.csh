@@ -84,19 +84,29 @@ void main() {
 	immut float depth = texelFetch(depthtex0, texel, 0).r;
 	immut bool is_geo = depth < 1.0;
 
-	immut uvec3 gbuf2_gba = is_geo ? (
-		#ifdef NETHER
-			texelFetch(colortex2, texel, 0).rgb
-		#else
-			texelFetch(colortex2, texel, 0).gba
-		#endif
-	) : uvec3(0u);
+	uvec3 gbuf_gba;
+	f16vec3 color;
+	float16_t block_light_level;
+
+	if (is_geo) {
+		gbuf_gba = (
+			#ifdef NETHER
+				texelFetch(colortex2, texel, 0).rgb
+			#else
+				texelFetch(colortex2, texel, 0).gba
+			#endif
+		);
+
+		immut f16vec4 color_block_light = f16vec4(imageLoad(colorimg1, texel));
+		color = color_block_light.rgb;
+		block_light_level = color_block_light.a;
+	}
 
 	immut vec2 texel_size = 1.0 / vec2(view_size());
 	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
 	vec3 ndc = fma(vec3(coord, depth), vec3(2.0), vec3(-1.0));
 
-	immut bool is_hand = gbuf.b >= 0x80000000u; // The most significant bit being 1 indicates hand.
+	immut bool is_hand = gbuf_gba.y >= 0x80000000u; // The most significant bit being 1 indicates hand.
 	if (is_hand) { ndc.z /= MC_HAND_DEPTH; }
 
 	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
@@ -105,12 +115,11 @@ void main() {
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
-	// Check if block light (lowest 15 bits) isn't zero, and we're within LL_DIST.
-	immut bool is_lit = (gbuf.b & 32767u) != 0u && chebyshev_dist < float16_t(LL_DIST);
+	immut bool is_maybe_block_lit = is_geo && block_light_level != float16_t(0.0) && chebyshev_dist < float16_t(LL_DIST);
 
 	barrier();
 
-	if (is_lit) { // Calculate view and player-eye space bounding boxes for the work group.
+	if (is_maybe_block_lit) { // Calculate view and player-eye space bounding boxes for the work group.
 		#ifdef SUBGROUP_ENABLED
 			immut vec3 sg_pe_min = subgroupMin(pe);
 			immut vec3 sg_pe_max = subgroupMax(pe);
@@ -199,7 +208,9 @@ void main() {
 		barrier(); // This control flow is safe since it's guaranteed to be the same across the work group.
 	}
 
-	if (bitfieldExtract(gbuf.b, 30, 1) == 0u) { // Exit on "pure light" flag.
+	immut uint8_t f0_enum = uint8_t(gbuf_gba.x >> 24u);
+
+	if (f0_enum != uint8_t(230u)) { // Exit on "pure light" flag.
 		immut f16vec3 n_pe = f16vec3(normalize(pe));
 
 		#ifdef NETHER
@@ -210,40 +221,37 @@ void main() {
 			immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
 			immut f16vec3 fog_col = sky(sky_fog_val, n_pe, sunDirectionPlr);
 
-			immut f16vec3 skylight_color = skylight();
+			immut f16vec3 sky_light_color = skylight();
 		#endif
 
-		f16vec3 color;
-
 		if (is_geo) {
-			immut f16vec4 color_ao = f16vec4(imageLoad(colorimg1, texel));
+			immut f16vec3 roughness_sss_emissiveness = f16vec3(unpackUnorm4x8(gbuf_gba.x).rgb);
+			immut float16_t roughness = roughness_sss_emissiveness.x;
+			immut float16_t sss = roughness_sss_emissiveness.y;
+			immut float16_t emissiveness = roughness_sss_emissiveness.z;
 
-			immut f16vec2 roughness_sss = f16vec2(unpackUnorm4x8(gbuf.g).zw);
+			immut float16_t sky_light_level = uint16BitsToFloat16(uint16_t(gbuf_gba.y) & uint16_t(32767u));
+			immut float16_t ao = float16_t(1.0/8191.0) * float16_t(uint16_t(bitfieldExtract(gbuf_gba.y, 15, 13)));
 
-			immut f16vec4 octa_normal = f16vec4(unpackSnorm4x8(gbuf.a));
+			immut f16vec4 octa_normal = f16vec4(unpackSnorm4x8(gbuf_gba.z));
 			immut f16vec3 w_tex_normal = normalize(octa_decode(octa_normal.xy));
 			immut f16vec3 w_face_normal = normalize(octa_decode(octa_normal.zw));
 
-			immut f16vec2 light = f16vec2(vec2(
-				gbuf.b & 32767u,
-				bitfieldExtract(gbuf.b, 15, 15)
-			) / 32767.0);
-
 			#ifdef LIGHT_LEVELS
-				f16vec3 block_light = f16vec3(visualize_ll(light.x));
+				f16vec3 block_light = f16vec3(visualize_ll(block_light_level));
 			#else
-				f16vec3 block_light = light.x * f16vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B);
+				f16vec3 block_light = block_light_level * f16vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B);
 			#endif
 
-			immut f16vec3 rcp_color = float16_t(1.0) / max(color_ao.rgb, float16_t(1.0e-4));
+			immut f16vec3 rcp_color = float16_t(1.0) / max(color, float16_t(1.0e-4));
 
 			#if HAND_LIGHT != 0
-				immut float16_t ind_bl = float16_t(IND_BL) * color_ao.a;
+				immut float16_t ind_bl = float16_t(IND_BL) * ao;
 			#endif
 
-			if (is_lit) {
+			if (is_maybe_block_lit) {
 				#if HAND_LIGHT == 0
-					immut float16_t ind_bl = float16_t(IND_BL) * color_ao.a;
+					immut float16_t ind_bl = float16_t(IND_BL) * ao;
 				#endif
 
 				immut vec3 offset = vec3(index_offset) - pe;
@@ -253,7 +261,7 @@ void main() {
 
 				immut uint16_t index_len = uint16_t(subgroupBroadcastFirst(sh.index_len));
 				for (uint16_t i = uint16_t(0u); i < index_len; ++i) {
-					immut uint light_data = sh.index_data[i];
+					immut uint light_data = subgroupBroadcastFirst(sh.index_data[i]);
 
 					immut f16vec3 w_rel_light = f16vec3(vec3(
 						light_data & 511u,
@@ -276,7 +284,7 @@ void main() {
 								(packed_light_color >> uint16_t(11u))
 							);
 						#else
-							immut uint packed_light_color = bitfieldExtract(sh.index_color[collab_inv_i/2u], int(16u * (collab_inv_i & 1u)), 16);
+							immut uint packed_light_color = bitfieldExtract(sh.index_color[i/2u], int(16u * (i & 1u)), 16);
 							immut f16vec3 light_color = f16vec3(
 								bitfieldExtract(uint(packed_light_color), 6, 5),
 								packed_light_color & uint16_t(63u),
@@ -294,12 +302,8 @@ void main() {
 					}
 				}
 
-				// Undo the multiplication from packing light color and brightness.
-				const vec3 packing_scale = vec3(15u * uvec3(31u, 63u, 31u));
-				immut f16vec3 new_light = f16vec3(float(DIR_BL * 3) / packing_scale) * light.x * fma(specular, rcp_color, diffuse);
-
-				block_light = mix(new_light, block_light, smoothstep(float16_t(LL_DIST - 15), float16_t(LL_DIST), chebyshev_dist));
-			} // else block_light = f16vec3(1.0); // DEBUG: `is_lit`
+				block_light = mix_ll_block_light(block_light, chebyshev_dist, block_light_level, specular, diffuse, rcp_color);
+			} // else block_light = f16vec3(1.0); // DEBUG: `is_maybe_block_lit`
 
 			// DEBUG: Culling & LDS overflow.
 			// block_light.gb += f16vec2(sh.index_len < ll.len, sh.index_len == 0);
@@ -312,27 +316,25 @@ void main() {
 					immut bvec2 active_lr = notEqual(hand_light_lr, u16vec2(0u));
 
 					if (active_lr.x) {
-						block_light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hand_light.left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+						block_light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hand_light.left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
 					}
 
 					if (active_lr.y) {
-						block_light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hand_light.right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness_sss.r, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+						block_light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hand_light.right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
 					}
 				}
 			#endif
 
 			f16vec3 final_light = fma(
-				ind_sky(skylight_color, light.y),
-				color_ao.aaa,
-				block_light
+				non_block_light(sky_light_color, sky_light_level), ao.xxx, block_light
 			);
 
 			#ifndef NETHER
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
-				immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
-				immut float16_t face_n_dot_l = dot(w_face_normal, n_w_rel_light);
+				immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_shadow_light);
+				immut float16_t face_n_dot_l = dot(w_face_normal, n_w_shadow_light);
 
-				immut uint s_distortion = texelFetch(colortex2, texel, 0).r;
+				immut float s_distortion = uintBitsToFloat(texelFetch(colortex2, texel, 0).r); // TODO: Maybe we should move this inside the branch in `sample_shadow`.
 				sample_shadow(
 					final_light,
 					chebyshev_dist, s_distortion,
@@ -342,7 +344,7 @@ void main() {
 				);
 			#endif
 
-			color = linear(mix(srgb(color_ao.rgb * final_light), srgb(fog_col), vanilla_fog(pe)));
+			color = linear(mix(srgb(color * final_light), srgb(fog_col), vanilla_fog(pe)));
 		} else { // Render sky.
 			#if defined NETHER || defined END
 				color = fog_col;
@@ -367,7 +369,7 @@ void main() {
 				immut bool moon = all(lessThan(abs(n_pe + sunDirectionPlr), fma(skyState.z, MOON_PHASE_DIFF, MOON_SIZE).xxx));
 
 				if (sun || moon) {
-					color += skylight_color;
+					color += sky_light_color;
 				}
 			#endif
 		}

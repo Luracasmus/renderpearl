@@ -126,8 +126,10 @@ void main() {
 		v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma = packFloat2x16(f16vec2(float16_t(0.0), avg_luma));
 
 		#ifdef TERRAIN
+			// The actual lowest AO level seems to be a bit above, around `0.19607`. This feels safer if precision changes. We saturate too for safety.
+			const float min_vanilla_ao = 0.1875;
+			v.ao = saturate(fma(float16_t(vaColor.a), float16_t(1.0 / (1.0 - min_vanilla_ao)), float16_t(-min_vanilla_ao))); // Scale AO range to full [0, 1].
 			v.tint = vec3(color);
-			v.ao = vaColor.a;
 
 			immut float16_t emission = max(float16_t(mc_Entity.x), float16_t(at_midBlock.w));
 			v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma |= uint(emission + float16_t(0.5));

@@ -1,2 +1,2 @@
 #define TRANSLUCENT
-#include "/prog/lit_forward.fsh"
+#include "/prog/lit_deferred.fsh"

@@ -33,3 +33,12 @@ void sample_ll_block_light(
 
 	diffuse = fma(light_diffuse.xxx, color, diffuse);
 }
+
+f16vec3 mix_ll_block_light(f16vec3 fallback_block_light, float16_t chebyshev_dist, float16_t block_light_level, f16vec3 specular, f16vec3 diffuse, f16vec3 rcp_color) {
+	// Undo the multiplication from packing light color and brightness.
+	const vec3 packing_scale = vec3(15u * uvec3(31u, 63u, 31u));
+	immut f16vec3 ll_block_light = f16vec3(float(DIR_BL * 3) / packing_scale) * block_light_level * fma(specular, rcp_color, diffuse);
+
+	// Mix based on distance.
+	return mix(ll_block_light, fallback_block_light, smoothstep(float16_t(LL_DIST - 15), float16_t(LL_DIST), chebyshev_dist));
+}

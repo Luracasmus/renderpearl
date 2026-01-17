@@ -115,7 +115,7 @@ Most significant <-> Least significant
 [0, 229] - f0
 230      - "pure light" flag
 231      - "metal" flag
-232      - "water" flag
+232      - "water" flag // TODO: This should be handled in forward.
 ```
 
 ```

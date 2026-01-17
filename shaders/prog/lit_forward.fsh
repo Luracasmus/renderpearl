@@ -16,6 +16,8 @@
 	layout(depth_unchanged) out float gl_FragDepth;
 #endif
 
+#include "/lib/mmul.glsl"
+#include "/lib/brdf.glsl"
 #include "/lib/mv_inv.glsl"
 uniform mat4 gbufferProjectionInverse;
 uniform sampler2D gtexture;
@@ -44,13 +46,12 @@ in
 #endif
 
 #include "/lib/view_size.glsl"
-#include "/lib/mmul.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/srgb.glsl"
 #define SKY_FSH
 #include "/lib/fog.glsl"
 #include "/lib/material/specular.glsl"
-#include "/lib/brdf.glsl"
+#include "/lib/material/ao.glsl"
 #include "/lib/light/non_block.glsl"
 #include "/lib/light/sample_ll_block.glsl"
 
@@ -76,7 +77,6 @@ uniform vec3 cameraPositionFract;
 
 void main() {
 	// TODO: Fix strange tint.
-	// TODO: Add procedural texel AO.
 	// TODO: Add hand light.
 	// TODO: Look into correctness of hand depth.
 
@@ -107,9 +107,9 @@ void main() {
 	#if defined SM && defined MC_SPECULAR_MAP
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
-		immut float16_t avg_luma = unpackFloat2x16(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma).y;
+		immut float16_t avg_srgb_luma = unpackFloat2x16(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma).y;
 
-		immut float16_t roughness = gen_roughness(luminance(color.rgb), avg_luma);
+		immut float16_t roughness = gen_roughness(luminance(color.rgb), avg_srgb_luma);
 	#endif
 
 	#ifdef NO_NORMAL
@@ -136,6 +136,8 @@ void main() {
 		#endif
 	#endif
 
+	immut float16_t srgb_luma = luminance(color.rgb);
+
 	color.rgb = linear(color.rgb);
 	immut f16vec3 rcp_color = float16_t(1.0) / max(color.rgb, float16_t(1.0e-5));
 
@@ -156,18 +158,16 @@ void main() {
 		#endif
 
 	#ifdef TERRAIN
-		// The actual lowest AO level seems to be a bit above, around `0.19607`. This feels safer if precision changes. We saturate too for safety.
-		const float min_vanilla_ao = 0.1875;
-
-		float16_t ao = saturate(fma(float16_t(v.ao), float16_t(1.0 / (1.0 - min_vanilla_ao)), float16_t(-min_vanilla_ao))); // Scale AO range to full [0, 1].
+		float16_t ao = corner_ao_curve(v.ao);
 	#else
 		float16_t ao = float16_t(0.9);
 	#endif
 
 	#if DIR_SHADING != 0
-		const float dir_shading = 0.1 * float(10 - DIR_SHADING);
-		ao *= clamp(dot(f16vec3(abs(w_tex_normal.xz), w_tex_normal.y), f16vec3(dir_shading, 0.5 * dir_shading, 1.0)), 0.25 * dir_shading, 1.0);
+		ao *= dir_shading(w_tex_normal);
 	#endif
+
+	ao *= gen_tex_ao(srgb_luma, avg_srgb_luma); // TODO: labPBR AO.
 
 	immut bool is_maybe_ll_lit = (
 		block_sky_light.x != float16_t(0.0) && chebyshev_dist < float16_t(LL_DIST) && !will_discard && !gl_HelperInvocation
@@ -314,11 +314,7 @@ void main() {
 			}
 		}
 
-		// Undo the multiplication from packing light color and brightness.
-		const vec3 packing_scale = vec3(15u * uvec3(31u, 63u, 31u));
-		immut f16vec3 ll_block_light = f16vec3(float(DIR_BL * 3) / packing_scale) * block_sky_light.x * fma(specular, rcp_color, diffuse);
-
-		block_light = mix(ll_block_light, block_light, smoothstep(float16_t(LL_DIST - 15), float16_t(LL_DIST), chebyshev_dist));
+		block_light = mix_ll_block_light(block_light, chebyshev_dist, block_sky_light.x, specular, diffuse, rcp_color);
 	}
 
 	// We probably want to have everything in this that doesn't require derivatives or SG stuff.
@@ -338,12 +334,12 @@ void main() {
 			#endif
 
 			#ifdef NETHER
-				const f16vec3 _sky_light_color = f16vec3(0.0);
+				const f16vec3 sky_light_color = f16vec3(0.0);
 			#else
 				immut f16vec3 sky_light_color = skylight();
 			#endif
 
-			light += ao * ind_sky(_sky_light_color, block_sky_light.y);
+			light += ao * non_block_light(sky_light_color, block_sky_light.y);
 
 			#ifndef NETHER
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
@@ -358,7 +354,7 @@ void main() {
 
 				sample_shadow(
 					light,
-					chebyshev_dist, s_distortion,
+					chebyshev_dist, v.s_distortion,
 					sky_light_color, rcp_color, roughness,
 					face_n_dot_l, tex_n_dot_l, n_w_shadow_light,
 					w_tex_normal, n_pe, pe
