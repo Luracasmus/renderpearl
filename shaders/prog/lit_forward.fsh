@@ -99,11 +99,11 @@ void main() {
 		#endif
 	);
 
+	immut float16_t avg_srgb_luma = unpackFloat2x16(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma).y;
+
 	#if defined SM && defined MC_SPECULAR_MAP
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
-		immut float16_t avg_srgb_luma = unpackFloat2x16(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma).y;
-
 		immut float16_t roughness = gen_roughness(luminance(color.rgb), avg_srgb_luma);
 	#endif
 
