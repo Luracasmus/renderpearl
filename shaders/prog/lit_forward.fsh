@@ -40,9 +40,16 @@ in
 	#include "/lib/light/shadows.glsl"
 #endif
 
-#ifdef END
+#ifndef NETHER
 	uniform float frameTimeCounter;
-	#include "/lib/prng/fast_rand.glsl"
+
+	#include "/lib/prng/pcg.glsl"
+
+	#ifdef END
+		#include "/lib/prng/fast_rand.glsl"
+	#else
+		uniform vec3 sunDirectionPlr;
+	#endif
 #endif
 
 #include "/lib/view_size.glsl"
@@ -61,18 +68,6 @@ uniform vec3 cameraPositionFract;
 
 #ifndef NO_NORMAL
 	#include "/lib/material/normal.glsl"
-#endif
-
-#ifndef NETHER
-	uniform float frameTimeCounter;
-
-	#include "/lib/prng/pcg.glsl"
-
-	#ifdef END
-		#include "/lib/prng/fast_rand.glsl"
-	#else
-		uniform vec3 sunDirectionPlr;
-	#endif
 #endif
 
 void main() {
@@ -390,7 +385,7 @@ void main() {
 				colortex1 = color;
 			#else
 				#ifdef NETHER
-					immut f16vec3 srgb_fog_col = srgb(f16vec3(fogColor));
+					immut f16vec3 srgb_fog_col = f16vec3(fogColor);
 				#elif defined END
 					immut f16vec3 srgb_fog_col = srgb(sky(n_pe));
 				#else

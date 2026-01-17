@@ -21,7 +21,6 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #include "/lib/octa_normal.glsl"
 #include "/lib/skylight.glsl"
 #include "/lib/srgb.glsl"
-#include "/lib/fog.glsl"
 #include "/lib/brdf.glsl"
 #include "/lib/light/non_block.glsl"
 #include "/lib/light/sample_ll_block.glsl"
@@ -41,6 +40,8 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 
 	#include "/lib/light/shadows.glsl"
 #endif
+
+#include "/lib/fog.glsl"
 
 #ifdef LIGHT_LEVELS
 	#include "/lib/llv.glsl"
@@ -219,14 +220,17 @@ void main() {
 		immut f16vec3 n_pe = f16vec3(normalize(pe));
 
 		#ifdef NETHER
-			immut f16vec3 fog_col = linear(f16vec3(fogColor));
-		#elif defined END
-			immut f16vec3 fog_col = sky(n_pe);
+			const f16vec3 sky_light_color = f16vec3(0.0);
+			immut f16vec3 srgb_fog_color = f16vec3(fogColor);
 		#else
-			immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
-			immut f16vec3 fog_col = sky(sky_fog_val, n_pe, sunDirectionPlr);
-
 			immut f16vec3 sky_light_color = skylight();
+
+			#ifdef END
+				immut f16vec3 fog_color = sky(n_pe);
+			#else
+				immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
+				immut f16vec3 fog_color = sky(sky_fog_val, n_pe, sunDirectionPlr);
+			#endif
 		#endif
 
 		if (is_geo) {
@@ -349,10 +353,20 @@ void main() {
 				);
 			#endif
 
-			color = linear(mix(srgb(color * final_light), srgb(fog_col), vanilla_fog(pe)));
+			color *= final_light;
+
+			#ifndef NETHER
+				immut f16vec3 srgb_fog_color = srgb(fog_color);
+			#endif
+
+			color = linear(mix(srgb(color), srgb_fog_color, vanilla_fog(pe)));
 		} else { // Render sky.
 			#if defined NETHER || defined END
-				color = fog_col;
+				#ifdef NETHER
+					immut f16vec3 fog_color = linear(srgb_fog_color);
+				#endif
+
+				color = fog_color;
 			#else
 				immut uvec2 seed = uvec2(ivec2(n_pe.xz * 1000.0 + sin(frameTimeCounter * 1000.0) * 0.2));
 
@@ -367,7 +381,7 @@ void main() {
 					)
 				);
 
-				color = stars + fog_col;
+				color = stars + fog_color;
 
 				immut vec3 sun_abs_dist = abs(n_pe - sunDirectionPlr);
 				immut bool sun = max3(sun_abs_dist.x, sun_abs_dist.y, sun_abs_dist.z) < SUN_SIZE;

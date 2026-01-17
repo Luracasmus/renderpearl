@@ -2,7 +2,7 @@
 
 #ifdef NETHER
 	/* RENDERTARGETS: 1,2 */
-	layout(location = 1, component = 1) out uvec3 colortex2;
+	layout(location = 1) out uvec3 colortex2;
 #else
 	/* RENDERTARGETS: 1,2,3 */
 	layout(location = 1) out uvec4 colortex2;
