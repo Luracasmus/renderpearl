@@ -74,6 +74,7 @@ void main() {
 	#else
 		immut f16vec4 octa_tangent_normal = unpackSnorm4x8(v.snorm4x8_octa_tangent_normal);
 		immut f16vec2 octa_w_face_normal = octa_tangent_normal.zw;
+		immut f16vec3 w_face_normal = normalize(octa_decode(octa_w_face_normal));
 	#endif
 
 	#if defined NO_NORMAL || NORMALS == 2
@@ -81,8 +82,6 @@ void main() {
 		immut f16vec2 octa_w_tex_normal = octa_w_face_normal;
 	#else
 		immut f16vec3 w_face_tangent = normalize(octa_decode(octa_tangent_normal.xy));
-		immut f16vec3 w_face_normal = normalize(octa_decode(octa_w_face_normal));
-
 		immut float16_t handedness = fma(float16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 4, 1)), float16_t(-2.0), float16_t(1.0));
 
 		// TODO: It looks like something is wrong here. Some normals seem inverted/flipped.
