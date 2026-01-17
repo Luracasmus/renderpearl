@@ -54,8 +54,8 @@ shared struct {
 	ivec3 bb_view_min;
 	uint index_len;
 	ivec3 bb_view_max;
-	uint[local_index_size] index_data;
-	uint16_t[local_index_size] index_color;
+	uint[local_index_size] ll_data;
+	uint16_t[local_index_size] ll_color;
 } sh;
 
 #if HAND_LIGHT != 0
@@ -200,8 +200,13 @@ void main() {
 				uint sg_incr_i;
 				#include "/lib/sg_incr.glsl"
 
-				sh.index_data[sg_incr_i] = light_data;
-				sh.index_color[sg_incr_i] = ll.color[i];
+				sh.ll_data[sg_incr_i] = light_data;
+
+				#ifdef INT16
+					sh.ll_color[sg_incr_i] = ll.color[i];
+				#else
+					sh.ll_color[sg_incr_i] = bitfieldExtract(ll.color[i/2u], int(16u * (i & 1u)), 16);
+				#endif
 			}
 		}
 
@@ -261,7 +266,7 @@ void main() {
 
 				immut uint16_t index_len = uint16_t(subgroupBroadcastFirst(sh.index_len));
 				for (uint16_t i = uint16_t(0u); i < index_len; ++i) {
-					immut uint light_data = subgroupBroadcastFirst(sh.index_data[i]);
+					immut uint light_data = subgroupBroadcastFirst(sh.ll_data[i]);
 
 					immut f16vec3 w_rel_light = f16vec3(vec3(
 						light_data & 511u,
@@ -276,15 +281,15 @@ void main() {
 					if (mhtn_dist < offset_intensity) { // We add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
 						immut bool is_wide = light_data >= 0x80000000u;
 
+						immut uint16_t packed_light_color = subgroupBroadcastFirst(sh.ll_color[i]);
+
 						#ifdef INT16
-							immut uint16_t packed_light_color = sh.index_color[i];
 							immut f16vec3 light_color = f16vec3(
 								(packed_light_color >> uint16_t(6u)) & uint16_t(31u),
 								packed_light_color & uint16_t(63u),
 								(packed_light_color >> uint16_t(11u))
 							);
 						#else
-							immut uint packed_light_color = bitfieldExtract(sh.index_color[i/2u], int(16u * (i & 1u)), 16);
 							immut f16vec3 light_color = f16vec3(
 								bitfieldExtract(uint(packed_light_color), 6, 5),
 								packed_light_color & uint16_t(63u),
