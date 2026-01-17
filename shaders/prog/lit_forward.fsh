@@ -1,6 +1,15 @@
 #include "/prelude/core.glsl"
 
-/* RENDERTARGETS: 1 */
+#ifdef DEFERRED_IGNORE
+	/* RENDERTARGETS: 1,2 */
+	#ifdef NETHER
+		layout(location = 1) out uint colortex2;
+	#else
+		layout(location = 1, component = 1) out uint colortex2;
+	#endif
+#else
+	/* RENDERTARGETS: 1 */
+#endif
 
 #ifdef TRANSLUCENT
 	layout(location = 0) out f16vec4 colortex1;
@@ -187,6 +196,10 @@ void main() {
 	#endif
 
 	if (subgroupAny(is_maybe_ll_lit)) {
+		#ifdef DEFERRED_IGNORE
+			colortex2 = colortex2_g_deferred_ignore;
+		#endif
+
 		#if HAND_LIGHT == 0
 			immut float16_t ind_bl = float16_t(IND_BL) * ao;
 		#endif

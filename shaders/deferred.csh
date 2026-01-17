@@ -216,7 +216,7 @@ void main() {
 
 	immut uint8_t f0_enum = uint8_t(gbuf_gba.x >> 24u);
 
-	if (f0_enum != uint8_t(230u)) { // Exit on "pure light" flag.
+	if (f0_enum != uint8_t(230u)) { // Exit on "deferred ignore" flag.
 		immut f16vec3 n_pe = f16vec3(normalize(pe));
 
 		#ifdef NETHER

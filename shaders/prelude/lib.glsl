@@ -6,6 +6,8 @@ const float16_t min_n_dot_l = float16_t(0.0001);
 // Because we use orthographic projection with constant parameters we can use this instead of ´shadowProjection´.
 const vec3 shadow_proj_scale = vec3(vec2(1.0 / shadowDistance), -2.0 / (shadowFarPlane - shadowNearPlane));
 
+const uint colortex2_g_deferred_ignore = 0xE6000000u; // Just zeroes but with the "f0 enum" set to 230.
+
 // Functions to simplify use of instruction arguments that make clamping essentially free:
 // See 'CLMP' in RDNA3.5 or 'CM' in RDNA4, for example.
 // Beware that clamping/saturation range depends on type.
