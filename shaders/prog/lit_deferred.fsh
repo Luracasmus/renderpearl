@@ -38,10 +38,17 @@ void main() {
 		f16vec4 color = f16vec4(texture(gtexture, v.coord));
 
 		#ifdef ALPHA_CHECK
-			if (color.a < float16_t(alphaTestRef)) { discard; }
+			immut bool will_discard = color.a < float16_t(alphaTestRef);
+
+			#ifdef SUBGROUP_ENABLED
+				if (subgroupAll(will_discard)) { discard; }
+			#endif
+		#else
+			const bool will_discard = false;
 		#endif
 	#else
 		f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
+		const bool will_discard = false;
 	#endif
 
 	immut f16vec3 tint = f16vec3(
@@ -53,20 +60,19 @@ void main() {
 	);
 	color.rgb *= tint;
 
-	#ifdef TERRAIN
-		immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 5, 11));
-
-		if (packed_alpha != uint16_t(2047u)) {
-			// TODO: Render sky and mix for fade effect.
-			// Alternatively dither transparency.
-		}
-	#endif
-
-	// #if (NORMALS != 2 && !defined NO_NORMAL && !(NORMALS == 1 && defined MC_NORMAL_MAP)) || !(defined SM && defined MC_SPECULAR_MAP)
-		immut float16_t srgb_luma = luminance(color.rgb);
-	// #endif
-
+	immut float16_t srgb_luma = luminance(color.rgb);
 	immut float16_t avg_srgb_luma = unpackFloat2x16(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma).y;
+
+	#ifdef TERRAIN
+		/*
+			immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 5, 11));
+
+			if (packed_alpha != uint16_t(2047u)) {
+				// TODO: Render sky and mix for fade effect.
+				// Alternatively dither transparency.
+			}
+		*/
+	#endif
 
 	#ifdef NO_NORMAL
 		immut f16vec3 w_face_normal = f16vec3(mvInv2); // == MV_INV * vec3(0.0, 0.0, 1.0)
@@ -93,20 +99,18 @@ void main() {
 			immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, v.unorm2x16_mid_coord, v.uint2x16_face_tex_size, srgb_luma));
 
 			/*
-				immut ivec2 half_texels = ivec2(
-					v.face_tex_size & 65535u,
-					v.face_tex_size >> 16u
-				) / 2 - 1;
-				immut vec2 atlas = vec2(textureSize(gtexture, 0));
-				immut vec2 atlas_texel = 1.0 / atlas;
-				immut vec2 half_size = vec2(half_texels) * atlas_texel;
+				immut ivec2 half_texels = ivec2(unpackUint2x16(
+					v.uint2x16_face_tex_size
+				) / uint16_t(2u) - uint16_t(1u));
 
-				immut vec2 local_coord = v.coord - unpackUnorm2x16(v.mid_coord);
+				immut vec2 local_coord = v.coord - unpackUnorm2x16(v.unorm2x16_mid_coord);
+				immut ivec2 local_texel = ivec2(local_coord * vec2(textureSize(gtexture, 0)));
+
 				color.rgb += vec4(
-					local_coord.x > -half_size.x,
-					local_coord.x < half_size.x,
-					local_coord.y > -half_size.y,
-					local_coord.y < half_size.y
+					local_texel.x > -half_texels.x,
+					local_texel.x < half_texels.x,
+					local_texel.y > -half_texels.y,
+					local_texel.y < half_texels.y
 				).rgb;
 			*/
 		#endif
@@ -120,8 +124,6 @@ void main() {
 		colortex2.a
 	#endif
 		= packSnorm4x8(f16vec4(octa_w_tex_normal, octa_w_face_normal));
-
-	color.rgb = linear(color.rgb);
 
 	{
 		uint data = (
@@ -195,17 +197,21 @@ void main() {
 			= data;
 	}
 
-	#ifndef NETHER
-		colortex2.r = floatBitsToUint(v.s_distortion);
-	#endif
-
-	immut float16_t block_light = (
-		#ifdef TERRAIN
-			float16_t(v.light.x)
-		#else
-			unpackFloat2x16(v.float2x16_light).x
+	if (gl_HelperInvocation || will_discard) {
+		discard;
+	} else {
+		#ifndef NETHER
+			colortex2.r = floatBitsToUint(v.s_distortion);
 		#endif
-	);
 
-	colortex1 = f16vec4(color.rgb, block_light);
+		immut float16_t block_light = (
+			#ifdef TERRAIN
+				float16_t(v.light.x)
+			#else
+				unpackFloat2x16(v.float2x16_light).x
+			#endif
+		);
+
+		colortex1 = f16vec4(linear(color.rgb), block_light);
+	}
 }

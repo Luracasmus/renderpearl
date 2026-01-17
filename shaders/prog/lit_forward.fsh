@@ -113,13 +113,15 @@ void main() {
 			unpackUnorm4x8(v.unorm4x8_tint_zero).rgb
 		#endif
 	);
+	color.rgb *= tint;
 
+	immut float16_t srgb_luma = luminance(color.rgb);
 	immut float16_t avg_srgb_luma = unpackFloat2x16(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma).y;
 
 	#if defined SM && defined MC_SPECULAR_MAP
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
-		immut float16_t roughness = gen_roughness(luminance(color.rgb), avg_srgb_luma);
+		immut float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma);
 	#endif
 
 	#ifdef NO_NORMAL
@@ -140,12 +142,10 @@ void main() {
 			#if NORMALS == 1 && defined MC_NORMAL_MAP
 				immut f16vec3 w_tex_normal = f16vec3(w_tbn * sample_normal(texture(normals, v.coord).rg));
 			#else
-				immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, v.unorm2x16_mid_coord, v.uint2x16_face_tex_size, luminance(color.rgb)));
+				immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, v.unorm2x16_mid_coord, v.uint2x16_face_tex_size, srgb_luma));
 			#endif
 		#endif
 	#endif
-
-	immut float16_t srgb_luma = luminance(color.rgb);
 
 	color.rgb = linear(color.rgb);
 	immut f16vec3 rcp_color = float16_t(1.0) / max(color.rgb, float16_t(1.0e-5));
@@ -348,8 +348,6 @@ void main() {
 		#endif
 		{
 			light += block_light;
-
-			color.rgb *= tint;
 
 			#ifdef TRANSLUCENT
 				immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 5, 11));

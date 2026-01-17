@@ -50,6 +50,8 @@ void main() {
 			#ifdef TRANSLUCENT
 				immut f16vec4 color = f16vec4(texture(gtexture, v.coord));
 				colortex1 = f16vec4(unpackUnorm4x8(v.tint)) * f16vec4(linear(color.rgb), color.a);
+
+				// TODO: Maybe write the ignore flag here too, for the chunk debug lines.
 			#else
 				#ifdef ALPHA_CHECK
 					immut f16vec4 color = f16vec4(texture(gtexture, v.coord));

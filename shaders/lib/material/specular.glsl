@@ -21,10 +21,10 @@ uniform float wetness;
 		);
 	}
 #else
-	float16_t gen_roughness(float16_t luminance, float16_t avg_luma) {
+	float16_t gen_roughness(float16_t srgb_luma, float16_t avg_srgb_luma) {
 		const float16_t contrast = float16_t(-14.0); // TODO: Make this configurable.
 
-		immut float16_t diff = avg_luma - luminance;
+		immut float16_t diff = avg_srgb_luma - srgb_luma;
 
 		// Thanks to Builderb0y (https://github.com/Builderb0y) for converting this to a logistic function.
 		// https://discord.com/channels/237199950235041794/1401709875171688528/1401981189954342982 (shaderLABS)
