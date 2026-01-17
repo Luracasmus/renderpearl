@@ -2,6 +2,8 @@
 
 ## Pipeline
 
+*Outdated!*
+
 > X marks the spot... where a write happens (in the buffer corresponding to the line)
 
 ### Shadow & Solid Geometry
