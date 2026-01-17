@@ -176,7 +176,7 @@ void main() {
 						float16_t(0.5)
 					)))) == uint8_t(0u)) {
 						immut vec3 pf = pe + mvInv3;
-						immut uvec3 offset_floor_pf = clamp(uvec3(fma(at_midBlock.xyz, vec3(1.0/64.0), 255.5 + cameraPositionFract + pf)), 0u, 511u);
+						immut uvec3 offset_floor_pf = clamp(uvec3(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + cameraPositionFract + pf)), 0u, 511u);
 						immut uint packed_pf = bitfieldInsert(bitfieldInsert(offset_floor_pf.x, offset_floor_pf.y, 9, 9), offset_floor_pf.z, 18, 9);
 
 						immut f16vec3 scaled_color = fma(linear(avg_col), f16vec3(31.0, 63.0, 31.0), f16vec3(0.5));

@@ -145,7 +145,7 @@ void main() {
 
 		if (is_first_invoc) {
 			llq.len = 0u;
-			ll.offset = vec3(0.0);
+			ll.offset = invCameraPositionDeltaInt;
 			ll.len = culled_len;
 		}
 	} else if (is_first_invoc) { ll.offset += invCameraPositionDeltaInt; }
