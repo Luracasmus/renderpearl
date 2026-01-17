@@ -85,6 +85,7 @@ void main() {
 
 		immut float16_t handedness = fma(float16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 4, 1)), float16_t(-2.0), float16_t(1.0));
 
+		// TODO: It looks like something is wrong here. Some normals seem inverted/flipped.
 		immut mat3 w_tbn = mat3(w_face_tangent, vec3(cross(w_face_tangent, w_face_normal) * handedness), w_face_normal);
 
 		#if NORMALS == 1 && defined MC_NORMAL_MAP

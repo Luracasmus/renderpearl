@@ -70,10 +70,16 @@ uniform vec3 cameraPositionFract;
 	#include "/lib/material/normal.glsl"
 #endif
 
+#if HAND_LIGHT != 0
+	readonly
+	#include "/buf/hl.glsl"
+
+	#include "/lib/light/hand.glsl"
+#endif
+
 void main() {
 	// TODO: Fix strange tint.
-	// TODO: Add hand light.
-	// TODO: Look into correctness of hand depth.
+	// TODO: Fix procedural normals.
 
 	#if defined TRANSLUCENT || defined ALPHA_CHECK
 		f16vec4 color = f16vec4(texture(gtexture, v.coord));
@@ -135,7 +141,10 @@ void main() {
 	color.rgb = linear(color.rgb);
 	immut f16vec3 rcp_color = float16_t(1.0) / max(color.rgb, float16_t(1.0e-5));
 
-	immut vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size()), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
+	vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size()), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
+	#ifdef HAND
+		ndc.z /= MC_HAND_DEPTH;
+	#endif
 	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
 	immut vec3 pe = MV_INV * view;
 	immut f16vec3 n_pe = f16vec3(normalize(pe));
@@ -173,7 +182,15 @@ void main() {
 		f16vec3 block_light = block_sky_light.x * f16vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B);
 	#endif
 
+	#if HAND_LIGHT != 0
+		immut float16_t ind_bl = float16_t(IND_BL) * ao;
+	#endif
+
 	if (subgroupAny(is_maybe_ll_lit)) {
+		#if HAND_LIGHT == 0
+			immut float16_t ind_bl = float16_t(IND_BL) * ao;
+		#endif
+
 		f16vec3 lit_max_pe, lit_max_view, lit_min_pe, lit_min_view;
 		if (is_maybe_ll_lit) {
 			lit_max_pe = f16vec3(pe);
@@ -211,7 +228,6 @@ void main() {
 		immut uint16_t chunk_invs = uint16_t(subgroupBallotBitCount(chunk_ballot));
 		immut uint16_t chunk_inv_id = uint16_t(gl_SubgroupInvocationID) - uint16_t(subgroupBallotFindLSB(chunk_ballot));
 
-		immut float16_t ind_bl = float16_t(IND_BL) * ao;
 		f16vec3 diffuse = f16vec3(0.0);
 		f16vec3 specular = f16vec3(0.0);
 
@@ -353,6 +369,29 @@ void main() {
 					face_n_dot_l, tex_n_dot_l, n_w_shadow_light,
 					w_tex_normal, n_pe, pe
 				);
+			#endif
+
+			#if HAND_LIGHT != 0
+				if (handLightPackedLR != 0) {
+					const bool is_hand = (
+						#ifdef HAND
+							true
+						#else
+							false
+						#endif
+					);
+
+					immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
+					immut bvec2 active_lr = notEqual(hand_light_lr, u16vec2(0u));
+
+					if (active_lr.x) {
+						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+					}
+
+					if (active_lr.y) {
+						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+					}
+				}
 			#endif
 
 			color.rgb *= light;

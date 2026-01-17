@@ -1,20 +1,20 @@
 uniform int handLightPackedLR;
+#include "/lib/un11_11_10.glsl"
 
 #if HAND_LIGHT_TRACE_STEPS != 0
 	uniform mat4 gbufferProjection;
 	uniform sampler2D depthtex2;
 #endif
 
-f16vec3 get_hand_light(uint16_t light_level, uvec2 buf_data, vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, bool is_hand) {
+f16vec3 get_hand_light(uint16_t light_level, uint packed_hl, vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, bool is_hand) {
 	immut f16vec3 pe_to_light = f16vec3(MV_INV * origin_view - pe);
 	immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
 	immut f16vec3 n_w_rel_light = pe_to_light * inversesqrt(sq_dist);
 
 	immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
 
-	immut u16vec2 rg = unpackUint2x16(buf_data.x);
-	immut u16vec2 b_count = unpackUint2x16(buf_data.y);
-	immut f16vec3 illum = float16_t(light_level) * float16_t(float(HAND_LIGHT) / hand_light_pack_scale) / max(float16_t(b_count.y) * sq_dist, float16_t(0.0078125)) * f16vec3(rg, b_count.x);
+	immut float16_t brightness = float16_t(light_level) * float16_t(HAND_LIGHT) / max(sq_dist, float16_t(0.0078125));
+	immut f16vec3 illum = brightness * unpack_un11_11_10(packed_hl);
 
 	f16vec3 light;
 

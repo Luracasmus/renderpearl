@@ -34,7 +34,10 @@ writeonly
 
 #if HAND_LIGHT
 	writeonly
-	#include "/buf/hand_light.glsl"
+	#include "/buf/hl.glsl"
+
+	writeonly
+	#include "/buf/hlq.glsl"
 #endif
 
 void main() {
@@ -47,7 +50,10 @@ void main() {
 	ll.len = uint16_t(0u);
 
 	#if HAND_LIGHT
-		hand_light.left = uvec2(0u);
-		hand_light.right = uvec2(0u);
+		hl.unorm11_11_10_left = 0u;
+		hl.unorm11_11_10_right = 0u;
+
+		hlq.uint2x16_left = uvec2(0u);
+		hlq.uint2x16_right = uvec2(0u);
 	#endif
 }

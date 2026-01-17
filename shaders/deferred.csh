@@ -61,7 +61,7 @@ shared struct {
 
 #if HAND_LIGHT != 0
 	readonly
-	#include "/buf/hand_light.glsl"
+	#include "/buf/hl.glsl"
 
 	#include "/lib/light/hand.glsl"
 #endif
@@ -319,24 +319,24 @@ void main() {
 			// block_light.rgb += distance(max(float16_t(sh.bb_view_min), float16_t(0.0)), max(float16_t(sh.bb_view_max), float16_t(0.0))) * float16_t(0.01);
 			// if (sh.index_len > local_index_size) block_light *= 10;
 
-			#if HAND_LIGHT
+			f16vec3 light = fma(
+				non_block_light(sky_light_color, sky_light_level), ao.xxx, block_light
+			);
+
+			#if HAND_LIGHT != 0
 				if (handLightPackedLR != 0) {
 					immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
 					immut bvec2 active_lr = notEqual(hand_light_lr, u16vec2(0u));
 
 					if (active_lr.x) {
-						block_light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hand_light.left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
 					}
 
 					if (active_lr.y) {
-						block_light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hand_light.right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
 					}
 				}
 			#endif
-
-			f16vec3 final_light = fma(
-				non_block_light(sky_light_color, sky_light_level), ao.xxx, block_light
-			);
 
 			#ifndef NETHER
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
@@ -345,7 +345,7 @@ void main() {
 
 				immut float s_distortion = uintBitsToFloat(texelFetch(colortex2, texel, 0).r); // TODO: Maybe we should move this inside the branch in `sample_shadow`.
 				sample_shadow(
-					final_light,
+					light,
 					chebyshev_dist, s_distortion,
 					sky_light_color, rcp_color, roughness,
 					face_n_dot_l, tex_n_dot_l, n_w_shadow_light,
@@ -353,7 +353,7 @@ void main() {
 				);
 			#endif
 
-			color *= final_light;
+			color *= light;
 
 			#ifndef NETHER
 				immut f16vec3 srgb_fog_color = srgb(fog_color);

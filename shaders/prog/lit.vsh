@@ -29,7 +29,7 @@ uniform sampler2D gtexture;
 	uniform int handLightPackedLR;
 
 	#if HAND_LIGHT
-		#include "/buf/hand_light.glsl"
+		#include "/buf/hlq.glsl"
 	#endif
 #endif
 
@@ -287,8 +287,8 @@ void main() {
 								if (subgroupElect())
 							#endif
 							{
-								atomicAdd(hand_light.right.x, rg);
-								atomicAdd(hand_light.right.y, b_count);
+								atomicAdd(hlq.uint2x16_right.x, rg);
+								atomicAdd(hlq.uint2x16_right.y, b_count);
 							}
 						} else {
 							#ifdef SUBGROUP_ENABLED
@@ -298,8 +298,8 @@ void main() {
 								if (subgroupElect())
 							#endif
 							{
-								atomicAdd(hand_light.left.x, rg);
-								atomicAdd(hand_light.left.y, b_count);
+								atomicAdd(hlq.uint2x16_left.x, rg);
+								atomicAdd(hlq.uint2x16_left.y, b_count);
 							}
 						}
 					}
