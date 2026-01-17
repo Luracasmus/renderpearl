@@ -31,8 +31,8 @@
 
 	// HAND_LIGHT
 		#define HAND_LIGHT 1 // [0 1 2 3 4 5]
-		#define MAX_HAND_LIGHT_TRACE_DIST 8 // [8 16 24 32 48 64 80 96]
-		#define HAND_LIGHT_TRACE_STEPS 32 // [0 4 8 16 32 64 128 256 512]
+		#define MAX_HAND_LIGHT_TRACE_DIST 48 // [8 16 24 32 48 64 80 96]
+		#define HAND_LIGHT_TRACE_STEPS 16 // [0 4 8 16 32 64 128 256 512]
 		// 4 -> 1
 		// 8 -> 1
 		// 16 -> 1
@@ -42,7 +42,7 @@
 		// 256 -> 2
 		// 512 -> 1
 		// ^ These are tuned with max HAND_LIGHT.
-		#define HAND_LIGHT_TRACE_HARDNESS 2 // [0 1 2 4 8]
+		#define HAND_LIGHT_TRACE_HARDNESS 1 // [0 1 2 4 8]
 
 	// FALLBACK_BLOCK
 		#define BL_FALLBACK_R 1.2 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0]
