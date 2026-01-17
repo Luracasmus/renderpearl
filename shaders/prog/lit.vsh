@@ -113,8 +113,11 @@ void main() {
 			#endif
 
 			// Pack handedness.
-			// We mask away everything except the sign (highest) bit and shift it down to index 4.
-			v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma |= (floatBitsToUint(at_tangent.w) & 2147483648u) >> 28u;
+			v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma = bitfieldInsert(
+				v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma,
+				floatBitsToUint(at_tangent.w) >> 31u, // The sign bit.
+				4, 1
+			);
 		#endif
 
 		f16vec3 color = f16vec3(vaColor.rgb);

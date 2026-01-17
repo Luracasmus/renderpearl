@@ -112,14 +112,13 @@ void main() {
 		immut f16vec3 w_tex_normal = w_face_normal;
 	#else
 		immut f16vec4 octa_tangent_normal = unpackSnorm4x8(v.snorm4x8_octa_tangent_normal);
-
 		immut f16vec3 w_face_tangent = normalize(octa_decode(octa_tangent_normal.xy));
 		immut f16vec3 w_face_normal = normalize(octa_decode(octa_tangent_normal.zw));
 
 		#if NORMALS == 2
 			immut f16vec3 w_tex_normal = w_face_normal;
 		#else
-			immut float16_t handedness = fma(float16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 4, 1)), float16_t(2.0), float16_t(-1.0));
+			immut float16_t handedness = fma(float16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 4, 1)), float16_t(-2.0), float16_t(1.0));
 
 			immut mat3 w_tbn = mat3(w_face_tangent, vec3(cross(w_face_tangent, w_face_normal) * handedness), w_face_normal);
 
