@@ -178,7 +178,7 @@ screen.COMPAT=§6◀§r Kompatibilitet §6▶
 		value.MUL_32x16.3=§c⚠§r På (alltid)
 
 	option.SUBGROUP=§e⌚§r Subgroup-operationer
-		option.SUBGROUP.comment=Aktiverar operationer och variabler från §oKHR_shader_subgroup§r-tillägget, vilka tillåter snabb delning av data mellan shader-anrop inom en subgroup\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas
+		option.SUBGROUP.comment=Aktiverar operationer och variabler från §oKHR_shader_subgroup§r-tillägget, vilka tillåter snabb delning av data mellan shader-anrop inom en subgroup\nDetta kravs för ljuslistebaserad belysning av genomskinlig geometri\n\n§c⚠§r Kan vara inkompatibelt med vissa grafikdrivrutiner om tilläggsstöd antas
 		value.SUBGROUP.1=På (kontrollera stöd)
 		value.SUBGROUP.2=§c⚠§r På (anta stöd baserat på enhet)
 		value.SUBGROUP.3=§c⚠§r På (alltid)

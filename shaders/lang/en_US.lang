@@ -248,7 +248,7 @@ screen.COMPAT=§6◀§r Compatibility §6▶
 		value.MUL_32x16.3=§c⚠§r On (always)
 
 	option.SUBGROUP=§e⌚§r Subgroup Operations
-		option.SUBGROUP.comment=Enables operations and variables provided by the §oKHR_shader_subgroup§r extension, which allow fast sharing of data between shader invocations within a subgroup\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed
+		option.SUBGROUP.comment=Enables operations and variables provided by the §oKHR_shader_subgroup§r extension, which allow fast sharing of data between shader invocations within a subgroup\nThis is required for light list-based lighting of translucent geometry\n\n§c⚠§r May be incompatible with some graphics drivers if extension support is assumed
 		value.SUBGROUP.0=§cOff
 		value.SUBGROUP.1=On (check for support)
 		value.SUBGROUP.2=§c⚠§r On (assume support based on device)
