@@ -102,7 +102,7 @@ void sample_shadow(
 
 			s_view.z += bias.x;
 
-			vec3 s_ndc = shadow_proj_scale * s_view;
+			vec3 s_ndc = shadow_proj_scale.xxy * s_view;
 			s_ndc.xy *= s_distortion;
 
 			vec3 s_screen = fma(s_ndc, vec3(0.5), vec3(0.5));

@@ -323,7 +323,7 @@ void main() {
 
 		#ifndef NETHER
 			if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
-				immut vec2 s_ndc = shadow_proj_scale.xy * (mat3x2(shadowModelView) * (pe + mvInv3));
+				immut vec2 s_ndc = shadow_proj_scale.x * (mat3x2(shadowModelView) * (pe + mvInv3));
 				v.s_distortion = distortion(s_ndc);
 			}
 		#endif
