@@ -8,16 +8,16 @@ void sample_ll_block_light(
 	immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
 	immut f16vec3 n_w_rel_light = w_rel_light * inversesqrt(sq_dist_light);
 
-	// Make falloff start a block away of the light source when the "wide" flag (most significant bit) is set.
+	// Make minimum falloff that of a block away of the light source when the "wide" flag (most significant bit) is set,
+	// otherwise, make it half a block away (sqrt(0.25), the edge of the light source block).
 	immut float16_t falloff = float16_t(1.0) / (
-		is_wide ? max(sq_dist_light - float16_t(1.0), float16_t(1.0)) : sq_dist_light
+		max(sq_dist_light, is_wide ? float16_t(1.0) : float16_t(0.25))
 	);
 
 	immut float16_t light_level = offset_intensity - mhtn_dist;
 	float16_t brightness = intensity * falloff;
 	brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
 	brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible.
-	brightness = min(brightness, float16_t(48.0)); // Prevent `float16_t` overflow later on.
 
 	color *= brightness;
 
