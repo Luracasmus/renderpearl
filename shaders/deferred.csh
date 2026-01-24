@@ -15,6 +15,10 @@ uniform sampler2D depthtex0;
 uniform usampler2D colortex2;
 uniform layout(rgba16f) restrict image2D colorimg1;
 
+#ifdef END
+	uniform float endFlashIntensity;
+#endif
+
 #include "/lib/mmul.glsl"
 #include "/lib/view_size.glsl"
 #include "/lib/luminance.glsl"

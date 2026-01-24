@@ -2,8 +2,7 @@
 	uniform vec3 skyColorLinear;
 #endif
 
-uniform float far;
-uniform float fogEnd, fogStart;
+uniform float far, fogEnd, fogStart;
 uniform vec3 fogColor;
 uniform int isEyeInWater;
 
@@ -39,7 +38,11 @@ float16_t sky_fog(float16_t height) {
 				immut vec2 texel_pos = vec2(gl_GlobalInvocationID.xy);
 			#endif
 
-			return mix(f16vec3(rand(fma(trunc(texel_pos * 0.25), vec2(4.0), frameTimeCounter.xx))), f16vec3(rand(floor(n_pe.xz * 1024.0 + frameTimeCounter * 1))) * f16vec3(0.05, 0.0, 0.05) * (float16_t(1.25) - float16_t(n_pe.y)), float16_t(0.99));
+			return mix(
+				f16vec3(rand(fma(trunc(texel_pos * 0.25), vec2(4.0), frameTimeCounter.xx))),
+				f16vec3(rand(floor(n_pe.xz * 1024.0 + frameTimeCounter * 1))) * f16vec3(0.05, 0.0, 0.05) * (float16_t(1.25) - float16_t(n_pe.y)),
+				float16_t(0.99)
+			) * fma(float16_t(endFlashIntensity), float16_t(1.5), float16_t(0.5));
 		}
 	#else
 		f16vec3 sky(float16_t sky_fog, vec3 n_pe, vec3 sun_dir) {

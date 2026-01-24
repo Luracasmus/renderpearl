@@ -41,24 +41,22 @@ in
 #include "/lib/lit_v_data.glsl"
 
 #ifndef NETHER
+	uniform float frameTimeCounter;
 	uniform vec3 shadowLightDirectionPlr;
 	uniform mat4 shadowModelView;
-
-	#include "/lib/skylight.glsl"
-	#include "/lib/sm/distort.glsl"
-	#include "/lib/light/shadows.glsl"
-#endif
-
-#ifndef NETHER
-	uniform float frameTimeCounter;
 
 	#include "/lib/prng/pcg.glsl"
 
 	#ifdef END
 		#include "/lib/prng/fast_rand.glsl"
+		uniform float endFlashIntensity;
 	#else
 		uniform vec3 sunDirectionPlr;
 	#endif
+
+	#include "/lib/skylight.glsl"
+	#include "/lib/sm/distort.glsl"
+	#include "/lib/light/shadows.glsl"
 #endif
 
 #include "/lib/view_size.glsl"

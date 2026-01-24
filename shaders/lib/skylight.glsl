@@ -1,6 +1,6 @@
 #ifdef END
 	f16vec3 skylight() {
-		return f16vec3(0.19, 0.1, 0.19);
+		return f16vec3(0.19, 0.1, 0.19) * fma(float16_t(endFlashIntensity), float16_t(2.0), float16_t(0.5));
 	}
 #else
 	uniform vec3 skyState;

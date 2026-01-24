@@ -26,6 +26,10 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	uniform mat4 gbufferProjectionInverse, shadowModelView;
 	uniform sampler2D depthtex0;
 
+	#ifdef END
+		uniform float endFlashIntensity;
+	#endif
+
 	float16_t pbr_fog(float dist) {
 		// Beer–Lambert law https://discord.com/channels/237199950235041794/276979724922781697/612009520117448764
 		return min(float16_t(1.0 - exp(-0.001 / pbrFogDensity * dist)), float16_t(1.0));
