@@ -19,7 +19,7 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 		immut uvec3 scaled_color = uvec3(fma(
 			f16vec3(rg, b_count.x),
-			f16vec3(2047.0, 2047.0, 1023.0) / (hand_light_pack_scale * max(float16_t(b_count.y), float16_t(0.0078125))),
+			f16vec3(vec3(2047.0, 2047.0, 1023.0) / hand_light_pack_scale) / max(float16_t(b_count.y), float16_t(0.0078125)),
 			f16vec3(0.5)
 		));
 		return bitfieldInsert(bitfieldInsert(scaled_color.r, scaled_color.g, 11, 11), scaled_color.b, 22, 10);
