@@ -78,7 +78,7 @@ void main() {
 		immut f16vec3 w_face_normal = f16vec3(mvInv2); // == MV_INV * vec3(0.0, 0.0, 1.0)
 		immut f16vec2 octa_w_face_normal = octa_encode(f16vec3(w_face_normal));
 	#else
-		immut f16vec4 octa_tangent_normal = unpackSnorm4x8(v.snorm4x8_octa_tangent_normal);
+		immut f16vec4 octa_tangent_normal = f16vec4(unpackSnorm4x8(v.snorm4x8_octa_tangent_normal));
 		immut f16vec2 octa_w_face_normal = octa_tangent_normal.zw;
 		immut f16vec3 w_face_normal = normalize(octa_decode(octa_w_face_normal));
 	#endif
@@ -135,7 +135,7 @@ void main() {
 		); // The sign bit (#15) is always zero.
 
 		#ifdef TERRAIN
-			float16_t ao = corner_ao_curve(v.ao);
+			float16_t ao = corner_ao_curve(float16_t(v.ao));
 		#else
 			float16_t ao = float16_t(0.9);
 		#endif

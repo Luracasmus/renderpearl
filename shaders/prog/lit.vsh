@@ -139,7 +139,7 @@ void main() {
 			// float16_t norm_emission = min(emission / float16_t(15.0), float16_t(1.0));
 			// v.light.x = float(min(fma(float16_t(norm_emission), float16_t(0.3), max(float16_t(v.light.x), norm_emission)), float16_t(1.0)));
 
-			float alpha = mc_chunkFade;
+			float16_t alpha = float16_t(mc_chunkFade);
 
 			#ifdef TRANSLUCENT
 				if (fluid) {
@@ -310,7 +310,7 @@ void main() {
 		#if defined TERRAIN || defined TRANSLUCENT
 			v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma = bitfieldInsert(
 				v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma,
-				uint(fma(alpha, 2047.0, 0.5)), // Scale and round from (0.0, 1.0] to [0, 2047].
+				uint(fma(alpha, float16_t(2047.0), float16_t(0.5))), // Scale and round from (0.0, 1.0] to [0, 2047].
 				5, 11
 			); // Pack alpha.
 		#endif

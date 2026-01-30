@@ -129,7 +129,7 @@ void main() {
 		immut f16vec3 w_face_normal = f16vec3(mvInv2);
 		immut f16vec3 w_tex_normal = w_face_normal;
 	#else
-		immut f16vec4 octa_tangent_normal = unpackSnorm4x8(v.snorm4x8_octa_tangent_normal);
+		immut f16vec4 octa_tangent_normal = f16vec4(unpackSnorm4x8(v.snorm4x8_octa_tangent_normal));
 		immut f16vec3 w_face_tangent = normalize(octa_decode(octa_tangent_normal.xy));
 		immut f16vec3 w_face_normal = normalize(octa_decode(octa_tangent_normal.zw));
 
@@ -175,7 +175,7 @@ void main() {
 		#endif
 
 	#ifdef TERRAIN
-		float16_t ao = corner_ao_curve(v.ao);
+		float16_t ao = corner_ao_curve(float16_t(v.ao));
 	#else
 		float16_t ao = float16_t(0.9);
 	#endif

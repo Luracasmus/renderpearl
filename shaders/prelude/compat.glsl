@@ -20,7 +20,7 @@
 #ifdef SIZED_16_8
 	// It seems like this is always supported on NVIDIA drivers.
 	// https://opengl.gpuinfo.org/listreports.php?extension=GL_NV_gpu_shader5
-	#if defined MC_GL_NV_gpu_shader5 || (defined ASSUME_NV_GPU_SHADER5 && defined MC_GL_VENDOR_NVIDIA)
+	#if (defined GL_NV_gpu_shader5 || defined MC_GL_NV_gpu_shader5) || (defined ASSUME_NV_GPU_SHADER5 && defined MC_GL_VENDOR_NVIDIA)
 		#extension GL_NV_gpu_shader5 : require
 		#define FLOAT16
 		#define INT16
@@ -30,7 +30,7 @@
 
 	// It seems like this is always supported on Windows with ATI/AMD drivers for Radeon GPUs (excluding some mobile or very old GPUs).
 	// https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_gpu_shader_half_float
-	#if defined MC_GL_AMD_gpu_shader_half_float || (defined ASSUME_AMD_GPU_SHADER_HALF_FLOAT && defined MC_GL_RENDERER_RADEON && defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
+	#if (defined GL_AMD_gpu_shader_half_float || defined MC_GL_AMD_gpu_shader_half_float) || (defined ASSUME_AMD_GPU_SHADER_HALF_FLOAT && defined MC_GL_RENDERER_RADEON && defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
 		#extension GL_AMD_gpu_shader_half_float : require
 		#define FLOAT16
 		// #define MAT16 // seems to cause some issues with casting :/
@@ -40,7 +40,7 @@
 
 	// Same as above.
 	// https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_gpu_shader_int16
-	#if defined MC_GL_AMD_gpu_shader_int16 || (defined ASSUME_AMD_GPU_SHADER_INT16 && defined MC_GL_RENDERER_RADEON && defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
+	#if (defined GL_AMD_gpu_shader_int16 || defined MC_GL_AMD_gpu_shader_int16) || (defined ASSUME_AMD_GPU_SHADER_INT16 && defined MC_GL_RENDERER_RADEON && defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
 		#extension GL_AMD_gpu_shader_int16 : require
 		#define INT16
 		#define PACK_INT16
@@ -52,34 +52,38 @@
 		#define TRANSMUTE_AND_PACK_INT16
 	#endif
 
-	#ifdef MC_GL_EXT_shader_16bit_storage
+	#if defined GL_EXT_shader_16bit_storage || defined MC_GL_EXT_shader_16bit_storage
 		#extension GL_EXT_shader_16bit_storage : require
 		#define FLOAT16 // How does this interact with trinary min/max?
 		#define INT16
 	#endif
 
-	#ifdef MC_GL_EXT_shader_8bit_storage
+	#if defined GL_EXT_shader_8bit_storage || defined MC_GL_EXT_shader_8bit_storage
 		#extension GL_EXT_shader_8bit_storage : require
 		#define INT8
 	#endif
 
-	#ifdef MC_GL_EXT_shader_explicit_arithmetic_types_float16
+	#if defined GL_EXT_shader_explicit_arithmetic_types_float16 || defined MC_GL_EXT_shader_explicit_arithmetic_types_float16
 		#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
 		#define FLOAT16
 		// #define MAT16
+
+		#define ARITH_FLOAT16
 	#endif
 
-	#ifdef MC_GL_EXT_shader_explicit_arithmetic_types_int16
+	#if defined GL_EXT_shader_16bit_storage || defined MC_GL_EXT_shader_explicit_arithmetic_types_int16
 		#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
 		#define INT16
 		#define PACK_INT16
+
+		#define ARITH_INT16
 	#endif
 
-	#if defined MC_GL_EXT_shader_explicit_arithmetic_types_float16 && defined MC_GL_EXT_shader_explicit_arithmetic_types_int16
+	#if defined ARITH_FLOAT16 && defined ARITH_INT16
 		#define TRANSMUTE_AND_PACK_INT16
 	#endif
 
-	#ifdef MC_GL_EXT_shader_explicit_arithmetic_types_int8
+	#if defined GL_EXT_shader_explicit_arithmetic_types_int8 || defined MC_GL_EXT_shader_explicit_arithmetic_types_int8
 		#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
 		#define INT8
 	#endif
@@ -96,7 +100,7 @@
 
 // It seems like this is always supported on non-NVIDIA or Intel+Windows drivers.
 // https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_shader_trinary_minmax
-#if (MINMAX_3 >= 1 && defined MC_GL_AMD_shader_trinary_minmax) || (MINMAX_3 >= 2 && !defined MC_GL_VENDOR_NVIDIA && !(defined MC_GL_VENDOR_INTEL && defined MC_OS_WINDOWS)) || MINMAX_3 >= 3
+#if (MINMAX_3 >= 1 && (defined GL_AMD_shader_trinary_minmax || defined MC_GL_AMD_shader_trinary_minmax)) || (MINMAX_3 >= 2 && !defined MC_GL_VENDOR_NVIDIA && !(defined MC_GL_VENDOR_INTEL && defined MC_OS_WINDOWS)) || MINMAX_3 >= 3
 	#extension GL_AMD_shader_trinary_minmax : require
 #else
 	#define min3(v0, v1, v2) min(v0, min(v1, v2))
@@ -105,14 +109,14 @@
 
 // It seems like this is always supported on Mesa drivers for Intel GPUs (excluding some mobile or very old GPUs).
 // https://opengl.gpuinfo.org/listreports.php?extension=GL_INTEL_shader_integer_functions2
-#if (MUL_32x16 >= 1 && defined MC_GL_INTEL_shader_integer_functions2) || (MUL_32x16 >= 2 && defined MC_GL_VENDOR_MESA && defined MC_GL_RENDERER_INTEL) || MUL_32x16 >= 3
+#if (MUL_32x16 >= 1 && (defined GL_INTEL_shader_integer_functions2 || defined MC_GL_INTEL_shader_integer_functions2)) || (MUL_32x16 >= 2 && defined MC_GL_VENDOR_MESA && defined MC_GL_RENDERER_INTEL) || MUL_32x16 >= 3
 	#extension GL_INTEL_shader_integer_functions2 : require
 #else
 	#define multiply32x16(v0, v1) (v0 * v1)
 #endif
 
 // https://opengl.gpuinfo.org/listreports.php?extension=GL_KHR_shader_subgroup
-#if (SUBGROUP >= 1 && defined GL_KHR_shader_subgroup) || (SUBGROUP >= 2 && (defined MC_GL_VENDOR_NVIDIA || defined MC_GL_RENDERER_RADEON)) || SUBGROUP >= 3
+#if (SUBGROUP >= 1 && ((defined GL_KHR_shader_subgroup_basic && defined GL_KHR_shader_subgroup_vote && GL_KHR_shader_subgroup_arithmetic && GL_KHR_shader_subgroup_ballot && GL_KHR_shader_subgroup_shuffle_relative) || defined GL_KHR_shader_subgroup || defined MC_GL_KHR_shader_subgroup)) || (SUBGROUP >= 2 && (defined MC_GL_VENDOR_NVIDIA || defined MC_GL_RENDERER_RADEON)) || SUBGROUP >= 3
 	#extension GL_KHR_shader_subgroup_basic : require
 	#extension GL_KHR_shader_subgroup_vote : require
 	#extension GL_KHR_shader_subgroup_arithmetic : require
