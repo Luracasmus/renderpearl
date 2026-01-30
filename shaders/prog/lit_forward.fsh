@@ -161,7 +161,11 @@ void main() {
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
-	f16vec3 light = f16vec3(0.0);
+	float16_t emissiveness = float16_t(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma & 15u) * float16_t(1.0 / 15.0);
+
+	// TODO: labPBR
+
+	f16vec3 light = f16vec3(float16_t(EMISSIVE_BRIGHTNESS) * emissiveness);
 
 	immut f16vec2 block_sky_light =
 		#ifdef TERRAIN

@@ -323,9 +323,8 @@ void main() {
 			// block_light.rgb += distance(max(float16_t(sh.bb_view_min), float16_t(0.0)), max(float16_t(sh.bb_view_max), float16_t(0.0))) * float16_t(0.01);
 			// if (sh.index_len > local_index_size) block_light *= 10;
 
-			f16vec3 light = fma(
-				non_block_light(sky_light_color, sky_light_level), ao.xxx, block_light
-			);
+			f16vec3 light = float16_t(EMISSIVE_BRIGHTNESS) * emissiveness + ao * non_block_light(sky_light_color, sky_light_level) + block_light;
+			// TODO: Something is making emissive blocks way brighter that is not this. We should look into it.
 
 			#if HAND_LIGHT != 0
 				if (handLightPackedLR != 0) {
