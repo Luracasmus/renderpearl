@@ -289,7 +289,7 @@ void main() {
 					if (mhtn_dist < offset_intensity) { // We add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
 						immut bool is_wide = light_data >= 0x80000000u;
 
-						immut uint16_t packed_light_color = subgroupBroadcastFirst(sh.ll_color[i]);
+						immut uint16_t packed_light_color = uint16_t(subgroupBroadcastFirst(sh.ll_color[i]));
 
 						#ifdef INT16
 							immut f16vec3 light_color = f16vec3(
