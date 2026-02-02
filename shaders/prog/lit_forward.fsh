@@ -37,6 +37,10 @@ uniform sampler2D gtexture;
 	#include "/lib/octa_normal.glsl"
 #endif
 
+#ifdef LIGHT_LEVELS
+	#include "/lib/llv.glsl"
+#endif
+
 in
 #include "/lib/lit_v_data.glsl"
 
