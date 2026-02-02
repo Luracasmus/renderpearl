@@ -13,7 +13,7 @@ f16vec3 get_hand_light(uint16_t light_level, uint packed_hl, vec3 origin_view, v
 
 	immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
 
-	immut float16_t brightness = float16_t(light_level) * float16_t(HAND_LIGHT) / max(sq_dist, float16_t(0.0078125));
+	immut float16_t brightness = float16_t(light_level) * float16_t(HAND_LIGHT) / max(sq_dist, float16_t(0.17));
 	immut f16vec3 illum = brightness * unpack_un11_11_10(packed_hl);
 
 	f16vec3 light;
