@@ -105,6 +105,8 @@ void main() {
 		immut f16vec4 color_block_light = f16vec4(imageLoad(colorimg1, texel));
 		color = color_block_light.rgb;
 		block_light_level = color_block_light.a;
+	} else {
+		gbuf_gba.xy = uvec2(0u);
 	}
 
 	immut vec2 texel_size = 1.0 / vec2(view_size());
