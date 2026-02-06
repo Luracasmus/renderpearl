@@ -72,7 +72,11 @@ in
 #include "/lib/material/ao.glsl"
 #include "/lib/light/non_block.glsl"
 
-#ifdef SUBGROUP_ENABLED
+#if defined SUBGROUP_ENABLED && !(defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
+	// AMD drivers for Windows don't support non-constant indices in `subgroupBroadcast` (<= SPIR-V 1.4 limitation),
+	// so the implementation here doesn't work.
+	#define FORWARD_LL_LIGHT_ENABLED
+
 	#include "/lib/light/sample_ll_block.glsl"
 
 	readonly
@@ -104,7 +108,7 @@ void main() {
 	#ifdef ALPHA_CHECK
 		immut bool will_discard = color.a < float16_t(alphaTestRef);
 
-		#ifdef SUBGROUP_ENABLED
+		#ifdef FORWARD_LL_LIGHT_ENABLED
 			if (subgroupAll(will_discard)) { discard; }
 		#endif
 	#else
@@ -200,7 +204,7 @@ void main() {
 		immut float16_t ind_bl = float16_t(IND_BL) * ao;
 	#endif
 
-	#ifdef SUBGROUP_ENABLED
+	#ifdef FORWARD_LL_LIGHT_ENABLED
 		immut bool is_maybe_ll_lit = (
 			block_sky_light.x != float16_t(0.0) && chebyshev_dist < float16_t(LL_DIST) && !will_discard && !gl_HelperInvocation
 		);
