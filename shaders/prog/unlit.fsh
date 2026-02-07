@@ -1,20 +1,19 @@
 #include "/prelude/core.glsl"
 
-#ifdef TRANSLUCENT // Requires `TINTED`
+#ifdef NO_COLORTEX2_WRITE
 	/* RENDERTARGETS: 1 */
+#else
+	/* RENDERTARGETS: 1,2 */
+	#ifdef NETHER
+		layout(location = 1) out uint colortex2;
+	#else
+		layout(location = 1, component = 1) out uint colortex2;
+	#endif
+#endif
+
+#ifdef TRANSLUCENT // Requires `TINTED`
 	layout(location = 0) out f16vec4 colortex1;
 #else
-	#ifdef NO_COLORTEX2_WRITE
-		/* RENDERTARGETS: 1 */
-	#else
-		/* RENDERTARGETS: 1,2 */
-		#ifdef NETHER
-			layout(location = 1) out uint colortex2;
-		#else
-			layout(location = 1, component = 1) out uint colortex2;
-		#endif
-	#endif
-
 	layout(location = 0) out f16vec3 colortex1;
 
 	#ifdef ALPHA_CHECK
@@ -61,10 +60,6 @@ void main() {
 				#endif
 
 				colortex1 = unpack_un11_11_10(v.tint) * linear(color.rgb);
-
-				#ifndef NO_COLORTEX2_WRITE
-					colortex2 = colortex2_g_deferred_ignore;
-				#endif
 			#endif
 		#else
 			/* // Currently unused.
@@ -78,20 +73,16 @@ void main() {
 			immut f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
 
 			colortex1 = linear(color.rgb);
-
-			#ifndef NO_COLORTEX2_WRITE
-				colortex2 = colortex2_g_deferred_ignore;
-			#endif
 		#endif
 	#else // Has to be `TINTED`.
 		#ifdef TRANSLUCENT
 			colortex1 = f16vec4(unpackUnorm4x8(v.tint));
 		#else
 			colortex1 = unpack_un11_11_10(v.tint);
-
-			#ifndef NO_COLORTEX2_WRITE
-				colortex2 = colortex2_g_deferred_ignore;
-			#endif
 		#endif
+	#endif
+
+	#ifndef NO_COLORTEX2_WRITE
+		colortex2 = colortex2_g_deferred_ignore;
 	#endif
 }
