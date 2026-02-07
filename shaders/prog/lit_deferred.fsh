@@ -137,7 +137,7 @@ void main() {
 		#ifdef TERRAIN
 			float16_t ao = corner_ao_curve(float16_t(v.ao));
 		#else
-			float16_t ao = float16_t(0.9);
+			float16_t ao = float16_t(1.0);
 		#endif
 
 		#if DIR_SHADING != 0
