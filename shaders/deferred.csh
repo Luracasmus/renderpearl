@@ -354,7 +354,7 @@ void main() {
 					chebyshev_dist, s_distortion,
 					sky_light_color, rcp_color, roughness,
 					face_n_dot_l, tex_n_dot_l, n_w_shadow_light,
-					w_tex_normal, n_pe, pe
+					w_face_normal, w_tex_normal, n_pe, pe
 				);
 			#endif
 

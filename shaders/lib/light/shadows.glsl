@@ -85,7 +85,7 @@ void sample_shadow(
 	float16_t chebyshev_dist, float s_distortion,
 	f16vec3 sky_light_color, f16vec3 rcp_color, float16_t roughness,
 	float16_t face_n_dot_l, float16_t tex_n_dot_l, f16vec3 n_w_shadow_light,
-	f16vec3 w_tex_normal, f16vec3 n_pe, vec3 pe
+	f16vec3 w_face_normal, f16vec3 w_tex_normal, f16vec3 n_pe, vec3 pe
 ) {
 	if (min(face_n_dot_l, tex_n_dot_l) > min_n_dot_l) {
 		const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
@@ -94,21 +94,20 @@ void sample_shadow(
 		f16vec3 dir_sky_light = sky_light_color * fma(specular_diffuse.xxx, rcp_color, specular_diffuse.yyy);
 
 		if (chebyshev_dist < sm_dist) {
-			vec3 s_view = rot_trans_mmul(shadowModelView, pe + mvInv3);
-
 			immut float16_t sine = sqrt(fma(face_n_dot_l, -face_n_dot_l, float16_t(1.0))); // Using the Pythagorean identity.
 			immut float16_t tangent = sine / face_n_dot_l;
-			immut float bias = tangent / (shadowMapResolution * shadow_proj_scale.x) / s_distortion * 9;
-
-			s_view.z += bias.x;
-
-			vec3 s_ndc = shadow_proj_scale.xxy * s_view;
+			/* // Experimental different bias. Seems worse.
+				immut float bias = tangent / (shadowMapResolution * shadow_proj_scale.x) / s_distortion * 9;
+				s_view.z += bias.x;
+			*/
+			//                               (-0.3, 32.0) // Seems to also work and gives slightly different results. Remember to uncomment the depth bias application when using that.
+			immut f16vec2 bias = f16vec2(vec2(-0.0, 64.0) / shadowMapResolution) * f16vec2(sine, min(float16_t(2.0), tangent)); // (normal_bias, slope_scaled_bias)
+			vec3 s_ndc = shadow_proj_scale.xxy * rot_trans_mmul(shadowModelView, pe + mvInv3 + vec3(bias.y * w_face_normal));
 			s_ndc.xy *= s_distortion;
-
-			vec3 s_screen = fma(s_ndc, vec3(0.5), vec3(0.5));
+			// s_ndc.z += float(bias.x);
 
 			dir_sky_light *= mix(
-				smooth_sample_sm(s_screen),
+				smooth_sample_sm(fma(s_ndc, vec3(0.5), vec3(0.5))),
 				f16vec3(1.0),
 				smoothstep(float16_t(sm_dist * (1.0 - SM_FADE_DIST)), sm_dist, chebyshev_dist)
 			);
