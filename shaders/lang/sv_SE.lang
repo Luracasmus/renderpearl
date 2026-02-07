@@ -27,19 +27,21 @@ screen.LIGHTING=§6◀§r Ljus §6▶
 		option.SM_DIST.comment=Avståndet inom vilket skuggor återges\nLägre värden gör också närmare skuggor skarpare\n\n§6⚠§r Det är rekommenderat att ställa in detta lägre än eller lika med inställningen för §lSynligt Avstånd§r för optimal prestanda och kvalitet
 		suffix.SM_DIST=\ datablock
 
-	option.SM_BLUR=§c⌚§r Skuggutsuddning
+	option.SM_BLUR=§c⌚§r Utsuddning
 		value.SM_BLUR.1=Linjär
 		value.SM_BLUR.2=Gaussisk
 
-	option.SM_FADE_DIST=§b⌚§r Skuggblekningsavstånd
+	option.SM_FADE_DIST=§b⌚§r Blekningsavstånd
+	option.SM_DISTORTION=§c⌚§r Förvrängning
+		option.SM_DISTORTION.comment=Kontrollerar avvägningen mellan skuggkvalitet nära och långt bort\nHögre värden allokerar en större andel av shadow map-texlarna till geometri nära mitten
 
 	option.SM_ENTITY=§c⌚§r Entitetsskuggor
 	option.SM_PLR=§e⌚§r Spelarskuggor
 		option.SM_PLR.comment=§b🛈§r Alltid aktiva när §l§6⌚§r §lEntitetsskuggor§r är aktiverade
 	option.SM_BLOCK_ENTITY=§e⌚§r Blockentitetsskuggor
 
-	option.DIR_SHADING=§b⌚§r Riktningsbaserad Skuggning
-		option.DIR_SHADING.comment=Aktiverar riktningsbaserad skuggning likt i Vanilla
+	option.DIR_SHADING=§b⌚§r Riktningsbaserad Ambient Occlusion
+		option.DIR_SHADING.comment=Aktiverar riktningsbaserad skuggning likt i Vanilla applicerad på ambient occlusion
 
 	screen.LIGHT_LIST=§6◀§r Ljuslista §6▶
 		option.LL_DIST=§c⌚§r Avstånd

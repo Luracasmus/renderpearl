@@ -45,20 +45,23 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 			option.SM_DIST.comment=Half the side of the square within which shadows are rendered\nLower values make closer shadows sharper\n\n§6⚠§r It's recommended to set this lower than or equal to your §lRender Distance§r for optimal performance and quality
 			suffix.SM_DIST=\ chunks
 
-		option.SM_BLUR=§c⌚§r Shadow Blur
+		option.SM_BLUR=§c⌚§r Blur
 			value.SM_BLUR.0=§cOff
 			value.SM_BLUR.1=Linear
 			value.SM_BLUR.2=Gaussian
 
-		option.SM_FADE_DIST=§b⌚§r Shadow Fade Distance
+		option.SM_FADE_DIST=§b⌚§r Fade Distance
+		option.SM_DISTORTION=§c⌚§r Distortion
+			option.SM_DISTORTION.comment=Controls the trade-off between near and far shadow quality\nHigher values allocate more of the shadow map texels to geometry close to the center
+			suffix.SM_DISTORTION=\%
 
 		option.SM_ENTITY=§c⌚§r Entity Shadows
 		option.SM_PLR=§e⌚§r Player Shadows
 			option.SM_PLR.comment=§b🛈§r Always active when §l§6⌚§r §lEntity Shadows§r are enabled
 		option.SM_BLOCK_ENTITY=§e⌚§r Block Entity Shadows
 
-		option.DIR_SHADING=§b⌚§r Directional Shading
-			option.DIR_SHADING.comment=Enables directional shading similar to Vanilla
+		option.DIR_SHADING=§b⌚§r Directional Ambient Occlusion
+			option.DIR_SHADING.comment=Enables directional shading similar to Vanilla applied to ambient occlusion
 			value.DIR_SHADING.0=§cOff
 
 	screen.LIGHT_LIST=§6◀§r Light List §6▶
