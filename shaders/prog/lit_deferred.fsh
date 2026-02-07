@@ -1,10 +1,9 @@
 #include "/prelude/core.glsl"
 
+/* RENDERTARGETS: 1,2 */
 #ifdef NETHER
-	/* RENDERTARGETS: 1,2 */
 	layout(location = 1) out uvec3 colortex2;
 #else
-	/* RENDERTARGETS: 1,2 */
 	layout(location = 1) out uvec4 colortex2;
 #endif
 
@@ -31,7 +30,7 @@ uniform sampler2D gtexture;
 #include "/lib/srgb.glsl"
 
 in
-#include "/lib/lit_v_data.glsl"
+#include "/lib/v_data_lit.glsl"
 
 void main() {
 	#ifdef TEX_ALPHA

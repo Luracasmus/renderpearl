@@ -15,6 +15,12 @@ uniform sampler2D depthtex0;
 uniform usampler2D colortex2;
 uniform layout(rgba16f) restrict image2D colorimg1;
 
+#ifdef DISTANT_HORIZONS
+	uniform int dhRenderDistance;
+#else
+	uniform float far;
+#endif
+
 #ifdef END
 	uniform float endFlashIntensity;
 #endif
@@ -70,6 +76,11 @@ shared struct {
 	#include "/lib/light/hand.glsl"
 #endif
 
+#ifdef DISTANT_HORIZONS
+	uniform mat4 dhProjectionInverse;
+	uniform sampler2D dhDepthTex0;
+#endif
+
 void main() {
 	// TODO: Look into skipping light list stuff if the entire work group is unlit.
 
@@ -86,8 +97,23 @@ void main() {
 	}
 
 	immut i16vec2 texel = i16vec2(gl_GlobalInvocationID.xy);
-	immut float depth = texelFetch(depthtex0, texel, 0).r;
-	immut bool is_geo = depth < 1.0;
+	float depth = texelFetch(depthtex0, texel, 0).r;
+	bool is_geo = depth < 1.0;
+
+	#ifdef DISTANT_HORIZONS
+		mat4 projection_inverse;
+		if (is_geo) {
+			projection_inverse = gbufferProjectionInverse;
+		} else {
+			depth = texelFetch(dhDepthTex0, texel, 0).r;
+
+			is_geo = depth < 1.0;
+
+			projection_inverse = dhProjectionInverse;
+		}
+	#else
+		immut mat4 projection_inverse = gbufferProjectionInverse;
+	#endif
 
 	uvec3 gbuf_gba;
 	f16vec3 color;
@@ -116,7 +142,7 @@ void main() {
 	immut bool is_hand = gbuf_gba.y >= 0x80000000u; // The most significant bit being 1 indicates hand.
 	if (is_hand) { ndc.z /= MC_HAND_DEPTH; }
 
-	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
+	immut vec3 view = proj_inv(projection_inverse, ndc);
 	immut vec3 pe = MV_INV * view;
 
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
@@ -364,7 +390,13 @@ void main() {
 				immut f16vec3 srgb_fog_color = srgb(fog_color);
 			#endif
 
-			color = linear(mix(srgb(color), srgb_fog_color, vanilla_fog(pe)));
+			#ifdef DISTANT_HORIZONS
+				immut float16_t render_dist = float16_t(dhRenderDistance);
+			#else
+				immut float16_t render_dist = float16_t(far);
+			#endif
+
+			color = linear(mix(srgb(color), srgb_fog_color, vanilla_fog(pe, render_dist)));
 		} else { // Render sky.
 			#if defined NETHER || defined END
 				#ifdef NETHER

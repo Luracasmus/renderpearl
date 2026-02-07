@@ -11,10 +11,6 @@
 		#warning "RenderPearl: The Monocle mod is incompatible with RenderPearl. Visual issues may occur. No support will be provided for using RenderPearl in this configuration."
 	#endif
 
-	#ifdef DISTANT_HORIZONS
-		#warning "RenderPearl: RenderPearl does not render Distant Horizons geometry. For optimal performance, please disable "Enable Rendering" in your Distant Horizons configuration."
-	#endif
-
 	#ifdef CHUNKS_FADE_IN_ENABLED
 		#warning "RenderPearl: Chunks Fade In support is experimental. Various issues may occur."
 	#endif

@@ -2,7 +2,7 @@
 	uniform vec3 skyColorLinear;
 #endif
 
-uniform float far, fogEnd, fogStart;
+uniform float fogEnd, fogStart;
 uniform vec3 fogColor;
 uniform int isEyeInWater;
 
@@ -10,14 +10,12 @@ float16_t linear_step(float16_t edge0, float16_t edge1, float16_t x) {
 	return saturate((x - edge0) / (edge1 - edge0));
 }
 
-float16_t vanilla_fog(vec3 pe) {
-	immut float16_t far_f16 = float16_t(far);
-
+float16_t vanilla_fog(vec3 pe, float16_t render_dist) {
 	return max(
 		linear_step(float16_t(fogStart), float16_t(fogEnd), float16_t(length(pe))), // Spherical environment fog.
 		linear_step(
-			far_f16 - clamp(float16_t(0.1) * far_f16, float16_t(4.0), float16_t(64.0)),
-			far_f16,
+			render_dist - clamp(float16_t(0.1) * render_dist, float16_t(4.0), float16_t(64.0)),
+			render_dist,
 			max(float16_t(length(pe.xz)), abs(float16_t(pe.y)))
 		) // Cylidrical border fog.
 	);

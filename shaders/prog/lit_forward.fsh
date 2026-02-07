@@ -30,6 +30,7 @@
 #include "/lib/mv_inv.glsl"
 uniform mat4 gbufferProjectionInverse;
 uniform sampler2D gtexture;
+uniform float far;
 
 #ifdef NO_NORMAL
 	uniform mat3 normalMatrix;
@@ -42,7 +43,7 @@ uniform sampler2D gtexture;
 #endif
 
 in
-#include "/lib/lit_v_data.glsl"
+#include "/lib/v_data_lit.glsl"
 
 #ifndef NETHER
 	uniform float frameTimeCounter;
@@ -441,7 +442,7 @@ void main() {
 					} // TODO: Self-colored fog should be based on the distance between the current surface and the solid one behind it, not the distance from the camera to the solid surface.
 				*/
 
-				color.a *= float16_t(1.0) - vanilla_fog(MV_INV * view + mvInv3);
+				color.a *= float16_t(1.0) - vanilla_fog(MV_INV * view + mvInv3, float16_t(far)); // TODO: Look into if this should be pe or pf.
 
 				colortex1 = color;
 			#else
@@ -454,7 +455,7 @@ void main() {
 					immut f16vec3 srgb_fog_col = srgb(sky(sky_fog_val, n_pe, sunDirectionPlr));
 				#endif
 
-				color.rgb = linear(mix(srgb(color.rgb), srgb_fog_col, vanilla_fog(pe)));
+				color.rgb = linear(mix(srgb(color.rgb), srgb_fog_col, vanilla_fog(pe, float16_t(far))));
 
 				colortex1 = color.rgb;
 			#endif

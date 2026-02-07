@@ -1,9 +1,4 @@
-#version 460 compatibility
-
-#include "/prelude/config.glsl"
-#include "/prelude/compat.glsl"
-#include "/prelude/directive.glsl"
-#include "/prelude/lib.glsl"
+#include "/prelude/core_compatibility.glsl"
 
 out gl_PerVertex { vec4 gl_Position; };
 

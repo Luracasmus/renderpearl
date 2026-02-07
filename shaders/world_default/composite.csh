@@ -43,10 +43,16 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	#include "/lib/mmul.glsl"
 	#include "/lib/srgb.glsl"
 	#include "/lib/skylight.glsl"
-	#include "/lib/fog.glsl"
 	#include "/lib/sm/sample.glsl"
 	#include "/lib/sm/distort.glsl"
 	#include "/lib/prng/ign.glsl"
+	#include "/lib/fog.glsl"
+
+	#ifdef DISTANT_HORIZONS
+		uniform int dhRenderDistance;
+	#else
+		uniform float far;
+	#endif
 
 	shared struct {
 		uint16_t[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] nbh;
@@ -125,7 +131,12 @@ void main() {
 		barrier();
 
 		if (is_geo) { // Apply computed volumetric light.
-			immut float16_t fog = saturate(vanilla_fog(pe) + pbr_fog(length(pe)));
+			#ifdef DISTANT_HORIZONS
+				immut float16_t render_dist = float16_t(dhRenderDistance);
+			#else
+				immut float16_t render_dist = float16_t(far);
+			#endif
+			immut float16_t fog = saturate(vanilla_fog(pe, render_dist) + pbr_fog(length(pe)));
 
 			// We use the average VL color of a 3x3 neighborhood of invocations
 			// to take advantage of IGN's low discrepancy
