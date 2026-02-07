@@ -96,9 +96,6 @@ in
 #endif
 
 void main() {
-	// TODO: Fix strange tint.
-	// TODO: Fix procedural normals.
-
 	#if defined TRANSLUCENT || defined ALPHA_CHECK
 		f16vec4 color = f16vec4(texture(gtexture, v.coord));
 	#else
@@ -171,9 +168,9 @@ void main() {
 
 	float16_t emissiveness = float16_t(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma & 15u) * float16_t(1.0 / 15.0);
 
-	// TODO: labPBR
+	// TODO: LabPBR.
 
-	f16vec3 light = f16vec3(float16_t(EMISSIVE_BRIGHTNESS) * emissiveness);
+	f16vec3 light = f16vec3(float16_t(EMISSION_BRIGHTNESS) * emissiveness);
 
 	immut f16vec2 block_sky_light =
 		#ifdef TERRAIN
@@ -192,7 +189,7 @@ void main() {
 		ao *= dir_shading(w_tex_normal);
 	#endif
 
-	ao *= gen_tex_ao(srgb_luma, avg_srgb_luma); // TODO: labPBR AO.
+	ao *= gen_tex_ao(srgb_luma, avg_srgb_luma); // TODO: LabPBR AO.
 
 	#ifdef LIGHT_LEVELS
 		f16vec3 block_light = f16vec3(visualize_ll(block_sky_light.x));

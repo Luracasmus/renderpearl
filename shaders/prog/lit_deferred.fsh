@@ -144,7 +144,7 @@ void main() {
 			ao *= dir_shading(w_tex_normal);
 		#endif
 
-		ao *= gen_tex_ao(srgb_luma, avg_srgb_luma); // TODO: labPBR AO support.
+		ao *= gen_tex_ao(srgb_luma, avg_srgb_luma); // TODO: LabPBR AO support.
 
 		data = bitfieldInsert(
 			data, uint(fma(ao, float16_t(8191.0), float16_t(0.5))),
@@ -172,17 +172,15 @@ void main() {
 			float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma);
 		#endif
 
-		const float16_t sss = float16_t(0.0); // TODO: labPBR SSS map support.
+		const float16_t sss = float16_t(0.0); // TODO: LabPBR SSS map support.
 
 		uint data = packUnorm4x8(f16vec4(roughness, sss, 0.0, 0.0));
 
 		#if defined TERRAIN || defined HAND
 			uint8_t emission = uint8_t(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma) & uint8_t(15u);
-			color *= fma(float16_t(emission), float16_t(2.0/15.0), float16_t(1.0)); // TODO: We should just add to the lighting in deferred instead of multiplying the color.
+			emission *= uint8_t(17u); // Scale to full `uint8_t` range.
 
-			emission *= uint8_t(17u); // Scale to full uint8_t range.
-
-			// TODO: labPBR emission map support.
+			// TODO: LabPBR emission map support.
 
 			data = bitfieldInsert(data, uint(emission), 16, 8);
 		#endif

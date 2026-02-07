@@ -221,6 +221,7 @@ screen.SURFACE=§6◀§r Surface §6▶
 		value.NORMALS.0=Auto-Generated
 		value.NORMALS.1=RP Normal Maps
 		value.NORMALS.2=Flat
+	option.EMISSION_BRIGHTNESS=§b⌚§r Emission Brightness
 
 screen.UTIL=§6◀§r Utility §6▶
 	option.LINE_WIDTH=§b⌚§r Line Width

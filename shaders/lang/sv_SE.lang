@@ -151,6 +151,7 @@ screen.SURFACE=§6◀§r Yta §6▶
 	option.NORMALS=§e⌚§r Normaler
 		value.NORMALS.0=Auto-Genererade
 		value.NORMALS.2=Platta
+	option.EMISSION_BRIGHTNESS=§b⌚§r Emissionsljusstyrka
 
 screen.UTIL=§6◀§r Verktyg §6▶
 	option.LINE_WIDTH=§b⌚§r Linjetjocklek

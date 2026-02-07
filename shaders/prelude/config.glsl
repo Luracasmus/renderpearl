@@ -8,7 +8,7 @@
 	#define AMBIENT 0.05 // [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
 	#define SSS 5 // [0 1 2 3 4 5 6 7 8 9 10]
 	#define DIR_SHADING 2 // [0 1 2 3 4 5 6 7 8 9]
-	#define EMISSIVE_BRIGHTNESS 0.125 // TODO [0.0625 0.125 0.25 0.5 1.0 2.0]
+	#define EMISSION_BRIGHTNESS 2.0 // [0.0625 0.125 0.25 0.5 1.0 2.0 4.0]
 	const float ambientOcclusionLevel = 1.0; // [0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 	// SHADOW_MAP
