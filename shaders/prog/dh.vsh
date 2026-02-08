@@ -16,17 +16,14 @@ out gl_PerVertex { vec4 gl_Position; };
 #include "/lib/push_to_llq.glsl"
 
 uniform bool rebuildLLQ;
-uniform vec3 cameraPosition, cameraPositionFract, chunkOffset;
-
-in vec2 mc_Entity;
-in vec4 at_midBlock;
+uniform vec3 cameraPosition, cameraPositionFract;
 
 out
 #include "/lib/v_data_dh.glsl"
 
 void main() {
-	vec3 model = vec3(gl_Vertex);
-
+	// TODO: Noise texture like in vanilla DH.
+	immut vec3 model = vec3(gl_Vertex);
 	immut vec3 view = rot_trans_mmul(mat4(gl_ModelViewMatrix), model);
 	immut vec4 clip = proj_mmul(mat4(gl_ProjectionMatrix), view);
 	gl_Position = clip;
@@ -45,12 +42,13 @@ void main() {
 
 	#ifdef TRANSLUCENT
 		f16vec4 color = f16vec4(gl_Color);
+		color.rgb = linear(color.rgb);
 		if (dhMaterialId == DH_BLOCK_WATER) {
 			color.a *= float16_t(WATER_OPACITY * 0.01);
 		}
 		v.unorm4x8_color = packUnorm4x8(color);
 	#else
-		f16vec3 color = f16vec3(gl_Color);
+		immut f16vec3 color = linear(f16vec3(gl_Color));
 		v.unorm4x8_color = packUnorm4x8(f16vec4(color, 0.0));
 	#endif
 

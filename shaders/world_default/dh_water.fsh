@@ -50,7 +50,6 @@ in
 void main() {
 	if (!gl_HelperInvocation) {
 		f16vec4 color = f16vec4(unpackUnorm4x8(v.unorm4x8_color));
-		color.rgb = linear(color.rgb);
 
 		vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size()), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
 		immut vec3 view = proj_inv(dhProjectionInverse, ndc);
@@ -116,6 +115,7 @@ void main() {
 		colortex1 = color * f16vec4(
 			light,
 			// Fade in where regular translucents fade out, and then fade out again at DH render distance. TODO: It might be possible to make the transition smoother.
+			// TODO: Skip shading and stuff far inside the regular RD.
 			vanilla_fog(pf, float16_t(far)) - vanilla_fog(pf, float16_t(dhRenderDistance))
 		);
 	}

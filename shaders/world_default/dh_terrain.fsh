@@ -11,7 +11,6 @@ layout(location = 0) out f16vec4 colortex1;
 layout(depth_unchanged) out float gl_FragDepth;
 
 #include "/lib/luminance.glsl"
-#include "/lib/srgb.glsl"
 
 #if DIR_SHADING != 0
 	#include "/lib/octa_normal.glsl"
@@ -81,6 +80,6 @@ void main() {
 			colortex2.r = floatBitsToUint(v.s_distortion);
 		#endif
 
-		colortex1 = f16vec4(linear(color.rgb), unpackFloat2x16(v.float2x16_light).x);
+		colortex1 = f16vec4(color.rgb, unpackFloat2x16(v.float2x16_light).x);
 	}
 }
