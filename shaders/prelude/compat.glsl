@@ -201,38 +201,29 @@
 	#define f16mat4 mat4
 #endif
 
-#ifndef PACK_INT16
-	#define packInt2x16(v) _packInt2x16(v)
-	int _packInt2x16(i16vec2 v) {
-		immut ivec2 v_i32 = ivec2(v);
-		return bitfieldInsert(v_i32.x, v_i32.y, 16, 16);
-	}
-
-	#define unpackInt2x16(v) _unpackInt2x16(v)
-	i16vec2 _unpackInt2x16(int v) { return i16vec2(v & 65535, v >> 16); }
-
-	#define packUint2x16(v) _packUint2x16(v)
-	uint _packUint2x16(u16vec2 v) {
-		immut uvec2 v_u32 = uvec2(v);
-		return bitfieldInsert(v_u32.x, v_u32.y, 16, 16);
-	}
-
-	#define unpackUint2x16(v) _unpackUint2x16(v)
-	u16vec2 _unpackUint2x16(uint v) { return u16vec2(v & 65535u, v >> 16u); }
-#endif
-
 #ifndef TRANSMUTE_AND_PACK_INT16
-	#define float16BitsToInt16(v) _float16BitsToInt16(v)
-	int16_t _float16BitsToInt16(float16_t v) { return int16_t(packFloat2x16(f16vec2(v, 0.0))); }
-	i16vec2 _float16BitsToInt16(f16vec2 v) { return unpackInt2x16(int(packFloat2x16(v))); }
-	i16vec3 _float16BitsToInt16(f16vec3 v) { return i16vec3(float16BitsToInt16(v.xy), float16BitsToInt16(v.z)); }
-	i16vec4 _float16BitsToInt16(f16vec4 v) { return i16vec4(float16BitsToInt16(v.xy), float16BitsToInt16(v.zw)); }
+	#ifdef PACK_INT16
+		#define float16BitsToInt16(v) _float16BitsToInt16(v)
+		int16_t _float16BitsToInt16(float16_t v) { return int16_t(packFloat2x16(f16vec2(v, 0.0))); }
+		i16vec2 _float16BitsToInt16(f16vec2 v) { return unpackInt2x16(int(packFloat2x16(v))); }
+		i16vec3 _float16BitsToInt16(f16vec3 v) { return i16vec3(float16BitsToInt16(v.xy), float16BitsToInt16(v.z)); }
+		i16vec4 _float16BitsToInt16(f16vec4 v) { return i16vec4(float16BitsToInt16(v.xy), float16BitsToInt16(v.zw)); }
 
-	#define int16BitsToFloat16(v) _int16BitsToFloat16(v)
-	float16_t _int16BitsToFloat16(int16_t v) { return unpackFloat2x16(uint(v)).x; }
-	f16vec2 _int16BitsToFloat16(i16vec2 v) { return unpackFloat2x16(uint(packInt2x16(v))); }
-	f16vec3 _int16BitsToFloat16(i16vec3 v) { return f16vec3(int16BitsToFloat16(v.xy), int16BitsToFloat16(v.z)); }
-	f16vec4 _int16BitsToFloat16(i16vec4 v) { return f16vec4(int16BitsToFloat16(v.xy), int16BitsToFloat16(v.zw)); }
+		#define int16BitsToFloat16(v) _int16BitsToFloat16(v)
+		float16_t _int16BitsToFloat16(int16_t v) { return unpackFloat2x16(uint(v)).x; }
+		f16vec2 _int16BitsToFloat16(i16vec2 v) { return unpackFloat2x16(uint(packInt2x16(v))); }
+		f16vec3 _int16BitsToFloat16(i16vec3 v) { return f16vec3(int16BitsToFloat16(v.xy), int16BitsToFloat16(v.z)); }
+		f16vec4 _int16BitsToFloat16(i16vec4 v) { return f16vec4(int16BitsToFloat16(v.xy), int16BitsToFloat16(v.zw)); }
+	#else
+		#define packUint2x16(v) _packUint2x16(v)
+		uint _packUint2x16(u16vec2 v) {
+			immut uvec2 v_u32 = uvec2(v);
+			return bitfieldInsert(v_u32.x, v_u32.y, 16, 16);
+		}
+
+		#define unpackUint2x16(v) _unpackUint2x16(v)
+		u16vec2 _unpackUint2x16(uint v) { return u16vec2(v & 65535u, v >> 16u); }
+	#endif
 
 	#define float16BitsToUint16(v) _float16BitsToUint16(v)
 	uint16_t _float16BitsToUint16(float16_t v) { return uint16_t(packFloat2x16(f16vec2(v, 0.0))); }
