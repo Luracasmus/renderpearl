@@ -6,7 +6,6 @@ layout(depth_greater) out float gl_FragDepth;
 
 uniform sampler2D depthtex0;
 uniform mat4 dhProjectionInverse;
-uniform float far;
 uniform int dhRenderDistance;
 
 #include "/lib/mmul.glsl"
@@ -120,7 +119,7 @@ void main() {
 				light,
 				// Fade in where regular translucents fade out, and then fade out again at DH render distance. TODO: It might be possible to make the transition smoother.
 				// TODO: Skip shading and stuff far inside the regular RD.
-				vanilla_fog(pf, float16_t(far)) - vanilla_fog(pf, float16_t(dhRenderDistance))
+				1.0 - vanilla_fog(pf, float16_t(dhRenderDistance))
 			);
 		}
 	}

@@ -30,7 +30,6 @@
 #include "/lib/mv_inv.glsl"
 uniform mat4 gbufferProjectionInverse;
 uniform sampler2D gtexture;
-uniform float far;
 
 #ifdef NO_NORMAL
 	uniform mat3 normalMatrix;
@@ -67,11 +66,16 @@ in
 #include "/lib/view_size.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/srgb.glsl"
-#define SKY_FSH
-#include "/lib/fog.glsl"
 #include "/lib/material/specular.glsl"
 #include "/lib/material/ao.glsl"
 #include "/lib/light/non_block.glsl"
+
+#ifndef DISTANT_HORIZONS
+	uniform float far;
+
+	#define SKY_FSH
+	#include "/lib/fog.glsl"
+#endif
 
 #if defined SUBGROUP_ENABLED && !(defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
 	// AMD drivers for Windows don't support non-constant indices in `subgroupBroadcast` (<= SPIR-V 1.4 limitation),
@@ -442,7 +446,9 @@ void main() {
 					} // TODO: Self-colored fog should be based on the distance between the current surface and the solid one behind it, not the distance from the camera to the solid surface.
 				*/
 
-				color.a *= float16_t(1.0) - vanilla_fog(MV_INV * view + mvInv3, float16_t(far)); // TODO: Look into if this should be pe or pf.
+				#ifndef DISTANT_HORIZONS
+					color.a *= float16_t(1.0) - vanilla_fog(pe + mvInv3, float16_t(far)); // TODO: Look into if this should be pe or pf.
+				#endif
 
 				colortex1 = color;
 			#else
