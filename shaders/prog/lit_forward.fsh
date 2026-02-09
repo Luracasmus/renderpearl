@@ -110,7 +110,7 @@ void main() {
 	#ifdef ALPHA_CHECK
 		immut bool will_discard = color.a < float16_t(alphaTestRef);
 
-		#ifdef FORWARD_LL_LIGHT_ENABLED
+		#ifdef SUBGROUP_ENABLED
 			if (subgroupAll(will_discard)) { discard; }
 		#endif
 	#else
