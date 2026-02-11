@@ -110,9 +110,7 @@ void main() {
 	#ifdef ALPHA_CHECK
 		immut bool will_discard = color.a < float16_t(alphaTestRef);
 
-		#ifdef SUBGROUP_ENABLED
-			if (subgroupAll(will_discard)) { discard; }
-		#endif
+		if (subgroupAll(will_discard)) { discard; }
 	#else
 		const bool will_discard = false;
 	#endif

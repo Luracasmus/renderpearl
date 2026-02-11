@@ -136,10 +136,14 @@
 		#extension GL_EXT_shader_subgroup_extended_types_float16 : enable
 	#endif
 #else
-	#define subgroupAny(v) (v)
+	// These should be equivalent afaik:
+	#define subgroupAny(v) anyInvocation(v)
+	#define subgroupAll(v) allInvocations(v)
+	#define subgroupAllEqual(v) allInvocationsEqual(v)
+
+	// These essentially emulate a subgroup size of 1:
 	#define subgroupElect() true
 	#define subgroupBroadcastFirst(v) (v)
-	// These essentially emulate a subgroup size of 1.
 #endif
 
 // 16/8-bit fallback definitions.
