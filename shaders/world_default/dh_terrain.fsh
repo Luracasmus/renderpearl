@@ -38,13 +38,7 @@ void main() {
 		{
 			uint data = v.float2x16_light >> 16u; // The sign bit (#15) is always zero.
 
-			#if DIR_SHADING != 0
-				immut f16vec3 w_normal = octa_decode(unpackSnorm4x8(v.snorm2x8_bool1_zero15_normal_emission).xy);
-				immut float16_t ao = dir_shading(w_normal);
-			#else
-				const float16_t ao = float16_t(1.0);
-			#endif
-
+			const float16_t ao = float16_t(1.0);
 			data = bitfieldInsert(
 				data, uint(fma(ao, float16_t(8191.0), float16_t(0.5))),
 				15, 13

@@ -139,10 +139,6 @@ void main() {
 			float16_t ao = float16_t(1.0);
 		#endif
 
-		#if DIR_SHADING != 0
-			ao *= dir_shading(w_tex_normal);
-		#endif
-
 		ao *= gen_tex_ao(srgb_luma, avg_srgb_luma); // TODO: LabPBR AO support.
 
 		data = bitfieldInsert(
@@ -194,8 +190,10 @@ void main() {
 			= data;
 	}
 
-	if (gl_HelperInvocation || will_discard) {
+	if (will_discard) {
 		discard;
+	} else if (gl_HelperInvocation) {
+		return;
 	} else {
 		#ifndef NETHER
 			colortex2.r = floatBitsToUint(v.s_distortion);

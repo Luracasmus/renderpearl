@@ -48,7 +48,9 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	#include "/lib/prng/ign.glsl"
 	#include "/lib/fog.glsl"
 
-	#ifdef DISTANT_HORIZONS
+	#ifdef VOXY
+		uniform int vxRenderDistance;
+	#elif defined DISTANT_HORIZONS
 		uniform int dhRenderDistance;
 	#else
 		uniform float far;
@@ -131,11 +133,15 @@ void main() {
 		barrier();
 
 		if (is_geo) { // Apply computed volumetric light.
-			#ifdef DISTANT_HORIZONS
-				immut float16_t render_dist = float16_t(dhRenderDistance);
-			#else
-				immut float16_t render_dist = float16_t(far);
-			#endif
+			immut float16_t render_dist = float16_t(
+				#ifdef VOXY
+					vxRenderDistance
+				#elif defined DISTANT_HORIZONS
+					dhRenderDistance
+				#else
+					far
+				#endif
+			);
 			immut float16_t fog = saturate(vanilla_fog(pe, render_dist) + pbr_fog(length(pe)));
 
 			// We use the average VL color of a 3x3 neighborhood of invocations

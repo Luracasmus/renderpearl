@@ -15,7 +15,9 @@ uniform sampler2D depthtex0;
 uniform usampler2D colortex2;
 uniform layout(rgba16f) restrict image2D colorimg1;
 
-#ifdef DISTANT_HORIZONS
+#ifdef VOXY
+	uniform int vxRenderDistance;
+#elif defined DISTANT_HORIZONS
 	uniform int dhRenderDistance;
 #else
 	uniform float far;
@@ -34,6 +36,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #include "/lib/brdf.glsl"
 #include "/lib/light/non_block.glsl"
 #include "/lib/light/sample_ll_block.glsl"
+#include "/lib/material/ao.glsl"
 
 #ifndef NETHER
 	uniform vec3 shadowLightDirectionPlr;
@@ -272,11 +275,15 @@ void main() {
 			immut float16_t emissiveness = roughness_sss_emissiveness.z;
 
 			immut float16_t sky_light_level = uint16BitsToFloat16(uint16_t(gbuf_gba.y) & uint16_t(32767u));
-			immut float16_t ao = float16_t(1.0/8191.0) * float16_t(uint16_t(bitfieldExtract(gbuf_gba.y, 15, 13)));
+			float16_t ao = float16_t(1.0/8191.0) * float16_t(uint16_t(bitfieldExtract(gbuf_gba.y, 15, 13)));
 
 			immut f16vec4 octa_normal = f16vec4(unpackSnorm4x8(gbuf_gba.z));
 			immut f16vec3 w_tex_normal = normalize(octa_decode(octa_normal.xy));
 			immut f16vec3 w_face_normal = normalize(octa_decode(octa_normal.zw));
+
+			#if DIR_SHADING != 0
+				ao *= dir_shading(w_tex_normal);
+			#endif
 
 			#ifdef LIGHT_LEVELS
 				f16vec3 block_light = f16vec3(visualize_ll(block_light_level));
@@ -390,11 +397,15 @@ void main() {
 				immut f16vec3 srgb_fog_color = srgb(fog_color);
 			#endif
 
-			#ifdef DISTANT_HORIZONS
-				immut float16_t render_dist = float16_t(dhRenderDistance);
-			#else
-				immut float16_t render_dist = float16_t(far);
-			#endif
+			immut float16_t render_dist = float16_t(
+				#ifdef VOXY
+					vxRenderDistance
+				#elif defined DISTANT_HORIZONS
+					dhRenderDistance
+				#else
+					far
+				#endif
+			);
 
 			color = linear(mix(srgb(color), srgb_fog_color, vanilla_fog(pe, render_dist)));
 		} else { // Render sky.

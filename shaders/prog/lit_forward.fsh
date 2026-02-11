@@ -70,7 +70,7 @@ in
 #include "/lib/material/ao.glsl"
 #include "/lib/light/non_block.glsl"
 
-#ifndef DISTANT_HORIZONS
+#if !defined VOXY && !defined DISTANT_HORIZONS
 	uniform float far;
 
 	#define SKY_FSH
@@ -446,7 +446,7 @@ void main() {
 					} // TODO: Self-colored fog should be based on the distance between the current surface and the solid one behind it, not the distance from the camera to the solid surface.
 				*/
 
-				#ifndef DISTANT_HORIZONS
+				#if !defined VOXY && !defined DISTANT_HORIZONS
 					color.a *= float16_t(1.0) - vanilla_fog(pe + mvInv3, float16_t(far)); // TODO: Look into if this should be pe or pf.
 				#endif
 
