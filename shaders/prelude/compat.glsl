@@ -38,31 +38,6 @@
 		#define AMD_FLOAT16
 	#endif
 
-	// Same as above.
-	// https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_gpu_shader_int16
-	#if (defined GL_AMD_gpu_shader_int16 || defined MC_GL_AMD_gpu_shader_int16) || (defined ASSUME_AMD_GPU_SHADER_INT16 && defined MC_GL_RENDERER_RADEON && defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
-		#extension GL_AMD_gpu_shader_int16 : require
-		#define INT16
-		#define PACK_INT16
-
-		#define AMD_INT16
-	#endif
-
-	#if defined AMD_FLOAT16 && defined AMD_INT16
-		#define TRANSMUTE_AND_PACK_INT16
-	#endif
-
-	#if defined GL_EXT_shader_16bit_storage || defined MC_GL_EXT_shader_16bit_storage
-		#extension GL_EXT_shader_16bit_storage : require
-		#define FLOAT16 // How does this interact with trinary min/max?
-		#define INT16
-	#endif
-
-	#if defined GL_EXT_shader_8bit_storage || defined MC_GL_EXT_shader_8bit_storage
-		#extension GL_EXT_shader_8bit_storage : require
-		#define INT8
-	#endif
-
 	#if defined GL_EXT_shader_explicit_arithmetic_types_float16 || defined MC_GL_EXT_shader_explicit_arithmetic_types_float16
 		#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
 		#define FLOAT16
@@ -71,21 +46,52 @@
 		#define ARITH_FLOAT16
 	#endif
 
-	#if defined GL_EXT_shader_16bit_storage || defined MC_GL_EXT_shader_explicit_arithmetic_types_int16
-		#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
-		#define INT16
-		#define PACK_INT16
+	#if IRIS_VERSION >= 10902
+		// Same as above.
+		// https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_gpu_shader_int16
+		#if (defined GL_AMD_gpu_shader_int16 || defined MC_GL_AMD_gpu_shader_int16) || (defined ASSUME_AMD_GPU_SHADER_INT16 && defined MC_GL_RENDERER_RADEON && defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
+			#extension GL_AMD_gpu_shader_int16 : require
+			#define INT16
+			#define PACK_INT16
 
-		#define ARITH_INT16
-	#endif
+			#define AMD_INT16
+		#endif
 
-	#if defined ARITH_FLOAT16 && defined ARITH_INT16
-		#define TRANSMUTE_AND_PACK_INT16
-	#endif
+		#if defined AMD_FLOAT16 && defined AMD_INT16
+			#define TRANSMUTE_AND_PACK_INT16
+		#endif
 
-	#if defined GL_EXT_shader_explicit_arithmetic_types_int8 || defined MC_GL_EXT_shader_explicit_arithmetic_types_int8
-		#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
-		#define INT8
+		#if defined GL_EXT_shader_16bit_storage || defined MC_GL_EXT_shader_16bit_storage
+			#extension GL_EXT_shader_16bit_storage : require
+			#define FLOAT16 // How does this interact with trinary min/max?
+			#define INT16
+		#endif
+
+		#if defined GL_EXT_shader_8bit_storage || defined MC_GL_EXT_shader_8bit_storage
+			#extension GL_EXT_shader_8bit_storage : require
+			#define INT8
+		#endif
+
+		#if defined GL_EXT_shader_16bit_storage || defined MC_GL_EXT_shader_explicit_arithmetic_types_int16
+			#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+			#define INT16
+			#define PACK_INT16
+
+			#define ARITH_INT16
+		#endif
+
+		#if defined ARITH_FLOAT16 && defined ARITH_INT16
+			#define TRANSMUTE_AND_PACK_INT16
+		#endif
+
+		#if defined GL_EXT_shader_explicit_arithmetic_types_int8 || defined MC_GL_EXT_shader_explicit_arithmetic_types_int8
+			#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
+			#define INT8
+		#endif
+	#else
+		// Iris < 1.9.2 has issues with 16-bit uint vectors due to a glsl-transformer bug. TODO: We could work around it more carefully and preserve more working functionality.
+		#undef INT16
+		#undef INT8
 	#endif
 #endif
 

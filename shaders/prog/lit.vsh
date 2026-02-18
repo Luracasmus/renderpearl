@@ -39,7 +39,6 @@ uniform sampler2D gtexture;
 #ifdef TERRAIN
 	uniform bool rebuildLLQ;
 	uniform vec3 cameraPosition, cameraPositionFract, chunkOffset;
-	// `mc_chunkFade` is patched in by Iris.
 
 	in vec2 mc_Entity;
 	in vec4 at_midBlock;
@@ -134,7 +133,13 @@ void main() {
 		// float16_t norm_emission = min(emission / float16_t(15.0), float16_t(1.0));
 		// v.light.x = float(min(fma(float16_t(norm_emission), float16_t(0.3), max(float16_t(v.light.x), norm_emission)), float16_t(1.0)));
 
-		float16_t alpha = float16_t(mc_chunkFade);
+		float16_t alpha = float16_t(
+			#ifdef IRIS_FEATURE_FADE_VARIABLE
+				mc_chunkFade // `mc_chunkFade` is patched in by Iris.
+			#else
+				1.0
+			#endif
+		);
 
 		#ifdef TRANSLUCENT
 			if (fluid) {

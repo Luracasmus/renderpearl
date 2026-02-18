@@ -98,7 +98,7 @@ void main() {
 			sh.index_color[i] = llq.color[i];
 
 			#ifndef INT16
-				if (i < culled_len / 2) {
+				if (i < culled_len / 2u) {
 					ll.color[i] = 0u;
 				}
 			#endif
