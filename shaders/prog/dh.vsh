@@ -29,7 +29,8 @@ void main() {
 	gl_Position = clip;
 
 	immut vec3 pe = MV_INV * view;
-	immut f16vec3 abs_pe = abs(f16vec3(pe));
+	immut f16vec3 f16_pe = f16vec3(pe);
+	immut f16vec3 abs_pe = abs(f16_pe);
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
 	immut mat3 normal_model_view_inverse = MV_INV * mat3(gl_NormalMatrix);
@@ -76,8 +77,8 @@ void main() {
 				float16_t(LOD_FALLOFF),
 				float16_t(0.5)
 			)))) == uint8_t(0u)) {
-				immut vec3 pf = pe + mvInv3;
-				immut uvec3 offset_floor_pf = clamp(uvec3(fma(w_normal.xyz, vec3(-0.5), 256.25 + cameraPositionFract + pf)), 0u, 511u); // Offset by half the negative normal and add (arbitrary) 0.25 to make sure we're not exactly between two blocks.
+				immut f16vec3 pf = f16_pe + f16vec3(mvInv3);
+				immut uvec3 offset_floor_pf = clamp(uvec3(fma(w_normal.xyz, f16vec3(-0.5), float16_t(256.25) + f16vec3(cameraPositionFract) + pf)), 0u, 511u); // Offset by half the negative normal and add (arbitrary) 0.25 to make sure we're not exactly between two blocks.
 
 				push_to_llq(offset_floor_pf, color.rgb, 15u, lava);
 			}
