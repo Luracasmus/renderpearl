@@ -62,7 +62,7 @@ void main() {
 			);
 			immut f16vec2 block_sky_light = unpackFloat2x16(v.float2x16_light);
 
-			immut f16vec3 w_normal = octa_decode(unpackSnorm4x8(v.snorm2x8_bool1_zero15_normal_emission).xy);
+			immut f16vec3 w_normal = octa_decode(f16vec2(unpackSnorm4x8(v.snorm2x8_bool1_zero15_normal_emission).xy));
 
 			#if DIR_SHADING != 0
 				immut float16_t ao = dir_shading(w_normal);
@@ -86,8 +86,9 @@ void main() {
 
 			light += ao * non_block_light(sky_light_color, block_sky_light.y);
 
+			immut vec3 pe = MV_INV * view;
+
 			#ifndef NETHER
-				immut vec3 pe = MV_INV * view;
 				immut f16vec3 n_pe = f16vec3(normalize(pe));
 				immut f16vec3 abs_pe = abs(f16vec3(pe));
 				immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
@@ -102,7 +103,7 @@ void main() {
 					immut float16_t n_dot_l = dot(w_normal, n_w_shadow_light);
 				#endif
 
-				const float16_t roughness = 0.8;
+				const float16_t roughness = float16_t(0.8);
 
 				sample_shadow(
 					light,
@@ -113,7 +114,7 @@ void main() {
 				);
 			#endif
 
-			immut f16vec3 pf = MV_INV * view + mvInv3;
+			immut f16vec3 pf = f16vec3(pe + mvInv3);
 
 			colortex1 = color * f16vec4(
 				light,

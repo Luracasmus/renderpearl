@@ -53,7 +53,7 @@ void main() {
 		}
 
 		{
-			const float16_t roughness = 0.8;
+			const float16_t roughness = float16_t(0.8);
 			uint data = packUnorm4x8(f16vec4(roughness, 0.0, 0.0, 0.0));
 
 			if (v.snorm2x8_bool1_zero15_normal_emission > 65536u) {
