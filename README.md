@@ -51,9 +51,9 @@ The name "RenderPearl" is inspired by the Bedrock Edition [RenderDragon](https:/
 
 Most built-in PBR information, including light colors, material normals and roughness, are almost entirely procedurally generated and should therefore work perfectly with most resource packs and mods.
 
-Support for mods that modify the Iris shader pipeline, such as Chunks Fade In, is experimental and may have issues, such as the shader pack failing to compile.
+Integration with Distant Horizons and Voxy is supported on the latest Minecraft version, but experimental and very basic. Complete support is planned for a future update.
 
-Distant Horizons should be compatible in the sense that everything loads, but the geometry outside the regular render distance will not be visible. Complete support is planned for a future update.
+Support for mods that modify the Iris shader pipeline, such as Chunks Fade In, is experimental and may have issues, such as the shader pack failing to compile.
 
 ## Requirements
 
@@ -67,7 +67,7 @@ Distant Horizons should be compatible in the sense that everything loads, but th
   * `SEPARATE_HARDWARE_SAMPLERS`
   * `SSBO`
 * **Graphics drivers** with support for **GLSL 4.60.8+**.
-* **Minecraft** of a version that is listed as supported by the RenderPearl release.
+* **Minecraft** of a version that is listed as supported by the RenderPearl release. The latest supported version is usually the most stable.
 
 <details>
 <summary>Driver Support</summary>
