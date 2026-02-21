@@ -58,11 +58,11 @@ void main() {
 	color.rgb *= tint;
 
 	immut float16_t srgb_luma = luminance(color.rgb);
-	immut float16_t avg_srgb_luma = unpackFloat2x16(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma).y;
+	immut float16_t avg_srgb_luma = abs(unpackFloat2x16(v.misc_packed).y);
 
 	#ifdef TERRAIN
 		/*
-			immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 5, 11));
+			immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.misc_packed, 5, 11));
 
 			if (packed_alpha != uint16_t(2047u)) {
 				// TODO: Render sky and mix for fade effect.
@@ -85,7 +85,7 @@ void main() {
 		immut f16vec2 octa_w_tex_normal = octa_w_face_normal;
 	#else
 		immut f16vec3 w_face_tangent = normalize(octa_decode(octa_tangent_normal.xy));
-		immut float16_t handedness = fma(float16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 4, 1)), float16_t(-2.0), float16_t(1.0));
+		immut float16_t handedness = fma(float16_t(bitfieldExtract(v.misc_packed, 4, 1)), float16_t(-2.0), float16_t(1.0));
 
 		// TODO: It looks like something is wrong here. Some normals seem inverted/flipped.
 		immut mat3 w_tbn = mat3(w_face_tangent, vec3(cross(w_face_tangent, w_face_normal) * handedness), w_face_normal);
@@ -159,26 +159,28 @@ void main() {
 	}
 
 	{
-		#if defined SM && defined MC_SPECULAR_MAP
-			float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
-		#else
-			float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma);
-		#endif
+		immut bool is_metal = uint8_t(v.misc_packed >> 31u) == uint8_t(1u); // TODO: LabPBR.
+		// const float16_t f0 = float16_t(0.04); // TODO: Uncomment and use when f0 isn't constant.
+		immut float16_t f0_enum = is_metal ? float16_t(231.0 / 255.0) : 0.0;
 
 		const float16_t sss = float16_t(0.0); // TODO: LabPBR SSS map support.
 
-		uint data = packUnorm4x8(f16vec4(roughness, sss, 0.0, 0.0));
+		#if defined SM && defined MC_SPECULAR_MAP
+			float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
+		#else
+			float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma, is_metal ? float16_t(-0.1) : float16_t(0.1));
+		#endif
+
+		uint data = packUnorm4x8(f16vec4(roughness, sss, 0.0, f0_enum));
 
 		#if defined TERRAIN || defined HAND
-			uint8_t emission = uint8_t(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma) & uint8_t(15u);
+			uint8_t emission = uint8_t(v.misc_packed) & uint8_t(15u);
 			emission *= uint8_t(17u); // Scale to full `uint8_t` range.
 
 			// TODO: LabPBR emission map support.
 
 			data = bitfieldInsert(data, uint(emission), 16, 8);
 		#endif
-
-		// TODO: f0 enum.
 
 		#ifdef NETHER
 			colortex2.r

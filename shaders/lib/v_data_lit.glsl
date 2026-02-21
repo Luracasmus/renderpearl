@@ -1,6 +1,8 @@
 VertexData {
 	layout(location = 0, component = 0) vec2 coord;
-	layout(location = 1, component = 0) flat uint uint4_bool1_unorm11_float16_emission_handedness_alpha_luma;
+	layout(location = 1, component = 0) flat uint misc_packed;
+	// ^uint4    bool1      unorm11 ufloat15 bool
+	// ^emission handedness alpha   luma     is_water_or_metal
 
 	#ifdef TERRAIN
 		layout(location = 0, component = 2) vec2 light; // (block, sky)

@@ -105,10 +105,15 @@ void main() {
 
 				const float16_t roughness = float16_t(0.8);
 
+				// TODO:
+				const float16_t f0 = float16_t(0.04);
+				const bool is_metal = false;
 				sample_shadow(
 					light,
 					chebyshev_dist, v.s_distortion,
-					sky_light_color, rcp_color, roughness,
+					sky_light_color,
+					color.rgb, rcp_color,
+					roughness, f0, is_metal,
 					n_dot_l, n_dot_l, n_w_shadow_light,
 					w_normal, w_normal, n_pe, pe
 				);

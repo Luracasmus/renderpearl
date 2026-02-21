@@ -53,6 +53,7 @@ void main() {
 		}
 
 		{
+			// const float16_t f0 = float16_t(0.04); // TODO: Uncomment and use when f0 isn't constant.
 			const float16_t roughness = float16_t(0.8);
 			uint data = packUnorm4x8(f16vec4(roughness, 0.0, 0.0, 0.0));
 

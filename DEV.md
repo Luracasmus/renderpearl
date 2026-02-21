@@ -114,10 +114,9 @@ Most significant <-> Least significant
 
 ```
 ┌ f0 (enum) ┐
-[0, 229] - f0
+[0, 229] - f0 / 255 (as in LabPBR)
 230      - "deferred ignore" flag
 231      - "metal" flag
-232      - "water" flag // TODO: This should be handled in forward.
 ```
 
 ```

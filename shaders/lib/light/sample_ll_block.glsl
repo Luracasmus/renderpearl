@@ -1,9 +1,9 @@
 void sample_ll_block_light(
-	inout f16vec3 specular, inout f16vec3 diffuse,
+	inout f16vec3 reflected, f16vec3 color, f16vec3 rcp_color,
 	float16_t intensity, float16_t offset_intensity, // `offset_intensity == intensity + 0.5` to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
 	f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 n_pe,
-	float16_t roughness, float16_t ind_bl,
-	f16vec3 w_rel_light, float16_t mhtn_dist, f16vec3 color, bool is_wide
+	float16_t roughness, float16_t f0, bool is_metal, float16_t ind_bl,
+	f16vec3 w_rel_light, float16_t mhtn_dist, f16vec3 light_color, bool is_wide
 ) {
 	immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
 	immut f16vec3 n_w_rel_light = w_rel_light * inversesqrt(sq_dist_light);
@@ -19,25 +19,23 @@ void sample_ll_block_light(
 	brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
 	brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible.
 
-	color *= brightness;
+	light_color *= brightness;
 
 	immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
 
-	float16_t light_diffuse = ind_bl; // Very fake GI.
+	f16vec3 this_reflected = ind_bl.xxx; // Very fake GI.
 
 	if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > min_n_dot_l) {
-		immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness);
-		specular = fma(specular_diffuse.xxx, color, specular);
-		light_diffuse += specular_diffuse.y;
+		this_reflected += brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness, f0, is_metal, color, rcp_color);
 	}
 
-	diffuse = fma(light_diffuse.xxx, color, diffuse);
+	reflected = fma(this_reflected, light_color, reflected);
 }
 
-f16vec3 mix_ll_block_light(f16vec3 fallback_block_light, float16_t chebyshev_dist, float16_t block_light_level, f16vec3 specular, f16vec3 diffuse, f16vec3 rcp_color) {
+f16vec3 mix_ll_block_light(f16vec3 fallback_block_light, float16_t chebyshev_dist, float16_t block_light_level, f16vec3 reflected) {
 	// Undo the multiplication from packing light color and brightness.
 	const vec3 packing_scale = vec3(15u * uvec3(31u, 63u, 31u));
-	immut f16vec3 ll_block_light = f16vec3(float(DIR_BL * 3) / packing_scale) * block_light_level * fma(specular, rcp_color, diffuse);
+	immut f16vec3 ll_block_light = f16vec3(float(DIR_BL * 3) / packing_scale) * block_light_level * reflected;
 
 	// Mix based on distance.
 	return mix(ll_block_light, fallback_block_light, smoothstep(float16_t(LL_DIST - 15), float16_t(LL_DIST), chebyshev_dist));

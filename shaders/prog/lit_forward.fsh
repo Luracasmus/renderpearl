@@ -125,12 +125,16 @@ void main() {
 	color.rgb *= tint;
 
 	immut float16_t srgb_luma = luminance(color.rgb);
-	immut float16_t avg_srgb_luma = unpackFloat2x16(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma).y;
+	immut float16_t avg_srgb_luma = abs(unpackFloat2x16(v.misc_packed).y);
+
+	immut bool is_water = uint8_t(v.misc_packed >> 31u) == uint8_t(1u);
+	const bool is_metal = false; // TODO: LabPBR.
+	immut float16_t f0 = is_water ? float16_t(0.02) : float16_t(0.04); // Based on: https://google.github.io/filament/Filament.md.html // TODO: LabPBR.
 
 	#if defined SM && defined MC_SPECULAR_MAP
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
-		immut float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma);
+		immut float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma, is_water ? float16_t(-0.05) : float16_t(0.1)); // TODO: Change when `is_metal` is also possible.
 	#endif
 
 	#ifdef NO_NORMAL
@@ -144,7 +148,7 @@ void main() {
 		#if NORMALS == 2
 			immut f16vec3 w_tex_normal = w_face_normal;
 		#else
-			immut float16_t handedness = fma(float16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 4, 1)), float16_t(-2.0), float16_t(1.0));
+			immut float16_t handedness = fma(float16_t(bitfieldExtract(v.misc_packed, 4, 1)), float16_t(-2.0), float16_t(1.0));
 
 			immut mat3 w_tbn = mat3(w_face_tangent, vec3(cross(w_face_tangent, w_face_normal) * handedness), w_face_normal);
 
@@ -169,7 +173,7 @@ void main() {
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
-	float16_t emissiveness = float16_t(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma & 15u) * float16_t(1.0 / 15.0);
+	float16_t emissiveness = float16_t(v.misc_packed & 15u) * float16_t(1.0 / 15.0);
 
 	// TODO: LabPBR.
 
@@ -251,8 +255,7 @@ void main() {
 			immut uint16_t chunk_invs = uint16_t(subgroupBallotBitCount(chunk_ballot));
 			immut uint16_t chunk_inv_id = uint16_t(gl_SubgroupInvocationID) - uint16_t(subgroupBallotFindLSB(chunk_ballot));
 
-			f16vec3 diffuse = f16vec3(0.0);
-			f16vec3 specular = f16vec3(0.0);
+			f16vec3 reflected = f16vec3(0.0);
 
 			for (uint16_t chunk_i = uint16_t(0u); chunk_i < global_len; chunk_i += chunk_invs) {
 				bool inv_is_in_bb;
@@ -334,10 +337,10 @@ void main() {
 
 								if (mhtn_dist < offset_intensity) {
 									sample_ll_block_light(
-										specular, diffuse,
+										reflected, color.rgb, rcp_color,
 										offset_intensity - float16_t(0.5), offset_intensity,
 										w_tex_normal, w_face_normal, n_pe,
-										roughness, ind_bl,
+										roughness, f0, is_metal, ind_bl,
 										w_rel_light, mhtn_dist, light_color, is_wide
 									);
 								}
@@ -347,7 +350,7 @@ void main() {
 				}
 			}
 
-			block_light = mix_ll_block_light(block_light, chebyshev_dist, block_sky_light.x, specular, diffuse, rcp_color);
+			block_light = mix_ll_block_light(block_light, chebyshev_dist, block_sky_light.x, reflected);
 		}
 	#endif
 
@@ -365,7 +368,7 @@ void main() {
 			light += block_light;
 
 			#ifdef TRANSLUCENT
-				immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, 5, 11));
+				immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.misc_packed, 5, 11));
 				color.a *= float16_t(1.0/2047.0) * float16_t(packed_alpha);
 			#endif
 
@@ -391,7 +394,9 @@ void main() {
 				sample_shadow(
 					light,
 					chebyshev_dist, v.s_distortion,
-					sky_light_color, rcp_color, roughness,
+					sky_light_color,
+					color.rgb, rcp_color,
+					roughness, f0, is_metal,
 					face_n_dot_l, tex_n_dot_l, n_w_shadow_light,
 					w_face_normal, w_tex_normal, n_pe, pe
 				);
@@ -411,11 +416,11 @@ void main() {
 					immut bvec2 active_lr = notEqual(hand_light_lr, u16vec2(0u));
 
 					if (active_lr.x) {
-						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color.rgb, rcp_color, ind_bl, is_hand);
 					}
 
 					if (active_lr.y) {
-						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color.rgb, rcp_color, ind_bl, is_hand);
 					}
 				}
 			#endif

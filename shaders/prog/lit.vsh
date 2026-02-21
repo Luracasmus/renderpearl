@@ -107,8 +107,8 @@ void main() {
 		#endif
 
 		// Pack handedness.
-		v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma = bitfieldInsert(
-			v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma,
+		v.misc_packed = bitfieldInsert(
+			v.misc_packed,
 			floatBitsToUint(at_tangent.w) >> 31u, // The sign bit.
 			4, 1
 		);
@@ -120,7 +120,14 @@ void main() {
 	#endif
 	immut f16vec3 avg_col = color * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
 	immut float16_t avg_luma = luminance(avg_col);
-	v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma = packFloat2x16(f16vec2(float16_t(0.0), avg_luma));
+	v.misc_packed = packFloat2x16(f16vec2(float16_t(0.0), avg_luma));
+
+	#if defined TERRAIN && !defined TRANSLUCENT
+		immut bool is_metal = abs(mc_Entity.x) < 0.1; // `mc_Entity.x == 0.0`.
+		if (is_metal) {
+			v.misc_packed |= 0x80000000u; // Pack is_water_or_metal (set last bit to 1).
+		}
+	#endif
 
 	#ifdef TERRAIN
 		// The actual lowest AO level seems to be a bit above, around `0.19607`. This feels safer if precision changes. We saturate too for safety.
@@ -129,7 +136,7 @@ void main() {
 		v.tint = vec3(color);
 
 		immut float16_t emission = max(float16_t(mc_Entity.x), float16_t(at_midBlock.w));
-		v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma |= uint(emission + float16_t(0.5));
+		v.misc_packed |= uint(emission + float16_t(0.5));
 		// float16_t norm_emission = min(emission / float16_t(15.0), float16_t(1.0));
 		// v.light.x = float(min(fma(float16_t(norm_emission), float16_t(0.3), max(float16_t(v.light.x), norm_emission)), float16_t(1.0)));
 
@@ -144,6 +151,7 @@ void main() {
 		#ifdef TRANSLUCENT
 			if (fluid) {
 				alpha *= float16_t(WATER_OPACITY * 0.01);
+				v.misc_packed |= 0x80000000u; // Pack is_water_or_metal (set last bit to 1).
 			}
 		#endif
 
@@ -178,7 +186,7 @@ void main() {
 					immut vec3 pf = pe + mvInv3;
 					immut uvec3 offset_floor_pf = clamp(uvec3(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + cameraPositionFract + pf)), 0u, 511u);
 
-					push_to_llq(offset_floor_pf, avg_col, v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma, fluid);
+					push_to_llq(offset_floor_pf, avg_col, v.misc_packed, fluid);
 				}
 			}
 		}
@@ -193,7 +201,7 @@ void main() {
 			immut bool is_right = view.x > 0.0;
 			immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
 			immut uint16_t this_hand_light = is_right ? hand_light_lr.y : hand_light_lr.x;
-			v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma |= uint(this_hand_light);
+			v.misc_packed |= uint(this_hand_light);
 
 			#if HAND_LIGHT
 				if (this_hand_light != uint16_t(0u) && abs(view.x) > 0.3) { // Use a margin around the center to not register e.g. a swinging sword as being on the opposite side.
@@ -236,8 +244,8 @@ void main() {
 	#endif
 
 	#if defined TERRAIN || defined TRANSLUCENT
-		v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma = bitfieldInsert(
-			v.uint4_bool1_unorm11_float16_emission_handedness_alpha_luma,
+		v.misc_packed = bitfieldInsert(
+			v.misc_packed,
 			uint(fma(alpha, float16_t(2047.0), float16_t(0.5))), // Scale and round from (0.0, 1.0] to [0, 2047].
 			5, 11
 		); // Pack alpha.

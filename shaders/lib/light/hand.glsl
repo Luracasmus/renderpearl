@@ -6,7 +6,14 @@ uniform int handLightPackedLR;
 	uniform sampler2D depthtex2;
 #endif
 
-f16vec3 get_hand_light(uint16_t light_level, uint packed_hl, vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe, float16_t roughness, f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 rcp_color, float16_t ind_bl, bool is_hand) {
+f16vec3 get_hand_light(
+	uint16_t light_level, uint packed_hl,
+	vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe,
+	float16_t roughness, float16_t f0, bool is_metal,
+	f16vec3 w_tex_normal, f16vec3 w_face_normal,
+	f16vec3 color, f16vec3 rcp_color,
+	float16_t ind_bl, bool is_hand
+) {
 	immut f16vec3 pe_to_light = f16vec3(MV_INV * origin_view - pe);
 	immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
 	immut f16vec3 n_w_rel_light = pe_to_light * inversesqrt(sq_dist);
@@ -19,7 +26,7 @@ f16vec3 get_hand_light(uint16_t light_level, uint packed_hl, vec3 origin_view, v
 	f16vec3 light;
 
 	if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > min_n_dot_l) {
-		f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness);
+		f16vec3 reflected = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness, f0, is_metal, color, rcp_color);
 
 		#if HAND_LIGHT_TRACE_STEPS != 0
 			const float trace_dist = float(MAX_HAND_LIGHT_TRACE_DIST);
@@ -74,16 +81,16 @@ f16vec3 get_hand_light(uint16_t light_level, uint packed_hl, vec3 origin_view, v
 						}
 					*/
 
-					specular_diffuse *= pow(visibility / float16_t(steps), float16_t(float(steps * uint(HAND_LIGHT_TRACE_HARDNESS)) / 8.0));
+					reflected *= pow(visibility / float16_t(steps), float16_t(float(steps * uint(HAND_LIGHT_TRACE_HARDNESS)) / 8.0));
 				#else
 					if (occluded) {
-						specular_diffuse = f16vec2(0.0);
+						reflected = f16vec3(0.0);
 					}
 				#endif
 			}
 		#endif
 
-		light = fma(specular_diffuse.xxx, rcp_color, (specular_diffuse.y + ind_bl).xxx);
+		light = reflected + ind_bl;
 	} else {
 		light = ind_bl.xxx;
 	}

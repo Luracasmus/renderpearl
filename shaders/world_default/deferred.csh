@@ -274,6 +274,16 @@ void main() {
 			immut float16_t sss = roughness_sss_emissiveness.y;
 			immut float16_t emissiveness = roughness_sss_emissiveness.z;
 
+			immut bool is_metal = f0_enum == uint8_t(231u);
+
+			/*
+				// float16_t f0;
+				if (!is_metal) {
+					f0 = f0_enum * float16_t(1.0 / 255.0);
+				} // Else, `f0` will never be used so we let it be undefined.
+			*/
+			const float16_t f0 = float16_t(0.04); // TODO: Uncomment above when f0 isn't constant.
+
 			immut float16_t sky_light_level = uint16BitsToFloat16(uint16_t(gbuf_gba.y) & uint16_t(32767u));
 			float16_t ao = float16_t(1.0/8191.0) * float16_t(uint16_t(bitfieldExtract(gbuf_gba.y, 15, 13)));
 
@@ -304,8 +314,7 @@ void main() {
 
 				immut vec3 offset = vec3(index_offset) - pe;
 
-				f16vec3 diffuse = f16vec3(0.0);
-				f16vec3 specular = f16vec3(0.0);
+				f16vec3 reflected = f16vec3(0.0);
 
 				immut uint16_t index_len = uint16_t(subgroupBroadcastFirst(sh.index_len));
 				for (uint16_t i = uint16_t(0u); i < index_len; ++i) {
@@ -341,16 +350,16 @@ void main() {
 						#endif
 
 						sample_ll_block_light(
-							specular, diffuse,
+							reflected, color, rcp_color,
 							intensity, offset_intensity,
 							w_tex_normal, w_face_normal, n_pe,
-							roughness, ind_bl,
+							roughness, f0, is_metal, ind_bl,
 							w_rel_light, mhtn_dist, light_color, is_wide
 						);
 					}
 				}
 
-				block_light = mix_ll_block_light(block_light, chebyshev_dist, block_light_level, specular, diffuse, rcp_color);
+				block_light = mix_ll_block_light(block_light, chebyshev_dist, block_light_level, reflected);
 			} // else block_light = f16vec3(1.0); // DEBUG: `is_maybe_block_lit`
 
 			// DEBUG: Culling & LDS overflow.
@@ -367,11 +376,11 @@ void main() {
 					immut bvec2 active_lr = notEqual(hand_light_lr, u16vec2(0u));
 
 					if (active_lr.x) {
-						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color, rcp_color, ind_bl, is_hand);
 					}
 
 					if (active_lr.y) {
-						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness, w_tex_normal, w_face_normal, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color, rcp_color, ind_bl, is_hand);
 					}
 				}
 			#endif
@@ -385,7 +394,9 @@ void main() {
 				sample_shadow(
 					light,
 					chebyshev_dist, s_distortion,
-					sky_light_color, rcp_color, roughness,
+					sky_light_color,
+					color, rcp_color,
+					roughness, f0, is_metal,
 					face_n_dot_l, tex_n_dot_l, n_w_shadow_light,
 					w_face_normal, w_tex_normal, n_pe, pe
 				);

@@ -83,15 +83,17 @@ f16vec3 smooth_sample_sm(vec3 s_scrn) {
 void sample_shadow(
 	inout f16vec3 light,
 	float16_t chebyshev_dist, float s_distortion,
-	f16vec3 sky_light_color, f16vec3 rcp_color, float16_t roughness,
+	f16vec3 sky_light_color,
+	f16vec3 color, f16vec3 rcp_color,
+	float16_t roughness, float16_t f0, bool is_metal,
 	float16_t face_n_dot_l, float16_t tex_n_dot_l, f16vec3 n_w_shadow_light,
 	f16vec3 w_face_normal, f16vec3 w_tex_normal, f16vec3 n_pe, vec3 pe
 ) {
 	if (min(face_n_dot_l, tex_n_dot_l) > min_n_dot_l) {
 		const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
-		immut f16vec2 specular_diffuse = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_shadow_light, roughness);
+		immut f16vec3 reflected = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_shadow_light, roughness, f0, is_metal, color, rcp_color);
 
-		f16vec3 dir_sky_light = sky_light_color * fma(specular_diffuse.xxx, rcp_color, specular_diffuse.yyy);
+		f16vec3 dir_sky_light = sky_light_color * reflected;
 
 		if (chebyshev_dist < sm_dist) {
 			immut float16_t sine = sqrt(fma(face_n_dot_l, -face_n_dot_l, float16_t(1.0))); // Using the Pythagorean identity.
