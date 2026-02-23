@@ -30,7 +30,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #include "/lib/mmul.glsl"
 #include "/lib/view_size.glsl"
 #include "/lib/luminance.glsl"
-#include "/lib/octa_normal.glsl"
+#include "/lib/octa_enc.glsl"
 #include "/lib/skylight.glsl"
 #include "/lib/srgb.glsl"
 #include "/lib/brdf.glsl"

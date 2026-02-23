@@ -15,7 +15,7 @@ layout(location = 0) out vec4 colortex1;
 #endif
 
 #include "/lib/srgb.glsl"
-#include "/lib/octa_normal.glsl"
+#include "/lib/octa_enc.glsl"
 
 void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	immut vec3 color = linear(parameters.sampledColour.rgb * parameters.tinting.rgb);

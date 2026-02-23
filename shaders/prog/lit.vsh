@@ -14,9 +14,8 @@ out gl_PerVertex { vec4 gl_Position; };
 #include "/lib/mmul.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/srgb.glsl"
-#include "/lib/norm_uv2.glsl"
+#include "/lib/norm_light_level.glsl"
 #include "/lib/mv_inv.glsl"
-uniform mat4 modelViewMatrix, projectionMatrix, textureMatrix;
 
 // TODO: Handle these better:
 in vec2 mc_midTexCoord;
@@ -38,7 +37,7 @@ uniform sampler2D gtexture;
 
 #ifdef TERRAIN
 	uniform bool rebuildLLQ;
-	uniform vec3 cameraPosition, cameraPositionFract, chunkOffset;
+	uniform vec3 cameraPosition, cameraPositionFract;
 
 	in vec2 mc_Entity;
 	in vec4 at_midBlock;
@@ -54,38 +53,30 @@ uniform sampler2D gtexture;
 	uniform vec4 entityColor;
 #endif
 
-in vec2 vaUV0;
-in vec3 vaPosition;
-in vec4 vaColor;
-
 #ifndef NO_NORMAL
-	uniform mat3 normalMatrix;
-	in vec3 vaNormal;
 	in vec4 at_tangent;
 
-	#include "/lib/octa_normal.glsl"
+	#include "/lib/octa_enc.glsl"
 #endif
 
 out
 #include "/lib/v_data_lit.glsl"
 
 void main() {
-	vec3 model = vaPosition;
+	vec3 model = vec3(gl_Vertex);
 
 	#ifdef TERRAIN
-		model += chunkOffset;
-
 		#if defined TRANSLUCENT || (WAVES != 0 && defined SOLID_TERRAIN)
 			immut bool fluid = mc_Entity.y == 1.0;
 			if (fluid) { model.y += wave(model.xz); }
 		#endif
 	#endif
 
-	immut vec3 view = rot_trans_mmul(modelViewMatrix, model);
-	immut vec4 clip = proj_mmul(projectionMatrix, view);
+	immut vec3 view = rot_trans_mmul(mat4(gl_ModelViewMatrix), model);
+	immut vec4 clip = proj_mmul(mat4(gl_ProjectionMatrix), view);
 	gl_Position = clip;
 
-	v.coord = rot_trans_mmul(textureMatrix, vaUV0);
+	v.coord = rot_trans_mmul(mat4(gl_TextureMatrix[0]), vec2(gl_MultiTexCoord0));
 
 	immut vec3 pe = MV_INV * view;
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
@@ -94,8 +85,8 @@ void main() {
 	#ifdef NO_NORMAL
 		immut f16vec3 w_normal = f16vec3(mvInv2); // == MV_INV * vec3(0.0, 0.0, 1.0)
 	#else
-		immut mat3 normal_model_view_inverse = MV_INV * normalMatrix;
-		immut f16vec3 w_normal = f16vec3(normal_model_view_inverse * normalize(vaNormal));
+		immut mat3 normal_model_view_inverse = MV_INV * mat3(gl_NormalMatrix);
+		immut f16vec3 w_normal = f16vec3(normal_model_view_inverse * normalize(vec3(gl_Normal)));
 		immut f16vec3 w_tangent = f16vec3(normal_model_view_inverse * normalize(at_tangent.xyz));
 
 		v.snorm4x8_octa_tangent_normal = packSnorm4x8(f16vec4(octa_encode(w_tangent), octa_encode(w_normal)));
@@ -114,11 +105,12 @@ void main() {
 		);
 	#endif
 
-	f16vec3 color = f16vec3(vaColor.rgb);
+	f16vec4 color_alpha_or_ao = f16vec4(gl_Color);
 	#ifdef ENTITY_COLOR
-		color = mix(color, f16vec3(entityColor.rgb), float16_t(entityColor.a));
+		immut f16vec4 entity_color = f16vec4(entityColor);
+		color_alpha_or_ao.rgb = mix(color_alpha_or_ao.rgb, entity_color.rgb, entity_color.a);
 	#endif
-	immut f16vec3 avg_col = color * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
+	immut f16vec3 avg_col = color_alpha_or_ao.rgb * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
 	immut float16_t avg_luma = luminance(avg_col);
 	v.misc_packed = packFloat2x16(f16vec2(float16_t(0.0), avg_luma));
 
@@ -132,8 +124,8 @@ void main() {
 	#ifdef TERRAIN
 		// The actual lowest AO level seems to be a bit above, around `0.19607`. This feels safer if precision changes. We saturate too for safety.
 		const float min_vanilla_ao = 0.1875;
-		v.ao = saturate(fma(float16_t(vaColor.a), float16_t(1.0 / (1.0 - min_vanilla_ao)), float16_t(-min_vanilla_ao))); // Scale AO range to full [0, 1].
-		v.tint = vec3(color);
+		v.ao = saturate(fma(color_alpha_or_ao.a, float16_t(1.0 / (1.0 - min_vanilla_ao)), float16_t(-min_vanilla_ao))); // Scale AO range to full [0, 1].
+		v.tint = vec3(color_alpha_or_ao.rgb);
 
 		immut float16_t emission = max(float16_t(mc_Entity.x), float16_t(at_midBlock.w));
 		v.misc_packed |= uint(emission + float16_t(0.5));
@@ -155,8 +147,8 @@ void main() {
 			}
 		#endif
 
-		// Only rebuild the index once every LL_RATE frames, and cull chunks which are completely outside LL_DIST in Chebyshev distance in uniform control flow.
-		if (rebuildLLQ && max3(chunkOffset.x, chunkOffset.y, chunkOffset.z) < float(LL_DIST + 16)) {
+		// Only rebuild the index once every LL_RATE frames.
+		if (rebuildLLQ) {
 			immut f16vec3 view_f16 = f16vec3(view);
 
 			#if !(WAVES != 0 && defined SOLID_TERRAIN)
@@ -192,10 +184,10 @@ void main() {
 		}
 	#else
 		#ifdef TRANSLUCENT
-			immut float16_t alpha = float16_t(vaColor.a);
+			immut float16_t alpha = color_alpha_or_ao.a;
 		#endif
 
-		v.unorm4x8_tint_zero = packUnorm4x8(f16vec4(color, 0.0));
+		v.unorm4x8_tint_zero = packUnorm4x8(f16vec4(color_alpha_or_ao.rgb, 0.0));
 
 		#ifdef HAND
 			immut bool is_right = view.x > 0.0;
@@ -207,7 +199,7 @@ void main() {
 				if (this_hand_light != uint16_t(0u) && abs(view.x) > 0.3) { // Use a margin around the center to not register e.g. a swinging sword as being on the opposite side.
 					// Scale and round to fit packing.
 					immut u16vec3 scaled_color = u16vec3(fma(
-						linear(color * f16vec3(textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb)),
+						linear(color_alpha_or_ao.rgb * f16vec3(textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb)),
 						f16vec3(hand_light_pack_scale),
 						f16vec3(0.5)
 					));
@@ -252,9 +244,9 @@ void main() {
 	#endif
 
 	#ifdef TERRAIN
-		v.light = vec2(norm_uv2());
+		v.light = vec2(norm_light_level());
 	#else
-		v.float2x16_light = packFloat2x16(norm_uv2());
+		v.float2x16_light = packFloat2x16(norm_light_level());
 	#endif
 
 	#ifndef NETHER

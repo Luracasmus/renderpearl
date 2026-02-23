@@ -31,10 +31,8 @@
 uniform mat4 gbufferProjectionInverse;
 uniform sampler2D gtexture;
 
-#ifdef NO_NORMAL
-	uniform mat3 normalMatrix;
-#else
-	#include "/lib/octa_normal.glsl"
+#ifndef NO_NORMAL
+	#include "/lib/octa_enc.glsl"
 #endif
 
 #ifdef LIGHT_LEVELS

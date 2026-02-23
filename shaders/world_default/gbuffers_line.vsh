@@ -1,4 +1,4 @@
-#include "/prelude/core.glsl"
+#include "/prelude/core_profile_core.glsl"
 
 uniform vec3 chunkOffset;
 uniform mat4 modelViewMatrix, projectionMatrix;
@@ -16,14 +16,16 @@ out VertexData {
 #include "/lib/un11_11_10.glsl"
 
 void main() {
-	immut vec4 color = vaColor;
+	immut vec4 color = vec4(vaColor);
 	v.tint = packUnorm4x8(vec4(linear(color.rgb), saturate(2.0 * color.a)));
 
-	immut vec3 model = vaPosition + chunkOffset;
+	immut vec3 model = vec3(vaPosition) + vec3(chunkOffset);
 
 	const float view_shrink = 1.0 - (1.0 / 256.0);
-	immut vec4 start_clip = proj_mmul(projectionMatrix, view_shrink * rot_trans_mmul(modelViewMatrix, model));
-	immut vec4 end_clip = proj_mmul(projectionMatrix, view_shrink * rot_trans_mmul(modelViewMatrix, model + vaNormal));
+	immut mat4 model_view_mat = mat4(modelViewMatrix);
+	immut mat4 projection_mat = mat4(projectionMatrix);
+	immut vec4 start_clip = proj_mmul(projection_mat, view_shrink * rot_trans_mmul(model_view_mat, model));
+	immut vec4 end_clip = proj_mmul(projection_mat, view_shrink * rot_trans_mmul(model_view_mat, model + vec3(vaNormal)));
 
 	vec3 start_ndc = start_clip.xyz / start_clip.w;
 	immut vec3 end_ndc = end_clip.xyz / end_clip.w;

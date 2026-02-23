@@ -1,4 +1,4 @@
-#include "/prelude/core_compatibility.glsl"
+#include "/prelude/core.glsl"
 
 /* RENDERTARGETS: 0 */
 layout(depth_unchanged) out float gl_FragDepth;

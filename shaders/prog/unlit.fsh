@@ -1,4 +1,8 @@
-#include "/prelude/core.glsl"
+#ifdef CORE_PROFILE
+	#include "/prelude/core_profile_core.glsl"
+#else
+	#include "/prelude/core.glsl"
+#endif
 
 #ifdef NO_COLORTEX2_WRITE
 	/* RENDERTARGETS: 1 */

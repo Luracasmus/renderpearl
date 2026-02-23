@@ -1,4 +1,4 @@
-#include "/prelude/core_compatibility.glsl"
+#include "/prelude/core.glsl"
 
 /* RENDERTARGETS: 1,2 */
 #ifdef NETHER
@@ -13,7 +13,7 @@ layout(depth_unchanged) out float gl_FragDepth;
 #include "/lib/luminance.glsl"
 
 #if DIR_SHADING != 0
-	#include "/lib/octa_normal.glsl"
+	#include "/lib/octa_enc.glsl"
 	#include "/lib/material/ao.glsl"
 #endif
 

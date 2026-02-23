@@ -1,11 +1,11 @@
-#include "/prelude/core_compatibility.glsl"
+#include "/prelude/core.glsl"
 
 out gl_PerVertex { vec4 gl_Position; };
 
 #include "/lib/mv_inv.glsl"
 #include "/lib/mmul.glsl"
 #include "/lib/srgb.glsl"
-#include "/lib/octa_normal.glsl"
+#include "/lib/octa_enc.glsl"
 
 #ifndef NETHER
 	uniform mat4 shadowModelView;

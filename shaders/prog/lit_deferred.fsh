@@ -22,7 +22,7 @@ uniform sampler2D gtexture;
 	#include "/lib/mv_inv.glsl"
 #endif
 
-#include "/lib/octa_normal.glsl"
+#include "/lib/octa_enc.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/material/specular.glsl"
 #include "/lib/material/ao.glsl"

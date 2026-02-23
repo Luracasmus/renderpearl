@@ -1,4 +1,4 @@
-#include "/prelude/core_compatibility.glsl"
+#include "/prelude/core.glsl"
 
 /* RENDERTARGETS: 1 */
 layout(location = 0) out f16vec4 colortex1;
@@ -10,7 +10,7 @@ uniform int dhRenderDistance;
 
 #include "/lib/mmul.glsl"
 #include "/lib/mv_inv.glsl"
-#include "/lib/octa_normal.glsl"
+#include "/lib/octa_enc.glsl"
 
 #ifdef LIGHT_LEVELS
 	#include "/lib/llv.glsl"
