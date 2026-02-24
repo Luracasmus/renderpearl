@@ -2,7 +2,7 @@
 f16vec2 norm_light_level() {
 	immut f16vec2 lm_raw_coord = f16vec2(gl_MultiTexCoord1);
 
-	#if defined TERRAIN && MC_VERSION >= 12110 && MC_VERSION <= 12111
+	#if defined TERRAIN && MC_VERSION >= 12110 && IRIS_VERSION < 11006
 		// `gl_TextureMatrix[1]` is broken here.
 		// [8, 248] -> [0, 1]
 		immut f16vec2 scale = f16vec2(1.0/240.0);
