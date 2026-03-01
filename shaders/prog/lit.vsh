@@ -163,7 +163,7 @@ void main() {
 			// Add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
 			immut float16_t offset_intensity = emission + float16_t(0.5);
 
-			// Distance between light and closest point on bounding box.
+			// Distance between light and closest point in frustum.
 			// In world-aligned space (player-eye) we can use Manhattan distance.
 			immut float16_t light_mhtn_dist_from_bb = dot(abs(f16_pe - clamped_pe), f16vec3(1.0));
 
@@ -174,7 +174,7 @@ void main() {
 				emission >= float16_t(MIN_LL_INTENSITY) &&
 				// Cull vertices outside LL_DIST using Chebyshev distance.
 				chebyshev_dist < float16_t(LL_DIST) &&
-				// Cull light too far outside frustum, using the same method as in per-work group culling when sampling.
+				// Cull lights too far outside frustum, using the same method as in per-work group culling when sampling.
 				light_mhtn_dist_from_bb <= offset_intensity
 			) {
 				immut uvec3 seed = uvec3(ivec3((0.5 + cameraPosition) + pe));
