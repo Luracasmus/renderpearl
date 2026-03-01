@@ -38,9 +38,9 @@ void main() {
 		{
 			uint data = v.float2x16_light >> 16u; // The sign bit (#15) is always zero.
 
-			const float16_t ao = float16_t(1.0);
+			const float ao = 1.0;
 			data = bitfieldInsert(
-				data, uint(fma(ao, float16_t(8191.0), float16_t(0.5))),
+				data, uint(fma(ao, float(8191.0), float(0.5))),
 				15, 13
 			);
 

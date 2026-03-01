@@ -42,7 +42,6 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		uint data = packHalf2x16(vec2(block_sky_light.y, 0.0)); // The sign bit (#15) is always zero.
 
 		const float ao = 1.0;
-
 		data = bitfieldInsert(
 			data, uint(fma(ao, 8191.0, 0.5)),
 			15, 13

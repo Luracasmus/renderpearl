@@ -140,7 +140,7 @@ void main() {
 		ao *= gen_tex_ao(srgb_luma, avg_srgb_luma); // TODO: LabPBR AO support.
 
 		data = bitfieldInsert(
-			data, uint(fma(ao, float16_t(8191.0), float16_t(0.5))),
+			data, uint(fma(float(ao), float(8191.0), float(0.5))),
 			15, 13
 		);
 
@@ -161,7 +161,7 @@ void main() {
 	{
 		immut bool is_metal = uint8_t(v.misc_packed >> 31u) == uint8_t(1u); // TODO: LabPBR.
 		// const float16_t f0 = float16_t(0.04); // TODO: Uncomment and use when f0 isn't constant.
-		immut float16_t f0_enum = is_metal ? float16_t(231.0 / 255.0) : 0.0;
+		immut float16_t f0_enum = is_metal ? float16_t(231.0 / 255.0) : float16_t(0.0);
 
 		const float16_t sss = float16_t(0.0); // TODO: LabPBR SSS map support.
 

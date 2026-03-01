@@ -287,7 +287,7 @@ void main() {
 			const float16_t f0 = float16_t(0.04); // TODO: Uncomment above when f0 isn't constant.
 
 			immut float16_t sky_light_level = uint16BitsToFloat16(uint16_t(gbuf_gba.y) & uint16_t(32767u));
-			float16_t ao = float16_t(1.0/8191.0) * float16_t(uint16_t(bitfieldExtract(gbuf_gba.y, 15, 13)));
+			float16_t ao = float16_t(float(1.0/8191.0) * float(uint16_t(bitfieldExtract(gbuf_gba.y, 15, 13))));
 
 			immut f16vec4 octa_normal = f16vec4(unpackSnorm4x8(gbuf_gba.z));
 			immut f16vec3 w_tex_normal = normalize(octa_decode(octa_normal.xy));
