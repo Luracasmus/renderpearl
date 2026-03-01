@@ -15,8 +15,9 @@ out gl_PerVertex { vec4 gl_Position; };
 
 #include "/lib/push_to_llq.glsl"
 
-uniform bool rebuildLLQ;
+uniform bool LLCollect;
 uniform vec3 cameraPosition, cameraPositionFract;
+uniform mat4 dhProjectionInverse;
 
 out
 #include "/lib/v_data_dh.glsl"
@@ -38,8 +39,8 @@ void main() {
 	immut uint packed_w_normal = packSnorm4x8(f16vec4(octa_encode(w_normal), f16vec2(0.0)));
 
 	immut bool lava = dhMaterialId == DH_BLOCK_LAVA;
-	immut bool emission = (lava || (dhMaterialId == DH_BLOCK_ILLUMINATED));
-	v.snorm2x8_bool1_zero15_normal_emission = bitfieldInsert(packed_w_normal, uint(emission), 16, 1);
+	immut bool is_emissive = (lava || (dhMaterialId == DH_BLOCK_ILLUMINATED));
+	v.snorm2x8_bool1_zero15_normal_emission = bitfieldInsert(packed_w_normal, uint(is_emissive), 16, 1);
 
 	#ifdef TRANSLUCENT
 		f16vec4 color = f16vec4(gl_Color);
@@ -53,34 +54,35 @@ void main() {
 		v.unorm4x8_color = packUnorm4x8(f16vec4(color, 0.0));
 	#endif
 
-	// Only rebuild the index once every LL_RATE frames.
-	if (rebuildLLQ) {
-		immut f16vec3 view_f16 = f16vec3(view);
+	// See regular terrain implementation for comments.
+	if (LLCollect) {
+		immut f16vec3 clamped_pe = f16vec3(MV_INV * proj_inv(dhProjectionInverse,
+			clamp(clip.xyz / clip.w,
+			vec3(-1.0, -1.0, 0.0),
+			vec3(1.0, 1.0, 1.0))
+		));
+
+		const uint intensity = 15u;
+		const float16_t offset_intensity = float16_t(float(intensity) + 0.5);
+		immut float16_t light_mhtn_dist_from_bb = dot(abs(f16_pe - clamped_pe), f16vec3(1.0));
 
 		if (
-			// Run once per face.
-			(gl_VertexID & 3) == 1 && // gl_VertexID % 4 == 1
-			// Cull too weak or non-lights.
-			emission &&
-			// Cull vertices outside LL_DIST using Chebyshev distance.
+			(gl_VertexID & 3) == 1 &&
+			is_emissive &&
 			chebyshev_dist < float16_t(LL_DIST) &&
-			// Cull behind camera outside of illumination range.
-			(view_f16.z < float16_t(0.0) || dot(abs_pe, f16vec3(1.0)) <= float16_t(15.0))
+			light_mhtn_dist_from_bb <= offset_intensity
 		) {
 			immut uvec3 seed = uvec3(ivec3((0.5 + cameraPosition) + pe));
 
-			// LOD culling
-			// Increase times two each LOD.
-			// The fact that the values resulting from higher LODs are divisible by the lower ones means that no lights will appear only further away.
 			if (uint8_t(pcg(seed.x + pcg(seed.y + pcg(seed.z)))) % (uint8_t(1u) << uint8_t(min(float16_t(7.0), fma(
-				(lava ? float16_t(LAVA_LOD_BIAS) : float16_t(0.0)) + length(view_f16) / float16_t(LL_DIST),
+				length(clamped_pe) / float16_t(LL_DIST),
 				float16_t(LOD_FALLOFF),
 				float16_t(0.5)
 			)))) == uint8_t(0u)) {
 				immut f16vec3 pf = f16_pe + f16vec3(mvInv3);
 				immut uvec3 offset_floor_pf = clamp(uvec3(fma(w_normal.xyz, f16vec3(-0.5), float16_t(256.25) + f16vec3(cameraPositionFract) + pf)), 0u, 511u); // Offset by half the negative normal and add (arbitrary) 0.25 to make sure we're not exactly between two blocks.
 
-				push_to_llq(offset_floor_pf, color.rgb, 15u, lava);
+				push_to_llq(offset_floor_pf, color.rgb, intensity, true);
 			}
 		}
 	}

@@ -16,7 +16,7 @@ fn main() {
             "	bufferObject.1={}",
             4 * (4 + (capacity + capacity.div_ceil(2)))
         );
-        println!("	bufferObject.2={}", 4 * (1 + (capacity * 2))); // TODO: Account for 16-bit colors in llq.
+        println!("	bufferObject.2={}", 4 * (4 + (capacity * 2))); // TODO: Account for 16-bit colors in llq.
 
         elif = "elif";
     }

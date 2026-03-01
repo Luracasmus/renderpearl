@@ -85,6 +85,7 @@ in
 	readonly
 	#include "/buf/ll.glsl"
 	uniform vec3 cameraPositionFract;
+	uniform ivec3 cameraPositionInt;
 #endif
 
 #ifndef NO_NORMAL
@@ -245,11 +246,11 @@ void main() {
 			immut f16vec3 chunk_view_min = f16vec3(subgroupMin(lit_min_view));
 			immut f16vec3 chunk_view_max = f16vec3(subgroupMax(lit_max_view));
 
-			immut f16vec3 ll_offset = f16vec3(vec3(-255.5) + subgroupBroadcastFirst(ll.offset) - cameraPositionFract - mvInv3);
+			immut vec3 ll_origin_offset = vec3(subgroupBroadcastFirst(ll.origin) - cameraPositionInt);
+			immut f16vec3 ll_offset = f16vec3(vec3(-255.5) + ll_origin_offset - cameraPositionFract - mvInv3);
 			immut uint16_t global_len = uint16_t(subgroupBroadcastFirst(ll.len));
 
 			immut uvec4 chunk_ballot = subgroupBallot(true);
-			// const uint16_t sg_size = uint16_t(gl_SubgroupSize);
 			immut uint16_t chunk_invs = uint16_t(subgroupBallotBitCount(chunk_ballot));
 			immut uint16_t chunk_inv_id = uint16_t(gl_SubgroupInvocationID) - uint16_t(subgroupBallotFindLSB(chunk_ballot));
 

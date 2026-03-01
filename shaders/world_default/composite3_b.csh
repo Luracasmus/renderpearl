@@ -14,10 +14,10 @@
 
 const ivec3 workGroups = ivec3(1, 1, 1);
 
-uniform bool rebuildLL;
-uniform vec3 cameraPositionFract, invCameraPositionDeltaInt;
+uniform bool LLDedup, LLSort;
+uniform vec3 cameraPositionFract;
+uniform ivec3 previousCameraPositionInt, cameraPositionInt;
 
-coherent
 #include "/buf/llq.glsl"
 
 #ifndef INT16
@@ -40,8 +40,11 @@ void main() {
 	immut bool is_first_invoc = local_invocation_i == uint16_t(0u);
 	const uint16_t wg_size = uint16_t(gl_WorkGroupSize.x);
 
-	if (rebuildLL) {
-		if (is_first_invoc) { sh.culled_len = 0u; }
+	if (LLDedup) { // Deduplicate the light list queue.
+		if (is_first_invoc) {
+			sh.culled_len = 0u;
+			llq.origin = previousCameraPositionInt;
+		}
 
 		// if (llq.len > ll.data.length()) { llq.len = uint16_t(0u); return; }
 
@@ -77,7 +80,6 @@ void main() {
 				}
 			}
 
-			// Copy shared list to global.
 			if (unique) {
 				#define SG_INCR_COUNTER sh.culled_len
 				uint sg_incr_i;
@@ -89,45 +91,61 @@ void main() {
 		}
 
 		barrier();
-		groupMemoryBarrier(); // Requires 'coherent' SSBOs.
 
-		// Copy back global list to shared.
-		immut uint16_t culled_len = uint16_t(subgroupBroadcastFirst(sh.culled_len));
-		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {
+		if (is_first_invoc) {
+			llq.len = sh.culled_len;
+		}
+	} else if (LLSort) { // Copy the light list queue sorted into the light list, and clear the queue.
+		immut uint16_t len = uint16_t(subgroupBroadcastFirst(llq.len));
+		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
 			sh.index_data[i] = llq.data[i];
 			sh.index_color[i] = llq.color[i];
 
 			#ifndef INT16
-				if (i < culled_len / 2u) {
-					ll.color[i] = 0u;
+				if (i < len / 2u) {
+					ll.color[i] = 0u; // Clear the slot in the light list that we will be adding to later.
 				}
 			#endif
 		}
 
 		barrier();
-		groupMemoryBarrier(); // Requires 'coherent' SSBOs.
+		#ifndef INT16
+			groupMemoryBarrier(); // Requires 'coherent' SSBO.
+		#endif
 
-		immut vec3 ll_offset = -255.5 - cameraPositionFract - mvInv3;
+		immut ivec3 ll_origin = subgroupBroadcastFirst(llq.origin);
 
-		// Copy shared list into global, with lights enumeration sorted from left to right in view space to improve locality when sampling.
+		if (is_first_invoc) {
+			llq.len = 0u;
+			ll.len = len;
+			ll.origin = ll_origin;
+		}
+
+		immut f16vec3 ll_origin_offset = f16vec3(ll_origin - cameraPositionInt);
+		immut f16vec3 ll_offset = ll_origin_offset - f16vec3(255.5 - cameraPositionFract - mvInv3);
+
+		immut f16vec3 mv_inv_0 = f16vec3(mvInv0);
+
+		// Copy shared list into global, with lights enumeration sorted from left to right in view space to improve locality when sampling (especially important in forward).
 		// TODO: We might want to do something on the Y axis too.
-		for (uint16_t i = local_invocation_i; i < culled_len; i += wg_size) {
+		// TODO: This seems very expensive right now with not enough benefit.
+		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
 			uint16_t k = uint16_t(0u);
 
 			immut uint data = sh.index_data[i];
-			immut float view_x = ((vec3(
+			immut float16_t view_x = dot(f16vec3(
 				data & 511u,
 				bitfieldExtract(data, 9, 9),
 				bitfieldExtract(data, 18, 9)
-			) + ll_offset) * MV_INV).x;
+			) + ll_offset, mv_inv_0); // Dot with first `MV_INV` column to get `(transpose(MV_INV) * <vec>).x`.
 
-			for (uint16_t j = uint16_t(0u); j < culled_len; ++j) if (j != i) {
+			for (uint16_t j = uint16_t(0u); j < len; ++j) if (j != i) {
 				immut uint other_data = sh.index_data[j];
-				immut float other_view_x = ((vec3(
+				immut float16_t other_view_x = dot(f16vec3(
 					other_data & 511u,
 					bitfieldExtract(other_data, 9, 9),
 					bitfieldExtract(other_data, 18, 9)
-				) + ll_offset) * MV_INV).x; // TODO: Optimize
+				) + ll_offset, mv_inv_0);
 
 				if (other_view_x < view_x || (other_view_x == view_x && i < j)) { ++k; }
 			}
@@ -142,11 +160,5 @@ void main() {
 				atomicOr(ll.color[k/2], color << (16u * (k & 1u)));
 			#endif
 		}
-
-		if (is_first_invoc) {
-			llq.len = 0u;
-			ll.offset = invCameraPositionDeltaInt;
-			ll.len = culled_len;
-		}
-	} else if (is_first_invoc) { ll.offset += invCameraPositionDeltaInt; }
+	}
 }

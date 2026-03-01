@@ -19,6 +19,7 @@ out gl_PerVertex { vec4 gl_Position; };
 
 // TODO: Handle these better:
 in vec2 mc_midTexCoord;
+uniform mat4 gbufferProjectionInverse;
 uniform sampler2D gtexture;
 
 #ifndef NETHER
@@ -36,7 +37,7 @@ uniform sampler2D gtexture;
 #endif
 
 #ifdef TERRAIN
-	uniform bool rebuildLLQ;
+	uniform bool LLCollect;
 	uniform vec3 cameraPosition, cameraPositionFract;
 
 	in vec2 mc_Entity;
@@ -79,7 +80,8 @@ void main() {
 	v.coord = rot_trans_mmul(mat4(gl_TextureMatrix[0]), vec2(gl_MultiTexCoord0));
 
 	immut vec3 pe = MV_INV * view;
-	immut f16vec3 abs_pe = abs(f16vec3(pe));
+	immut f16vec3 f16_pe = f16vec3(pe);
+	immut f16vec3 abs_pe = abs(f16_pe);
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
 	#ifdef NO_NORMAL
@@ -147,13 +149,23 @@ void main() {
 			}
 		#endif
 
-		// Only rebuild the index once every LL_RATE frames.
-		if (rebuildLLQ) {
-			immut f16vec3 view_f16 = f16vec3(view);
+		if (LLCollect) {
+			immut f16vec3 clamped_pe = f16vec3(MV_INV * proj_inv(gbufferProjectionInverse,
+				clamp(clip.xyz / clip.w,
+				vec3(-1.0, -1.0, 0.0),
+				vec3(1.0, 1.0, 1.0))
+			)); // Player eye position clamped to frustum.
 
 			#if !(WAVES != 0 && defined SOLID_TERRAIN)
 				immut bool fluid = mc_Entity.y == 1.0;
 			#endif
+
+			// Add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
+			immut float16_t offset_intensity = emission + float16_t(0.5);
+
+			// Distance between light and closest point on bounding box.
+			// In world-aligned space (player-eye) we can use Manhattan distance.
+			immut float16_t light_mhtn_dist_from_bb = dot(abs(f16_pe - clamped_pe), f16vec3(1.0));
 
 			if (
 				// Run once per face.
@@ -162,8 +174,8 @@ void main() {
 				emission >= float16_t(MIN_LL_INTENSITY) &&
 				// Cull vertices outside LL_DIST using Chebyshev distance.
 				chebyshev_dist < float16_t(LL_DIST) &&
-				// Cull behind camera outside of illumination range.
-				(view_f16.z < float16_t(0.0) || dot(abs_pe, f16vec3(1.0)) <= emission)
+				// Cull light too far outside frustum, using the same method as in per-work group culling when sampling.
+				light_mhtn_dist_from_bb <= offset_intensity
 			) {
 				immut uvec3 seed = uvec3(ivec3((0.5 + cameraPosition) + pe));
 
@@ -171,7 +183,7 @@ void main() {
 				// Increase times two each LOD.
 				// The fact that the values resulting from higher LODs are divisible by the lower ones means that no lights will appear only further away.
 				if (uint8_t(pcg(seed.x + pcg(seed.y + pcg(seed.z)))) % (uint8_t(1u) << uint8_t(min(float16_t(7.0), fma(
-					(fluid ? float16_t(LAVA_LOD_BIAS) : float16_t(0.0)) + length(view_f16) / float16_t(LL_DIST),
+					(fluid ? float16_t(LAVA_LOD_BIAS) : float16_t(0.0)) + length(clamped_pe) / float16_t(LL_DIST),
 					float16_t(LOD_FALLOFF),
 					float16_t(0.5)
 				)))) == uint8_t(0u)) {

@@ -10,6 +10,7 @@ readonly
 
 #include "/lib/mv_inv.glsl"
 uniform vec3 cameraPositionFract;
+uniform ivec3 cameraPositionInt;
 uniform mat4 gbufferProjectionInverse;
 uniform sampler2D depthtex0;
 uniform usampler2D colortex2;
@@ -66,7 +67,7 @@ shared struct {
 	ivec3 bb_pe_min;
 	ivec3 bb_pe_max;
 	ivec3 bb_view_min;
-	uint index_len;
+	uint ll_len;
 	ivec3 bb_view_max;
 	uint[local_index_size] ll_data;
 	uint16_t[local_index_size] ll_color;
@@ -88,7 +89,7 @@ void main() {
 	// TODO: Look into skipping light list stuff if the entire work group is unlit.
 
 	if (gl_LocalInvocationIndex == 0u) {
-		sh.index_len = 0u;
+		sh.ll_len = 0u;
 
 		const ivec3 i32_max = ivec3(0x7fffffff);
 		const ivec3 i32_min = ivec3(0x80000000);
@@ -205,7 +206,8 @@ void main() {
 	// Make sure this tile isn't fully unlit, out of range or sky by checking if the player-eye bounding box has non-negative dimensions.
 	// This branch must be taken the same way by the whole work group for the barrier within to be safe.
 	if (all(greaterThanEqual(bb_pe_max, bb_pe_min))) {
-		index_offset += subgroupBroadcastFirst(ll.offset) - cameraPositionFract - mvInv3;
+		immut vec3 ll_origin_offset = vec3(subgroupBroadcastFirst(ll.origin) - cameraPositionInt);
+		index_offset += ll_origin_offset - cameraPositionFract - mvInv3;
 
 		immut f16vec3 bb_view_min = f16vec3(subgroupBroadcastFirst(sh.bb_view_min));
 		immut f16vec3 bb_view_max = f16vec3(subgroupBroadcastFirst(sh.bb_view_max));
@@ -226,13 +228,13 @@ void main() {
 			// Distance between light and closest point on bounding box.
 			// In world-aligned space (player-eye) we can use Manhattan distance.
 			immut float16_t light_mhtn_dist_from_bb = dot(abs(pe_light - clamp(pe_light, bb_pe_min, bb_pe_max)), f16vec3(1.0));
-			immut bool pe_visible = light_mhtn_dist_from_bb <= offset_intensity; // not sure why this +1 is needed here
+			immut bool pe_visible = light_mhtn_dist_from_bb <= offset_intensity;
 
 			immut f16vec3 v_light = f16vec3(pe_light * MV_INV);
 			immut bool view_visible = distance(v_light, clamp(v_light, bb_view_min, bb_view_max)) <= offset_intensity;
 
 			if (pe_visible && view_visible) {
-				#define SG_INCR_COUNTER sh.index_len
+				#define SG_INCR_COUNTER sh.ll_len
 				uint sg_incr_i;
 				#include "/lib/sg_incr.glsl"
 
@@ -316,8 +318,8 @@ void main() {
 
 				f16vec3 reflected = f16vec3(0.0);
 
-				immut uint16_t index_len = uint16_t(subgroupBroadcastFirst(sh.index_len));
-				for (uint16_t i = uint16_t(0u); i < index_len; ++i) {
+				immut uint16_t ll_len = uint16_t(subgroupBroadcastFirst(sh.ll_len));
+				for (uint16_t i = uint16_t(0u); i < ll_len; ++i) {
 					immut uint light_data = subgroupBroadcastFirst(sh.ll_data[i]);
 
 					immut f16vec3 w_rel_light = f16vec3(vec3(
@@ -363,7 +365,7 @@ void main() {
 			} // else block_light = f16vec3(1.0); // DEBUG: `is_maybe_block_lit`
 
 			// DEBUG: Culling & LDS overflow.
-			// block_light.gb += f16vec2(sh.index_len < ll.len, sh.index_len == 0);
+			// block_light.gb += f16vec2(sh.ll_len < ll.len, sh.index_len == 0);
 			// block_light.rgb += distance(max(float16_t(sh.bb_view_min), float16_t(0.0)), max(float16_t(sh.bb_view_max), float16_t(0.0))) * float16_t(0.01);
 			// if (sh.index_len > local_index_size) block_light *= 10;
 

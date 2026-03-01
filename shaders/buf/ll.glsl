@@ -1,5 +1,5 @@
 layout(std430, binding = 1) restrict buffer lightList {
-	vec3 offset;
+	ivec3 origin;
 	uint16_t len;
 
 	uint[LL_CAPACITY] data; // This capacity could maybe be lowered.
