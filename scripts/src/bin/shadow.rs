@@ -1,5 +1,3 @@
-/// https://play.rust-lang.org/
-///
 /// Used in `shaders/prelude/directive.glsl`.
 fn main() {
     const REN_MUL: f64 = 0.85; // `shadowDistanceRenderMul`

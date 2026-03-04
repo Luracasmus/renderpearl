@@ -1,5 +1,3 @@
-/// https://play.rust-lang.org/
-///
 /// Used in `shaders/shaders.properties`.
 fn main() {
     const CAPACITIES: [u32; 19] = [
