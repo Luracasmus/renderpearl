@@ -103,6 +103,6 @@ f16vec3 brdf(
 
 	return n_dot_l * (
 		fd_burley(roughness, n_dot_v, float16_t(n_dot_l), l_dot_h) +
-		specular * (float16_t(1.0) + (f0 / env_brdf_approx_ab_x(roughness, n_dot_v) - f0)) * rcp_color
+		specular * (float16_t(1.0) + (f0 / env_brdf_approx_ab_x(roughness, n_dot_v) - f0)) * rcp_color // TODO: Is this correct for metals?
 	);
 }
