@@ -441,7 +441,7 @@ void main() {
 
 			immut float16_t render_dist = float16_t(
 				#ifdef VOXY
-					vxRenderDistance
+					float16_t(16.0) * float16_t(vxRenderDistance)
 				#elif defined DISTANT_HORIZONS
 					dhRenderDistance
 				#else
