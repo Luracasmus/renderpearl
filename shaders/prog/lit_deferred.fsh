@@ -140,7 +140,7 @@ void main() {
 		ao *= gen_tex_ao(srgb_luma, avg_srgb_luma); // TODO: LabPBR AO support.
 
 		data = bitfieldInsert(
-			data, uint(fma(float(ao), float(8191.0), float(0.5))),
+			data, uint(fma(float(ao), 8191.0, 0.5)),
 			15, 13
 		);
 

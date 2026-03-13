@@ -14,7 +14,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #endif
 
 #if defined COMPASS || (VL != 0 && !defined NETHER)
-	#include "/lib/view_size.glsl"
+	uniform int packedView;
 #endif
 
 #include "/lib/tonemap.glsl"
@@ -102,7 +102,7 @@ void main() {
 
 	#if VL != 0 && !defined NETHER
 		immut float depth = texelFetch(depthtex0, texel, 0).r;
-		immut vec2 texel_size = 1.0 / vec2(view_size());
+		immut vec2 texel_size = 1.0 / vec2(unpackUint2x16(uint(packedView)));
 		immut bool is_geo = depth < 1.0;
 
 		immut uvec2 nbh_pos = gl_LocalInvocationID.xy + 1u;
@@ -168,7 +168,7 @@ void main() {
 	#endif
 
 	/*
-		vec2 coord = fma(vec2(texel), 2.0 / vec2(view_size()), vec2(-1.0));
+		vec2 coord = fma(vec2(texel), 2.0 / vec2(unpackUint2x16(uint(packedView))), vec2(-1.0));
 
 		const float markiplier = 0.1;
 
@@ -177,7 +177,7 @@ void main() {
 		coord *= fma(max(abs_coord.x, abs_coord.y), markiplier, 1.0 - markiplier);
 
 		coord = fma(mix(coord, mod(fma(coord, vec2(0.5), vec2(0.5)), 0.25), 0.5), vec2(0.5), vec2(0.5));
-		i16vec2 distorted_texel = i16vec2(fma(coord, vec2(view_size()), vec2(0.5)));
+		i16vec2 distorted_texel = i16vec2(fma(coord, vec2(unpackUint2x16(uint(packedView))), vec2(0.5)));
 	*/
 
 	#if RED_MUL != 100 || GREEN_MUL != 100 || BLUE_MUL != 100

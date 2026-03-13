@@ -87,7 +87,7 @@ void sample_shadow(
 	f16vec3 color, f16vec3 rcp_color,
 	float16_t roughness, float16_t f0, bool is_metal,
 	float16_t face_n_dot_l, float16_t tex_n_dot_l, f16vec3 n_w_shadow_light,
-	f16vec3 w_face_normal, f16vec3 w_tex_normal, f16vec3 n_pe, vec3 pe
+	f16vec3 w_face_normal, f16vec3 w_tex_normal, f16vec3 n_pe, vec3 pe, vec3 mv_inv_trans
 ) {
 	if (min(face_n_dot_l, tex_n_dot_l) > min_n_dot_l) {
 		const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
@@ -104,7 +104,7 @@ void sample_shadow(
 			*/
 			//                               (-0.3, 32.0) // Seems to also work and gives slightly different results. Remember to uncomment the depth bias application when using that.
 			immut f16vec2 bias = f16vec2(vec2(-0.0, 64.0) / shadowMapResolution) * f16vec2(sine, min(float16_t(2.0), tangent)); // (normal_bias, slope_scaled_bias)
-			vec3 s_ndc = shadow_proj_scale.xxy * rot_trans_mmul(shadowModelView, pe + mvInv3 + vec3(bias.y * w_face_normal));
+			vec3 s_ndc = shadow_proj_scale.xxy * rot_trans_mmul(shadowModelView, pe + mv_inv_trans + vec3(bias.y * w_face_normal));
 			s_ndc.xy *= s_distortion;
 			// s_ndc.z += float(bias.x);
 

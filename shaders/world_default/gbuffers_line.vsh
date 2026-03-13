@@ -1,5 +1,6 @@
 #include "/prelude/core_profile_core.glsl"
 
+uniform int packedView;
 uniform vec3 chunkOffset;
 uniform mat4 modelViewMatrix, projectionMatrix;
 
@@ -11,7 +12,6 @@ out VertexData {
 } v;
 
 #include "/lib/mmul.glsl"
-#include "/lib/view_size.glsl"
 #include "/lib/srgb.glsl"
 #include "/lib/un11_11_10.glsl"
 
@@ -30,7 +30,7 @@ void main() {
 	vec3 start_ndc = start_clip.xyz / start_clip.w;
 	immut vec3 end_ndc = end_clip.xyz / end_clip.w;
 
-	immut vec2 view_size = vec2(view_size());
+	immut vec2 view_size = vec2(unpackUint2x16(uint(packedView)));
 	immut vec2 dir_screen = normalize((end_ndc.xy - start_ndc.xy) * view_size);
 	vec2 offset_ndc = float(LINE_WIDTH) / view_size * vec2(-dir_screen.y, dir_screen.x);
 

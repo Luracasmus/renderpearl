@@ -55,7 +55,7 @@ f16vec3 get_hand_light(
 					ray_halfclip += step;
 
 					immut f16vec2 ray_screen_undiv_xy = fma(ray_halfclip.ww, f16vec2(0.5), ray_halfclip.xy);
-					// immut ivec2 texel = ivec2(ray_screen.xy * view_size());
+					// immut ivec2 texel = ivec2(ray_screen.xy * unpackUint2x16(uint(packedView)));
 
 					// immut vec4 depth_samples = textureGather(depthtex2, trace_screen.xy, 0);
 					// immut bvec4 visible_samples = greaterThan(trace_screen.zzzz, depth_samples); // step just doesn't work here on AMD Mesa for some reason

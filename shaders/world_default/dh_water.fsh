@@ -6,7 +6,7 @@ layout(depth_greater) out float gl_FragDepth;
 
 uniform sampler2D depthtex0;
 uniform mat4 dhProjectionInverse;
-uniform int dhRenderDistance;
+uniform int dhRenderDistance, packedView;
 
 #include "/lib/mmul.glsl"
 #include "/lib/mv_inv.glsl"
@@ -39,7 +39,6 @@ in
 	#include "/lib/light/shadows.glsl"
 #endif
 
-#include "/lib/view_size.glsl"
 #include "/lib/srgb.glsl"
 #include "/lib/luminance.glsl"
 #define SKY_FSH
@@ -54,7 +53,7 @@ void main() {
 		} else {
 			f16vec4 color = f16vec4(unpackUnorm4x8(v.unorm4x8_color));
 
-			vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size()), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
+			vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(unpackUint2x16(uint(packedView))), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
 			immut vec3 view = proj_inv(dhProjectionInverse, ndc);
 
 			f16vec3 light = f16vec3(
@@ -115,7 +114,7 @@ void main() {
 					color.rgb, rcp_color,
 					roughness, f0, is_metal,
 					n_dot_l, n_dot_l, n_w_shadow_light,
-					w_normal, w_normal, n_pe, pe
+					w_normal, w_normal, n_pe, pe, mvInv3
 				);
 			#endif
 

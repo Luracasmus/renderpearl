@@ -5,7 +5,9 @@
 #define SUBGROUP 0
 #include "/prelude/compat.glsl"
 #include "/prelude/directive.glsl"
+#include "/prelude/lib.glsl"
 
+/* RENDERTARGETS: 1 */
 layout(location = 0) out vec4 colortex1;
 
 #include "/lib/srgb.glsl"
@@ -16,5 +18,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 
 	immut vec2 block_sky_light = fma(parameters.lightMap, vec2(16.0/15.0), vec2(-1.0/32.0));
 
-	colortex1 = color;
+	// TODO
+
+	colortex1 = color * dot(block_sky_light, vec2(1.0));
 }

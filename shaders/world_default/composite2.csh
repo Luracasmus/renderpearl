@@ -7,8 +7,7 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 uniform layout(rgba8) restrict writeonly image2D blendWeight;
 uniform sampler2D edgeS, areatex, searchtex;
-
-#include "/lib/view_size.glsl"
+uniform int packedView;
 
 /*
 	SMAA Blending Weight Calculation
@@ -225,7 +224,7 @@ void main() {
 	bvec2 e = greaterThanEqual(texelFetch(edgeS, texel, 0).rg, vec2(0.5));
 
 	if (any(e)) {
-		immut vec2 view_size = vec2(view_size());
+		immut vec2 view_size = vec2(unpackUint2x16(uint(packedView)));
 		immut vec2 texel_size = 1.0 / view_size;
 
 		immut vec2 texel_coord = vec2(texel) + 0.5;

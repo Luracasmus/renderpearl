@@ -1,6 +1,12 @@
 {
 	"version": 1,
-	"uniforms": [],
+	"uniforms": [
+		#ifdef NETHER
+
+		#else
+		"packedView", "shadowModelView", "vxModelViewInv", "vxProjInv"
+		#endif
+	],
 	"samplers": {},
 	"opaqueDrawBuffers": [1, 2],
 	"translucentDrawBuffers": [1]

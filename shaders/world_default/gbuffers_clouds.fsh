@@ -5,13 +5,13 @@ layout(location = 0) out f16vec4 colortex1;
 layout(depth_unchanged) out float gl_FragDepth;
 
 #include "/lib/mv_inv.glsl"
+uniform int packedView;
 uniform float frameTimeCounter, pbrFogDensity;
 uniform vec3 cameraPosition, sunDirectionPlr;
 uniform mat4 gbufferProjectionInverse;
 
 in VertexData { layout(location = 0, component = 0) flat uint tint; } v;
 
-#include "/lib/view_size.glsl"
 #include "/lib/mmul.glsl"
 #include "/lib/un11_11_10.glsl"
 #include "/lib/srgb.glsl"
@@ -20,7 +20,7 @@ in VertexData { layout(location = 0, component = 0) flat uint tint; } v;
 #include "/lib/prng/pcg.glsl"
 
 void main() {
-	immut vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size()), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
+	immut vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(unpackUint2x16(uint(packedView))), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
 	immut vec3 pe = MV_INV * proj_inv(gbufferProjectionInverse, ndc);
 	immut vec3 world = pe + mvInv3 + cameraPosition;
 

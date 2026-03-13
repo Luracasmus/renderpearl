@@ -7,8 +7,8 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 uniform layout(rgba8) restrict writeonly image2D colorimg0;
 uniform sampler2D blendWeightS, colortex1;
+uniform int packedView;
 
-#include "/lib/view_size.glsl"
 #include "/lib/srgb.glsl"
 #include "/lib/luminance.glsl"
 
@@ -75,7 +75,7 @@ f16vec3 smaa_nbh_blend(i16vec2 texel, vec2 texel_size, vec2 coord) {
 void main() {
 	immut u8vec2 nbh_pos = u8vec2(gl_LocalInvocationID.xy) + uint8_t(1u);
 	immut i16vec2 texel = i16vec2(gl_GlobalInvocationID.xy);
-	immut vec2 texel_size = 1.0 / vec2(view_size());
+	immut vec2 texel_size = 1.0 / vec2(unpackUint2x16(uint(packedView)));
 	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
 
 	f16vec3 color = smaa_nbh_blend(texel, texel_size, coord);

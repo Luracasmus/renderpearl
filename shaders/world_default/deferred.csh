@@ -9,6 +9,7 @@ readonly
 #include "/buf/ll.glsl"
 
 #include "/lib/mv_inv.glsl"
+uniform int packedView;
 uniform vec3 cameraPositionFract;
 uniform ivec3 cameraPositionInt;
 uniform mat4 gbufferProjectionInverse;
@@ -29,7 +30,6 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #endif
 
 #include "/lib/mmul.glsl"
-#include "/lib/view_size.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/octa_enc.glsl"
 #include "/lib/skylight.glsl"
@@ -80,7 +80,10 @@ shared struct {
 	#include "/lib/light/hand.glsl"
 #endif
 
-#ifdef DISTANT_HORIZONS
+#ifdef VOXY
+	uniform mat4 vxModelViewInv, vxProjInv;
+	uniform sampler2D vxDepthTexOpaque;
+#elif defined DISTANT_HORIZONS
 	uniform mat4 dhProjectionInverse;
 	uniform sampler2D dhDepthTex0;
 #endif
@@ -104,19 +107,45 @@ void main() {
 	float depth = texelFetch(depthtex0, texel, 0).r;
 	bool is_geo = depth < 1.0;
 
-	#ifdef DISTANT_HORIZONS
-		mat4 projection_inverse;
-		if (is_geo) {
-			projection_inverse = gbufferProjectionInverse;
+	#ifdef VOXY
+		immut float vx_depth = texelFetch(vxDepthTexOpaque, texel, 0).r;
+
+		mat4 proj_inv_mat;
+		mat3 mv_inv_rot;
+		vec3 mv_inv_trans;
+		bool is_maybe_block_lit = vx_depth > depth; // Not Voxy geometry.
+		if (is_maybe_block_lit) {
+			proj_inv_mat = gbufferProjectionInverse;
+			mv_inv_rot = MV_INV;
+			mv_inv_trans = mvInv3;
 		} else {
-			depth = texelFetch(dhDepthTex0, texel, 0).r;
+			depth = vx_depth;
 
 			is_geo = depth < 1.0;
 
-			projection_inverse = dhProjectionInverse;
+			proj_inv_mat = vxProjInv;
+			mv_inv_rot = mat3(vxModelViewInv);
+			mv_inv_trans = vxModelViewInv[3].xyz;
 		}
 	#else
-		immut mat4 projection_inverse = gbufferProjectionInverse;
+		#ifdef DISTANT_HORIZONS
+			mat4 proj_inv_mat;
+			if (is_geo) {
+				proj_inv_mat = gbufferProjectionInverse;
+			} else {
+				depth = texelFetch(dhDepthTex0, texel, 0).r;
+
+				is_geo = depth < 1.0;
+
+				proj_inv_mat = dhProjectionInverse;
+			}
+		#else
+			immut mat4 proj_inv_mat = gbufferProjectionInverse;
+		#endif
+
+		immut mat3 mv_inv_rot = MV_INV;
+		immut vec3 mv_inv_trans = mvInv3;
+		bool is_maybe_block_lit = true;
 	#endif
 
 	uvec3 gbuf_gba;
@@ -139,20 +168,20 @@ void main() {
 		gbuf_gba.xy = uvec2(0u);
 	}
 
-	immut vec2 texel_size = 1.0 / vec2(view_size());
+	immut vec2 texel_size = 1.0 / vec2(unpackUint2x16(uint(packedView)));
 	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);
 	vec3 ndc = fma(vec3(coord, depth), vec3(2.0), vec3(-1.0));
 
 	immut bool is_hand = gbuf_gba.y >= 0x80000000u; // The most significant bit being 1 indicates hand.
 	if (is_hand) { ndc.z /= MC_HAND_DEPTH; }
 
-	immut vec3 view = proj_inv(projection_inverse, ndc);
-	immut vec3 pe = MV_INV * view;
+	immut vec3 view = proj_inv(proj_inv_mat, ndc);
+	immut vec3 pe = mv_inv_rot * view;
 
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
-	immut bool is_maybe_block_lit = is_geo && block_light_level != float16_t(0.0) && chebyshev_dist < float16_t(LL_DIST);
+	is_maybe_block_lit = is_maybe_block_lit && is_geo && block_light_level != float16_t(0.0) && chebyshev_dist < float16_t(LL_DIST);
 
 	barrier();
 
@@ -207,7 +236,7 @@ void main() {
 	// This branch must be taken the same way by the whole work group for the barrier within to be safe.
 	if (all(greaterThanEqual(bb_pe_max, bb_pe_min))) {
 		immut vec3 ll_origin_offset = vec3(subgroupBroadcastFirst(ll.origin) - cameraPositionInt);
-		index_offset += ll_origin_offset - cameraPositionFract - mvInv3;
+		index_offset += ll_origin_offset - cameraPositionFract - mv_inv_trans;
 
 		immut f16vec3 bb_view_min = f16vec3(subgroupBroadcastFirst(sh.bb_view_min));
 		immut f16vec3 bb_view_max = f16vec3(subgroupBroadcastFirst(sh.bb_view_max));
@@ -230,7 +259,7 @@ void main() {
 			immut float16_t light_mhtn_dist_from_bb = dot(abs(pe_light - clamp(pe_light, bb_pe_min, bb_pe_max)), f16vec3(1.0));
 			immut bool pe_visible = light_mhtn_dist_from_bb <= offset_intensity;
 
-			immut f16vec3 v_light = f16vec3(pe_light * MV_INV);
+			immut f16vec3 v_light = f16vec3(pe_light * mv_inv_rot);
 			immut bool view_visible = distance(v_light, clamp(v_light, bb_view_min, bb_view_max)) <= offset_intensity;
 
 			if (pe_visible && view_visible) {
@@ -400,7 +429,7 @@ void main() {
 					color, rcp_color,
 					roughness, f0, is_metal,
 					face_n_dot_l, tex_n_dot_l, n_w_shadow_light,
-					w_face_normal, w_tex_normal, n_pe, pe
+					w_face_normal, w_tex_normal, n_pe, pe, mv_inv_trans
 				);
 			#endif
 

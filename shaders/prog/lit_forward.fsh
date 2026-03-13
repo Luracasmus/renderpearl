@@ -28,6 +28,7 @@
 #include "/lib/mmul.glsl"
 #include "/lib/brdf.glsl"
 #include "/lib/mv_inv.glsl"
+uniform int packedView;
 uniform mat4 gbufferProjectionInverse;
 uniform sampler2D gtexture;
 
@@ -61,7 +62,6 @@ in
 	#include "/lib/light/shadows.glsl"
 #endif
 
-#include "/lib/view_size.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/srgb.glsl"
 #include "/lib/material/specular.glsl"
@@ -162,7 +162,7 @@ void main() {
 	color.rgb = linear(color.rgb);
 	immut f16vec3 rcp_color = float16_t(1.0) / max(color.rgb, float16_t(1.0e-5));
 
-	vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size()), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
+	vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(unpackUint2x16(uint(packedView))), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
 	#ifdef HAND
 		ndc.z /= MC_HAND_DEPTH;
 	#endif
@@ -397,7 +397,7 @@ void main() {
 					color.rgb, rcp_color,
 					roughness, f0, is_metal,
 					face_n_dot_l, tex_n_dot_l, n_w_shadow_light,
-					w_face_normal, w_tex_normal, n_pe, pe
+					w_face_normal, w_tex_normal, n_pe, pe, mvInv3
 				);
 			#endif
 

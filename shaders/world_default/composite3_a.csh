@@ -28,8 +28,8 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 
 #if AUTO_EXP
 	#include "/buf/auto_exp.glsl"
-	#include "/lib/view_size.glsl"
 
+	uniform int packedView;
 	uniform float frameTime;
 #endif
 
@@ -63,7 +63,7 @@ void main() {
 
 	#if AUTO_EXP
 		const vec2 composite_wg_size = vec2(8.0, 16.0); // Keep up to date.
-		immut vec2 work_groups = ceil(vec2(view_size()) / composite_wg_size);
+		immut vec2 work_groups = ceil(vec2(unpackUint2x16(uint(packedView))) / composite_wg_size);
 
 		immut float16_t geo_avg_luma = float16_t(exp(float(subgroupBroadcastFirst(auto_exp.sum_log_luma)) * LOG2_E / (1024.0 * work_groups.x * work_groups.y)));
 		auto_exp.exposure = max(mix(

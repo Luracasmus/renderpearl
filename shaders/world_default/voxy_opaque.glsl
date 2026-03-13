@@ -5,21 +5,27 @@
 #define SUBGROUP 0
 #include "/prelude/compat.glsl"
 #include "/prelude/directive.glsl"
+#include "/prelude/lib.glsl"
 
+/* RENDERTARGETS: 1,2 */
 layout(location = 0) out vec4 colortex1;
 
 #ifdef NETHER
 	layout(location = 1) out uvec3 colortex2;
 #else
 	layout(location = 1) out uvec4 colortex2;
+
+	#include "/lib/mmul.glsl"
+	#include "/lib/sm/distort.glsl"
 #endif
 
 #include "/lib/srgb.glsl"
 #include "/lib/octa_enc.glsl"
 
 void voxy_emitFragment(VoxyFragmentParameters parameters) {
-	immut vec3 color = linear(parameters.sampledColour.rgb * parameters.tinting.rgb);
+	// TODO: Implement proper material data.
 
+	immut vec3 color = linear(parameters.sampledColour.rgb * parameters.tinting.rgb);
 	immut vec2 block_sky_light = fma(parameters.lightMap, vec2(16.0/15.0), vec2(-1.0/32.0));
 
 	colortex1 = vec4(color, block_sky_light.x);
@@ -27,7 +33,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	{
 		// From cortex (https://github.com/MCRcortex):
 		immut uint face = parameters.face;
-		immut vec3 w_normal = vec3(uint((face >> 1u) == 2u), uint((face >> 1u) == 0u), uint((face >> 1u) == 1u)) * (float(int(face) & 1) * 2 - 1);
+		immut vec3 w_normal = vec3(uint((face >> 1u) == 2u), uint((face >> 1u) == 0u), uint((face >> 1u) == 1u)) * fma(float(int(face) & 1), 2.0, -1.0);
 		immut vec2 octa_w_normal = octa_encode(w_normal);
 
 		#ifdef NETHER
@@ -35,7 +41,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		#else
 			colortex2.a
 		#endif
-			= packUnorm4x8(octa_w_normal.xyxy);
+			= packSnorm4x8(octa_w_normal.xyxy);
 	}
 
 	{
@@ -70,6 +76,16 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	}
 
 	#ifndef NETHER
-		colortex2.r = floatBitsToUint(1.0); // TODO
+		immut uvec2 view_size = unpackUint2x16(uint(packedView)); // We have to do this manually to not include the uniform declaration.
+		immut vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
+		immut vec3 pe = mat3(vxModelViewInv) * proj_inv(vxProjInv, ndc);
+		immut vec3 abs_pe = abs(pe);
+		immut float chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
+
+		if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
+			immut vec2 s_ndc = shadow_proj_scale.x * (mat3x2(shadowModelView) * (pe + vxModelViewInv[3].xyz));
+
+			colortex2.r = floatBitsToUint(distortion(s_ndc)); // Would ideally be per-vertex but this should be mostly alright.
+		}
 	#endif
 }

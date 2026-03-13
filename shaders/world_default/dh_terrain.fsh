@@ -40,7 +40,7 @@ void main() {
 
 			const float ao = 1.0;
 			data = bitfieldInsert(
-				data, uint(fma(ao, float(8191.0), float(0.5))),
+				data, uint(fma(ao, 8191.0, 0.5)),
 				15, 13
 			);
 
