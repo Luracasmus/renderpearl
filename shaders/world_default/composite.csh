@@ -196,7 +196,7 @@ void main() {
 	#if AUTO_EXP
 		if (gl_LocalInvocationIndex == 0u) {
 			// Clamp to avoid over- or underflowing the counter.
-			atomicAdd(auto_exp.sum_log_luma, int(roundEven(clamp(log2(luma), float16_t(-7.0), float16_t(7.0)) * float16_t(512.0))));
+			atomicAdd(auto_exp.sum_log_luma, int(roundEven(clamp(log2(luma), float16_t(-14.0), float16_t(14.0)) * float16_t(256.0))));
 		}
 
 		color *= float16_t(subgroupBroadcastFirst(auto_exp.exposure));

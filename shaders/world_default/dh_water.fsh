@@ -57,7 +57,7 @@ void main() {
 			immut vec3 view = proj_inv(dhProjectionInverse, ndc);
 
 			f16vec3 light = f16vec3(
-				(v.snorm2x8_bool1_zero15_normal_emission > 65536u) ? float16_t(EMISSION_BRIGHTNESS) : float16_t(0.0)
+				(v.snorm2x8_bool1_zero15_normal_emission > 65536u) ? float16_t(lumi_emission) : float16_t(0.0)
 			);
 			immut f16vec2 block_sky_light = unpackFloat2x16(v.float2x16_light);
 

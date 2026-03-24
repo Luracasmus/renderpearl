@@ -15,6 +15,7 @@ in VertexData { layout(location = 0, component = 0) flat uint tint; } v;
 #include "/lib/mmul.glsl"
 #include "/lib/un11_11_10.glsl"
 #include "/lib/srgb.glsl"
+#include "/lib/luminance.glsl"
 #include "/lib/skylight.glsl"
 #include "/lib/fog.glsl"
 #include "/lib/prng/pcg.glsl"

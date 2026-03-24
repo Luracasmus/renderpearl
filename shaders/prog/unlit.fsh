@@ -4,15 +4,15 @@
 	#include "/prelude/core.glsl"
 #endif
 
-#ifdef NO_COLORTEX2_WRITE
-	/* RENDERTARGETS: 1 */
-#else
+#ifdef DEFERRED_IGNORE
 	/* RENDERTARGETS: 1,2 */
 	#ifdef NETHER
 		layout(location = 1) out uint colortex2;
 	#else
 		layout(location = 1, component = 1) out uint colortex2;
 	#endif
+#else
+	/* RENDERTARGETS: 1 */
 #endif
 
 #ifdef TRANSLUCENT // Requires `TINTED`
@@ -86,7 +86,7 @@ void main() {
 		#endif
 	#endif
 
-	#ifndef NO_COLORTEX2_WRITE
+	#ifdef DEFERRED_IGNORE
 		colortex2 = colortex2_g_deferred_ignore;
 	#endif
 }

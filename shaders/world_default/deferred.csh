@@ -334,15 +334,10 @@ void main() {
 
 			immut f16vec3 rcp_color = float16_t(1.0) / max(color, float16_t(1.0e-4));
 
-			#if HAND_LIGHT != 0
-				immut float16_t ind_bl = float16_t(IND_BL) * ao;
-			#endif
+			immut float16_t ind_bl = float16_t(IND_BL) * ao;
+			block_light *= ind_bl;
 
 			if (is_maybe_block_lit) {
-				#if HAND_LIGHT == 0
-					immut float16_t ind_bl = float16_t(IND_BL) * ao;
-				#endif
-
 				immut vec3 offset = vec3(index_offset) - pe;
 
 				f16vec3 reflected = f16vec3(0.0);
@@ -393,12 +388,14 @@ void main() {
 				block_light = mix_ll_block_light(block_light, chebyshev_dist, block_light_level, reflected);
 			} // else block_light = f16vec3(1.0); // DEBUG: `is_maybe_block_lit`
 
+			block_light *= float16_t(lumi_dir_bl);
+
 			// DEBUG: Culling & LDS overflow.
 			// block_light.gb += f16vec2(sh.ll_len < ll.len, sh.index_len == 0);
 			// block_light.rgb += distance(max(float16_t(sh.bb_view_min), float16_t(0.0)), max(float16_t(sh.bb_view_max), float16_t(0.0))) * float16_t(0.01);
 			// if (sh.index_len > local_index_size) block_light *= 10;
 
-			f16vec3 light = float16_t(EMISSION_BRIGHTNESS) * emissiveness + ao * non_block_light(sky_light_color, sky_light_level) + block_light;
+			f16vec3 light = float16_t(lumi_emission) * emissiveness + ao * non_block_light(sky_light_color, sky_light_level) + block_light;
 			// TODO: Something is making emissive blocks way brighter that is not this. We should look into it.
 
 			#if HAND_LIGHT != 0
@@ -407,11 +404,11 @@ void main() {
 					immut bvec2 active_lr = notEqual(hand_light_lr, u16vec2(0u));
 
 					if (active_lr.x) {
-						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), view_left_hand, view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color, rcp_color, ind_bl, is_hand);
 					}
 
 					if (active_lr.y) {
-						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), view_right_hand, view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color, rcp_color, ind_bl, is_hand);
 					}
 				}
 			#endif

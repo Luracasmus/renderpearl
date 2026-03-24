@@ -168,7 +168,7 @@ void main() {
 		#if defined SM && defined MC_SPECULAR_MAP
 			float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 		#else
-			float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma, is_metal ? float16_t(-0.1) : float16_t(0.1));
+			float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma, is_metal ? float16_t(-0.2) : float16_t(-0.1));
 		#endif
 
 		uint data = packUnorm4x8(f16vec4(roughness, sss, 0.0, f0_enum));

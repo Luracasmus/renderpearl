@@ -1,6 +1,6 @@
 #ifdef END
 	f16vec3 skylight() {
-		return f16vec3(0.19, 0.1, 0.19) * fma(float16_t(endFlashIntensity), float16_t(2.0), float16_t(0.5));
+		return f16vec3(vec3(0.95, 0.5, 0.95) * lumi_end) * fma(float16_t(endFlashIntensity), float16_t(2.0), float16_t(0.5));
 	}
 #else
 	uniform vec3 skyState;
@@ -14,14 +14,14 @@
 		const float16_t zenith = float16_t(1.0);
 
 		// TODO: Check scales at: https://www.wikiwand.com/en/articles/Daylight#Intensity_in_different_conditions
-		immut f16vec3 col_moonlight = f16vec3(0.69, 0.76, 0.99) * float16_t(0.01) * sky_state.z;
-		const f16vec3 col_sunrise = f16vec3(0.89, 0.78, 0.31) * float16_t(0.25);
-		const f16vec3 col_morning = f16vec3(0.92, 0.93, 0.55);
-		const f16vec3 col_zenith = f16vec3(0.93, 0.95, 0.65); // f16vec3(0.99, 0.99, 0.91);
+		immut f16vec3 col_moonlight = f16vec3(vec3(0.69, 0.76, 0.99) * lumi_moonlight) * sky_state.z;
+		const f16vec3 col_sunrise = f16vec3(vec3(0.89, 0.78, 0.31) * lumi_sunrise);
+		const f16vec3 col_morning = f16vec3(vec3(0.92, 0.93, 0.55) * lumi_morning);
+		const f16vec3 col_zenith = f16vec3(vec3(0.93, 0.95, 0.65) * lumi_zenith); // f16vec3(0.99, 0.99, 0.91);
 
-		const f16vec3 col_overcast = f16vec3(0.17, 0.19, 0.25);
+		const f16vec3 col_overcast_mul = f16vec3(vec3(0.17, 0.19, 0.25) * lumi_mul_overcast);
 
-		return float16_t(DIR_SL) * mix(
+		return mix(
 			col_moonlight,
 			mix(
 				col_sunrise,
@@ -33,6 +33,6 @@
 				smoothstep(sunrise, morning, sky_state.y)
 			),
 			smoothstep(moonlight, sunrise, sky_state.y)
-		) * mix(f16vec3(1.0), col_overcast, sky_state.x);
+		) * mix(f16vec3(1.0), col_overcast_mul, sky_state.x);
 	}
 #endif

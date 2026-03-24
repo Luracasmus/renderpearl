@@ -58,3 +58,20 @@ uvec4 saturate(uvec4 v) { return clamp(v, 0u, 0xFFFFFFFFu); }
 	u8vec3 saturate(u8vec3 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
 	u8vec4 saturate(u8vec4 v) { return clamp(v, uint8_t(0u), uint8_t(0xFFu)); }
 #endif
+
+const float lumen = 0.001; // 1 lumen in our custom luminous flux unit.
+
+const float lumi_global_nether = lumen * 5.0;
+const float lumi_end = lumen * 5.0 * DIR_SL;
+const float lumi_moonlight = lumen * 0.25 * DIR_SL;
+const float lumi_sunrise = lumen * 400.0 * DIR_SL;
+const float lumi_morning = lumen * 20000.0 * DIR_SL;
+const float lumi_zenith = lumen * 80000.0 * DIR_SL;
+
+const float lumi_mul_sky = 0.2;
+const float lumi_mul_overcast = 0.05;
+
+const float lumi_dir_bl = lumen * 300.0 * DIR_BL;
+const float lumi_ind_daylight = lumen * 20000.0 * IND_SL;
+const float lumi_ambient = lumen * 0.25 * AMBIENT;
+const float lumi_emission = lumi_dir_bl * EMISSION_BRIGHTNESS;

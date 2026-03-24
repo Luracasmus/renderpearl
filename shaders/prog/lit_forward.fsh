@@ -133,7 +133,7 @@ void main() {
 	#if defined SM && defined MC_SPECULAR_MAP
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
-		immut float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma, is_water ? float16_t(-0.05) : float16_t(0.1)); // TODO: Change when `is_metal` is also possible.
+		immut float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma, is_water ? float16_t(-0.15) : float16_t(-0.1)); // TODO: Change when `is_metal` is also possible.
 	#endif
 
 	#ifdef NO_NORMAL
@@ -176,7 +176,7 @@ void main() {
 
 	// TODO: LabPBR.
 
-	f16vec3 light = f16vec3(float16_t(EMISSION_BRIGHTNESS) * emissiveness);
+	f16vec3 light = f16vec3(float16_t(lumi_emission) * emissiveness);
 
 	immut f16vec2 block_sky_light =
 		#ifdef TERRAIN
@@ -203,9 +203,8 @@ void main() {
 		f16vec3 block_light = block_sky_light.x * f16vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B);
 	#endif
 
-	#if HAND_LIGHT != 0
-		immut float16_t ind_bl = float16_t(IND_BL) * ao;
-	#endif
+	immut float16_t ind_bl = float16_t(IND_BL) * ao;
+	block_light *= ind_bl;
 
 	#ifdef FORWARD_LL_LIGHT_ENABLED
 		immut bool is_maybe_ll_lit = (
@@ -213,10 +212,6 @@ void main() {
 		);
 
 		if (subgroupAny(is_maybe_ll_lit)) {
-			#if HAND_LIGHT == 0
-				immut float16_t ind_bl = float16_t(IND_BL) * ao;
-			#endif
-
 			f16vec3 lit_max_pe, lit_max_view, lit_min_pe, lit_min_view;
 			if (is_maybe_ll_lit) {
 				lit_max_pe = f16vec3(pe);
@@ -353,6 +348,8 @@ void main() {
 		}
 	#endif
 
+	block_light *= float16_t(lumi_dir_bl);
+
 	// We probably want to have everything in this that doesn't require derivatives or SG stuff.
 	// I think (?) it should usually be slightly faster.
 	if (!gl_HelperInvocation) {
@@ -415,11 +412,11 @@ void main() {
 					immut bvec2 active_lr = notEqual(hand_light_lr, u16vec2(0u));
 
 					if (active_lr.x) {
-						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), f16vec3(-0.2, -0.2, -0.1), view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color.rgb, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), view_left_hand, view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color.rgb, rcp_color, ind_bl, is_hand);
 					}
 
 					if (active_lr.y) {
-						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), f16vec3(0.2, -0.2, -0.1), view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color.rgb, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), view_right_hand, view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color.rgb, rcp_color, ind_bl, is_hand);
 					}
 				}
 			#endif

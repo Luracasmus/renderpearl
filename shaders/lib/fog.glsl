@@ -44,7 +44,9 @@ float16_t sky_fog(float16_t height) {
 		}
 	#else
 		f16vec3 sky(float16_t sky_fog, vec3 n_pe, vec3 sun_dir) {
-			f16vec3 color = mix(f16vec3(skyColorLinear), linear(f16vec3(fogColor)) * float16_t(2.0), sky_fog);
+			immut f16vec3 skylight_col = skylight();
+
+			f16vec3 color = float16_t(lumi_mul_sky) * luminance(skylight_col) * mix(f16vec3(skyColorLinear), linear(f16vec3(fogColor)) * float16_t(2.0), sky_fog);
 
 			#if SUN_BLOOM || SKY_BLOOM
 				if (isEyeInWater == 0) {
@@ -60,11 +62,15 @@ float16_t sky_fog(float16_t height) {
 							day + float16_t(0.5),
 							float16_t(1.0)) * f16vec3(float16_t(SUN_BLOOM) * float16_t(pow(sun, 256.0)) + day * float16_t(SKY_BLOOM) * pow(float16_t(sun), float16_t(3.0))
 						),
-						float16_t(0.15) * skylight(),
+						float16_t(0.15) * skylight_col,
 						color
 					);
 
-					color = fma(f16vec3(float16_t(SUN_BLOOM) * float16_t(pow(moon, 256.0)) + float16_t(SKY_BLOOM) * pow(float16_t(moon), float16_t(3.0))), f16vec3(0.0104, 0.0112, 0.0152), color);
+					color = fma(
+						f16vec3(float16_t(SUN_BLOOM) * float16_t(pow(moon, 256.0)) + float16_t(SKY_BLOOM) * pow(float16_t(moon), float16_t(3.0))),
+						f16vec3(0.104, 0.112, 0.152) * skylight_col,
+						color
+					);
 				}
 			#endif
 

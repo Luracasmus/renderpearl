@@ -6,6 +6,9 @@ uniform int handLightPackedLR;
 	uniform sampler2D depthtex2;
 #endif
 
+const f16vec3 view_left_hand = f16vec3(-0.2, -0.2, -0.1);
+const f16vec3 view_right_hand = f16vec3(0.2, -0.2, -0.1);
+
 f16vec3 get_hand_light(
 	uint16_t light_level, uint packed_hl,
 	vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe,
@@ -20,7 +23,7 @@ f16vec3 get_hand_light(
 
 	immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
 
-	immut float16_t brightness = float16_t(light_level) * float16_t(HAND_LIGHT) / max(sq_dist, float16_t(0.17));
+	immut float16_t brightness = float16_t(light_level) * float16_t(lumi_dir_bl * float(HAND_LIGHT)) / max(sq_dist, float16_t(0.17));
 	immut f16vec3 illum = brightness * unpack_un11_11_10(packed_hl);
 
 	f16vec3 light;

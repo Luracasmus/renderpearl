@@ -1,4 +1,8 @@
 #define ALPHA_CHECK
 #define TRANSLUCENT
-#define DEFERRED_IGNORE
+
+#if IRIS_VERSION < 11007
+	#define DEFERRED_IGNORE
+#endif
+
 #include "/prog/lit_forward.fsh"
