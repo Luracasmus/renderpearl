@@ -1,4 +1,4 @@
-#if IRIS_VERSION >= 11007
+#if IRIS_VERSION == 11007
 	#define TRANSLUCENT
 #endif
 
