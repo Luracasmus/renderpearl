@@ -10,7 +10,7 @@ f16vec2 norm_light_level() {
 	#else
 		immut mat4 lm_tex_mat = mat4(gl_TextureMatrix[1]);
 		immut f16vec2 scale = f16vec2(lm_tex_mat[0].x, lm_tex_mat[1].y) * f16vec2(16.0 / 15.0);
-		immut f16vec2 offset = fma(f16vec2(lm_tex_mat[0].w, lm_tex_mat[1].w), f16vec2(16.0 / 15.0), f16vec2(0.5 / 15.0));
+		immut f16vec2 offset = fma(f16vec2(lm_tex_mat[0].w, lm_tex_mat[1].w), f16vec2(16.0 / 15.0), f16vec2(-0.5 / 15.0));
 	#endif
 
 	return fma(lm_raw_coord, scale, offset);
