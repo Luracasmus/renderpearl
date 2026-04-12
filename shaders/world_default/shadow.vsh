@@ -1,10 +1,12 @@
+#include "/prelude/core.glsl"
+
+out gl_PerVertex { vec4 gl_Position; };
+
 #if SM_DIST == 0 || defined END || defined NETHER
-	#include "/prog/none.vsh"
+	void main() {
+		gl_Position = vec4(0.0/0.0, 0.0/0.0, 1.0/0.0, 1.0);
+	}
 #else
-	#include "/prelude/core.glsl"
-
-	out gl_PerVertex { vec4 gl_Position; };
-
 	#ifdef SM_ENTITY
 	#endif
 	#ifdef SM_PLR

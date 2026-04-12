@@ -1,10 +1,12 @@
+#include "/prelude/core.glsl"
+
+/* RENDERTARGETS: 0 */
+
 #if SM_DIST == 0 || defined END || defined NETHER
-	#include "/prog/none.fsh"
+	layout(depth_unchanged) out float gl_FragDepth;
+
+	void main() {}
 #else
-	#include "/prelude/core.glsl"
-
-	/* RENDERTARGETS: 0 */
-
 	#ifdef TEXTURED
 		uniform sampler2D gtexture;
 
