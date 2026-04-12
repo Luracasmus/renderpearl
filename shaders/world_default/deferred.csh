@@ -67,14 +67,17 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 const uint local_index_size = uint(float(LL_CAPACITY) * LDS_RATIO);
 
 shared struct {
-	ivec3 bb_pe_min;
-	ivec3 bb_pe_max;
-	ivec3 bb_view_min;
 	uint ll_len;
-	ivec3 bb_view_max;
 	uint[local_index_size] ll_data;
 	uint16_t[local_index_size] ll_color;
 } sh;
+
+// We need these variables outside the shared struct to work around a bug causing compilation failure on old AMD drivers when using `atomicMin`.
+// See: https://github.com/Luracasmus/renderpearl/issues/17
+shared ivec3 sh_bb_pe_min;
+shared ivec3 sh_bb_pe_max;
+shared ivec3 sh_bb_view_min;
+shared ivec3 sh_bb_view_max;
 
 #if HAND_LIGHT != 0
 	readonly
@@ -100,10 +103,10 @@ void main() {
 		const ivec3 i32_max = ivec3(0x7fffffff);
 		const ivec3 i32_min = ivec3(0x80000000);
 
-		sh.bb_pe_min = i32_max;
-		sh.bb_pe_max = i32_min;
-		sh.bb_view_min = i32_max;
-		sh.bb_view_max = i32_min;
+		sh_bb_pe_min = i32_max;
+		sh_bb_pe_max = i32_min;
+		sh_bb_view_min = i32_max;
+		sh_bb_view_max = i32_min;
 	}
 
 	immut i16vec2 texel = i16vec2(gl_GlobalInvocationID.xy);
@@ -200,38 +203,38 @@ void main() {
 				immut ivec3 floor_sg_pe_min = ivec3(sg_pe_min - 0.5);
 				immut ivec3 ceil_sg_pe_max = ivec3(sg_pe_max + 0.5);
 
-				atomicMin(sh.bb_pe_min.x, floor_sg_pe_min.x); atomicMax(sh.bb_pe_max.x, ceil_sg_pe_max.x);
-				atomicMin(sh.bb_pe_min.y, floor_sg_pe_min.y); atomicMax(sh.bb_pe_max.y, ceil_sg_pe_max.y);
-				atomicMin(sh.bb_pe_min.z, floor_sg_pe_min.z); atomicMax(sh.bb_pe_max.z, ceil_sg_pe_max.z);
+				atomicMin(sh_bb_pe_min.x, floor_sg_pe_min.x); atomicMax(sh_bb_pe_max.x, ceil_sg_pe_max.x);
+				atomicMin(sh_bb_pe_min.y, floor_sg_pe_min.y); atomicMax(sh_bb_pe_max.y, ceil_sg_pe_max.y);
+				atomicMin(sh_bb_pe_min.z, floor_sg_pe_min.z); atomicMax(sh_bb_pe_max.z, ceil_sg_pe_max.z);
 
 				immut ivec3 floor_sg_view_min = ivec3(sg_view_min - 0.5);
 				immut ivec3 ceil_sg_view_max = ivec3(sg_view_max + 0.5);
 
-				atomicMin(sh.bb_view_min.x, floor_sg_view_min.x); atomicMax(sh.bb_view_max.x, ceil_sg_view_max.x);
-				atomicMin(sh.bb_view_min.y, floor_sg_view_min.y); atomicMax(sh.bb_view_max.y, ceil_sg_view_max.y);
-				atomicMin(sh.bb_view_min.z, floor_sg_view_min.z); atomicMax(sh.bb_view_max.z, ceil_sg_view_max.z);
+				atomicMin(sh_bb_view_min.x, floor_sg_view_min.x); atomicMax(sh_bb_view_max.x, ceil_sg_view_max.x);
+				atomicMin(sh_bb_view_min.y, floor_sg_view_min.y); atomicMax(sh_bb_view_max.y, ceil_sg_view_max.y);
+				atomicMin(sh_bb_view_min.z, floor_sg_view_min.z); atomicMax(sh_bb_view_max.z, ceil_sg_view_max.z);
 			}
 		#else
 			immut ivec3 ceil_pe = ivec3(pe + 0.5);
 			immut ivec3 floor_pe = ivec3(pe - 0.5);
 
-			atomicMin(sh.bb_pe_min.x, floor_pe.x); atomicMax(sh.bb_pe_max.x, ceil_pe.x);
-			atomicMin(sh.bb_pe_min.y, floor_pe.y); atomicMax(sh.bb_pe_max.y, ceil_pe.y);
-			atomicMin(sh.bb_pe_min.z, floor_pe.z); atomicMax(sh.bb_pe_max.z, ceil_pe.z);
+			atomicMin(sh_bb_pe_min.x, floor_pe.x); atomicMax(sh_bb_pe_max.x, ceil_pe.x);
+			atomicMin(sh_bb_pe_min.y, floor_pe.y); atomicMax(sh_bb_pe_max.y, ceil_pe.y);
+			atomicMin(sh_bb_pe_min.z, floor_pe.z); atomicMax(sh_bb_pe_max.z, ceil_pe.z);
 
 			immut ivec3 ceil_view = ivec3(view + 0.5);
 			immut ivec3 floor_view = ivec3(view - 0.5);
 
-			atomicMin(sh.bb_view_min.x, floor_view.x); atomicMax(sh.bb_view_max.x, ceil_view.x);
-			atomicMin(sh.bb_view_min.y, floor_view.y); atomicMax(sh.bb_view_max.y, ceil_view.y);
-			atomicMin(sh.bb_view_min.z, floor_view.z); atomicMax(sh.bb_view_max.z, ceil_view.z);
+			atomicMin(sh_bb_view_min.x, floor_view.x); atomicMax(sh_bb_view_max.x, ceil_view.x);
+			atomicMin(sh_bb_view_min.y, floor_view.y); atomicMax(sh_bb_view_max.y, ceil_view.y);
+			atomicMin(sh_bb_view_min.z, floor_view.z); atomicMax(sh_bb_view_max.z, ceil_view.z);
 		#endif
 	}
 
 	barrier();
 
-	immut f16vec3 bb_pe_min = f16vec3(subgroupBroadcastFirst(sh.bb_pe_min));
-	immut f16vec3 bb_pe_max = f16vec3(subgroupBroadcastFirst(sh.bb_pe_max));
+	immut f16vec3 bb_pe_min = f16vec3(subgroupBroadcastFirst(sh_bb_pe_min));
+	immut f16vec3 bb_pe_max = f16vec3(subgroupBroadcastFirst(sh_bb_pe_max));
 
 	vec3 index_offset = vec3(-255.5);
 
@@ -241,8 +244,8 @@ void main() {
 		immut vec3 ll_origin_offset = vec3(subgroupBroadcastFirst(ll.origin) - cameraPositionInt);
 		index_offset += ll_origin_offset - cameraPositionFract - mv_inv_trans;
 
-		immut f16vec3 bb_view_min = f16vec3(subgroupBroadcastFirst(sh.bb_view_min));
-		immut f16vec3 bb_view_max = f16vec3(subgroupBroadcastFirst(sh.bb_view_max));
+		immut f16vec3 bb_view_min = f16vec3(subgroupBroadcastFirst(sh_bb_view_min));
+		immut f16vec3 bb_view_max = f16vec3(subgroupBroadcastFirst(sh_bb_view_max));
 
 		immut uint16_t global_len = uint16_t(subgroupBroadcastFirst(ll.len));
 		for (uint16_t i = uint16_t(gl_LocalInvocationIndex); i < global_len; i += uint16_t(gl_WorkGroupSize.x * gl_WorkGroupSize.y)) {
@@ -395,7 +398,7 @@ void main() {
 
 			// DEBUG: Culling & LDS overflow.
 			// block_light.gb += f16vec2(sh.ll_len < ll.len, sh.index_len == 0);
-			// block_light.rgb += distance(max(float16_t(sh.bb_view_min), float16_t(0.0)), max(float16_t(sh.bb_view_max), float16_t(0.0))) * float16_t(0.01);
+			// block_light.rgb += distance(max(float16_t(sh_bb_view_min), float16_t(0.0)), max(float16_t(sh_bb_view_max), float16_t(0.0))) * float16_t(0.01);
 			// if (sh.index_len > local_index_size) block_light *= 10;
 
 			f16vec3 light = float16_t(lumi_emission) * emissiveness + ao * non_block_light(sky_light_color, sky_light_level) + block_light;
