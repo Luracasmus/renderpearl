@@ -43,14 +43,10 @@ uniform sampler2D gtexture;
 in
 #include "/lib/v_data_lit.glsl"
 
-#ifdef SHADOWS_ENABLED
-	uniform float frameTimeCounter;
-	uniform vec3 shadowLightDirectionPlr;
-	uniform mat4 shadowModelView;
+#ifndef NETHER
+    uniform float frameTimeCounter;
 
-	#include "/lib/prng/pcg.glsl"
-
-	#ifdef END
+    #ifdef END
 		#include "/lib/prng/fast_rand.glsl"
 		uniform float endFlashIntensity;
 	#else
@@ -58,6 +54,14 @@ in
 	#endif
 
 	#include "/lib/skylight.glsl"
+#endif
+
+#ifdef SHADOWS_ENABLED
+	uniform vec3 shadowLightDirectionPlr;
+	uniform mat4 shadowModelView;
+
+	#include "/lib/prng/pcg.glsl"
+
 	#include "/lib/sm/distort.glsl"
 	#include "/lib/light/shadows.glsl"
 #endif
