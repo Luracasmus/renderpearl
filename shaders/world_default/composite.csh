@@ -40,14 +40,6 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 		uniform float frameTimeCounter;
 	#endif
 
-	#include "/lib/mmul.glsl"
-	#include "/lib/srgb.glsl"
-	#include "/lib/skylight.glsl"
-	#include "/lib/sm/sample.glsl"
-	#include "/lib/sm/distort.glsl"
-	#include "/lib/prng/ign.glsl"
-	#include "/lib/fog.glsl"
-
 	#ifdef VOXY
 		uniform int vxRenderDistance;
 	#elif defined DISTANT_HORIZONS
@@ -55,6 +47,14 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	#else
 		uniform float far;
 	#endif
+
+	#include "/lib/mmul.glsl"
+	#include "/lib/srgb.glsl"
+	#include "/lib/skylight.glsl"
+	#include "/lib/sm/sample.glsl"
+	#include "/lib/sm/distort.glsl"
+	#include "/lib/prng/ign.glsl"
+	#include "/lib/fog.glsl"
 
 	shared struct {
 		uint16_t[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2] nbh;
