@@ -12,14 +12,14 @@ VertexData {
 		layout(location = 2, component = 0) vec3 tint;
 		layout(location = 2, component = 3) float ao;
 
-		#ifndef NETHER
+		#ifdef SHADOWS_ENABLED
 			layout(location = 3, component = 0) float s_distortion;
 		#endif
 	#else
 		layout(location = 1, component = 1) flat uint unorm4x8_tint_zero;
 		layout(location = 1, component = 2) flat uint float2x16_light; // (block, sky)
 
-		#ifndef NETHER
+		#ifdef SHADOWS_ENABLED
 			layout(location = 0, component = 2) float s_distortion;
 		#endif
 

@@ -21,10 +21,6 @@ in
 
 #ifndef NETHER
 	uniform float frameTimeCounter;
-	uniform vec3 shadowLightDirectionPlr;
-	uniform mat4 shadowModelView;
-
-	#include "/lib/prng/pcg.glsl"
 
 	#ifdef END
 		#include "/lib/prng/fast_rand.glsl"
@@ -33,8 +29,15 @@ in
 		uniform vec3 sunDirectionPlr;
 	#endif
 
-	#include "/lib/brdf.glsl"
+	#include "/lib/prng/pcg.glsl"
 	#include "/lib/skylight.glsl"
+#endif
+
+#ifdef SHADOWS_ENABLED
+	uniform vec3 shadowLightDirectionPlr;
+	uniform mat4 shadowModelView;
+
+	#include "/lib/brdf.glsl"
 	#include "/lib/sm/distort.glsl"
 	#include "/lib/light/shadows.glsl"
 #endif
@@ -87,7 +90,7 @@ void main() {
 
 			immut vec3 pe = MV_INV * view;
 
-			#ifndef NETHER
+			#ifdef SHADOWS_ENABLED
 				immut f16vec3 n_pe = f16vec3(normalize(pe));
 				immut f16vec3 abs_pe = abs(f16vec3(pe));
 				immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);

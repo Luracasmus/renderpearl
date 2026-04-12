@@ -1,2 +1,2 @@
 #define NETHER
-#include "/prog/none.vsh"
+#include "/world_default/shadow_solid.vsh"

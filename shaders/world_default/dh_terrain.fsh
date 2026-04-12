@@ -1,10 +1,10 @@
 #include "/prelude/core.glsl"
 
 /* RENDERTARGETS: 1,2 */
-#ifdef NETHER
-	layout(location = 1) out uvec3 colortex2;
-#else
+#ifdef SHADOWS_ENABLED
 	layout(location = 1) out uvec4 colortex2;
+#else
+	layout(location = 1) out uvec3 colortex2;
 #endif
 
 layout(location = 0) out f16vec4 colortex1;
@@ -24,10 +24,10 @@ void main() {
 	if (!gl_HelperInvocation) {
 		immut f16vec3 color = f16vec3(unpackUnorm4x8(v.unorm4x8_color).rgb);
 
-		#ifdef NETHER
-			colortex2.b
-		#else
+		#ifdef SHADOWS_ENABLED
 			colortex2.a
+		#else
+			colortex2.b
 		#endif
 			= bitfieldInsert(
 				v.snorm2x8_bool1_zero15_normal_emission,
@@ -44,10 +44,10 @@ void main() {
 				15, 13
 			);
 
-			#ifdef NETHER
-				colortex2.g
-			#else
+			#ifdef SHADOWS_ENABLED
 				colortex2.b
+			#else
+				colortex2.g
 			#endif
 				= data;
 		}
@@ -63,15 +63,15 @@ void main() {
 
 			// TODO: f0 enum.
 
-			#ifdef NETHER
-				colortex2.r
-			#else
+			#ifdef SHADOWS_ENABLED
 				colortex2.g
+			#else
+				colortex2.r
 			#endif
 				= data;
 		}
 
-		#ifndef NETHER
+		#ifdef SHADOWS_ENABLED
 			colortex2.r = floatBitsToUint(v.s_distortion);
 		#endif
 

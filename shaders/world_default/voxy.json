@@ -1,8 +1,7 @@
 {
 	"version": 1,
 	"uniforms": [
-		#ifdef NETHER
-
+		#if defined END || defined NETHER
 		#else
 		"packedView", "shadowModelView", "vxModelViewInv", "vxProjInv"
 		#endif

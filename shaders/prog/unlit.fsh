@@ -6,10 +6,10 @@
 
 #ifdef DEFERRED_IGNORE
 	/* RENDERTARGETS: 1,2 */
-	#ifdef NETHER
-		layout(location = 1) out uint colortex2;
-	#else
+	#ifdef SHADOWS_ENABLED
 		layout(location = 1, component = 1) out uint colortex2;
+	#else
+		layout(location = 1) out uint colortex2;
 	#endif
 #else
 	/* RENDERTARGETS: 1 */

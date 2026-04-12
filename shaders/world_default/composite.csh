@@ -13,13 +13,13 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	uniform vec3 playerLookVector;
 #endif
 
-#if defined COMPASS || (VL != 0 && !defined NETHER)
+#if defined COMPASS || (VL != 0 && defined SHADOWS_ENABLED)
 	uniform int packedView;
 #endif
 
 #include "/lib/tonemap.glsl"
 
-#if VL != 0 && !defined NETHER
+#if VL != 0 && defined SHADOWS_ENABLED
 	#include "/lib/mv_inv.glsl"
 	uniform float pbrFogDensity;
 	uniform vec3 sunDirectionPlr;
@@ -100,7 +100,7 @@ void main() {
 	immut i16vec2 texel = i16vec2(gl_GlobalInvocationID.xy);
 	f16vec3 color = f16vec3(imageLoad(colorimg1, texel).rgb);
 
-	#if VL != 0 && !defined NETHER
+	#if VL != 0 && defined SHADOWS_ENABLED
 		immut float depth = texelFetch(depthtex0, texel, 0).r;
 		immut vec2 texel_size = 1.0 / vec2(unpackUint2x16(uint(packedView)));
 		immut bool is_geo = depth < 1.0;

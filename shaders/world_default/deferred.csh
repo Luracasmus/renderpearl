@@ -40,8 +40,6 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #include "/lib/material/ao.glsl"
 
 #ifndef NETHER
-	uniform vec3 shadowLightDirectionPlr;
-	uniform mat4 shadowModelView;
 	uniform float frameTimeCounter;
 
 	#include "/lib/prng/pcg.glsl"
@@ -51,6 +49,11 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	#else
 		uniform vec3 sunDirectionPlr;
 	#endif
+#endif
+
+#ifdef SHADOWS_ENABLED
+	uniform vec3 shadowLightDirectionPlr;
+	uniform mat4 shadowModelView;
 
 	#include "/lib/light/shadows.glsl"
 #endif
@@ -154,10 +157,10 @@ void main() {
 
 	if (is_geo) {
 		gbuf_gba = (
-			#ifdef NETHER
-				texelFetch(colortex2, texel, 0).rgb
-			#else
+			#ifdef SHADOWS_ENABLED
 				texelFetch(colortex2, texel, 0).gba
+			#else
+				texelFetch(colortex2, texel, 0).rgb
 			#endif
 		);
 
@@ -413,7 +416,7 @@ void main() {
 				}
 			#endif
 
-			#ifndef NETHER
+			#ifdef SHADOWS_ENABLED
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
 				immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_shadow_light);
 				immut float16_t face_n_dot_l = dot(w_face_normal, n_w_shadow_light);

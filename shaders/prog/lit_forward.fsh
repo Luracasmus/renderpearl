@@ -2,10 +2,10 @@
 
 #ifdef DEFERRED_IGNORE
 	/* RENDERTARGETS: 1,2 */
-	#ifdef NETHER
-		layout(location = 1) out uint colortex2;
-	#else
+	#ifdef SHADOWS_ENABLED
 		layout(location = 1, component = 1) out uint colortex2;
+	#else
+		layout(location = 1) out uint colortex2;
 	#endif
 #else
 	/* RENDERTARGETS: 1 */
@@ -43,7 +43,7 @@ uniform sampler2D gtexture;
 in
 #include "/lib/v_data_lit.glsl"
 
-#ifndef NETHER
+#ifdef SHADOWS_ENABLED
 	uniform float frameTimeCounter;
 	uniform vec3 shadowLightDirectionPlr;
 	uniform mat4 shadowModelView;
@@ -368,15 +368,15 @@ void main() {
 				color.a *= float16_t(1.0/2047.0) * float16_t(packed_alpha);
 			#endif
 
-			#ifdef NETHER
-				const f16vec3 sky_light_color = f16vec3(0.0);
-			#else
+			#ifdef SHADOWS_ENABLED
 				immut f16vec3 sky_light_color = skylight();
+			#else
+				const f16vec3 sky_light_color = f16vec3(0.0);
 			#endif
 
 			light += ao * non_block_light(sky_light_color, block_sky_light.y);
 
-			#ifndef NETHER
+			#ifdef SHADOWS_ENABLED
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
 
 				#ifdef NO_NORMAL

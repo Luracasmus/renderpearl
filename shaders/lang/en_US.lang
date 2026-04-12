@@ -54,6 +54,7 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 		option.SM_DISTORTION=§c⌚§r Distortion
 			option.SM_DISTORTION.comment=Controls the trade-off between near and far shadow quality\nHigher values allocate more of the shadow map texels to geometry close to the center
 			suffix.SM_DISTORTION=\%
+			value.SM_DIST.0=§cOff
 
 		option.SM_ENTITY=§c⌚§r Entity Shadows
 		option.SM_PLR=§e⌚§r Player Shadows

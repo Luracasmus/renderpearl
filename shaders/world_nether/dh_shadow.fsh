@@ -1,2 +1,2 @@
 #define NETHER
-#include "/prog/none.fsh"
+#include "/world_default/dh_shadow.fsh"

@@ -65,7 +65,8 @@ void main() {
 		fract_scaled_world_xz.y
 	);
 
-	immut f16vec3 color = float16_t(0.25) * skylight() + float16_t(0.5) * unpack_un11_11_10(v.tint);
+	immut f16vec3 skylight_col = skylight();
+	immut f16vec3 color = float16_t(0.25) * skylight_col + luminance(skylight_col) * float16_t(0.5) * unpack_un11_11_10(v.tint);
 
 	colortex1 = f16vec4(
 		mix(mix(color, fog_col, float16_t(0.25)), fog_col, fog),

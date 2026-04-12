@@ -22,7 +22,7 @@ in vec2 mc_midTexCoord;
 uniform mat4 gbufferProjectionInverse;
 uniform sampler2D gtexture;
 
-#ifndef NETHER
+#ifdef SHADOWS_ENABLED
 	uniform mat4 shadowModelView;
 
 	#include "/lib/sm/distort.glsl"
@@ -261,7 +261,7 @@ void main() {
 		v.float2x16_light = packFloat2x16(norm_light_level());
 	#endif
 
-	#ifndef NETHER
+	#ifdef SHADOWS_ENABLED
 		if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
 			immut vec2 s_ndc = shadow_proj_scale.x * (mat3x2(shadowModelView) * (pe + mvInv3));
 			v.s_distortion = distortion(s_ndc);

@@ -1,10 +1,10 @@
 #include "/prelude/core.glsl"
 
 /* RENDERTARGETS: 1,2 */
-#ifdef NETHER
-	layout(location = 1) out uvec3 colortex2;
-#else
+#ifdef SHADOWS_ENABLED
 	layout(location = 1) out uvec4 colortex2;
+#else
+	layout(location = 1) out uvec3 colortex2;
 #endif
 
 layout(location = 0) out f16vec4 colortex1;
@@ -115,10 +115,10 @@ void main() {
 		immut f16vec2 octa_w_tex_normal = octa_encode(w_tex_normal);
 	#endif
 
-	#ifdef NETHER
-		colortex2.b
-	#else
+	#ifdef SHADOWS_ENABLED
 		colortex2.a
+	#else
+		colortex2.b
 	#endif
 		= packSnorm4x8(f16vec4(octa_w_tex_normal, octa_w_face_normal));
 
@@ -150,10 +150,10 @@ void main() {
 			data |= 0x80000000u; // Set most significant bit to 1.
 		#endif
 
-		#ifdef NETHER
-			colortex2.g
-		#else
+		#ifdef SHADOWS_ENABLED
 			colortex2.b
+		#else
+			colortex2.g
 		#endif
 			= data;
 	}
@@ -182,10 +182,10 @@ void main() {
 			data = bitfieldInsert(data, uint(emission), 16, 8);
 		#endif
 
-		#ifdef NETHER
-			colortex2.r
-		#else
+		#ifdef SHADOWS_ENABLED
 			colortex2.g
+		#else
+			colortex2.r
 		#endif
 			= data;
 	}
@@ -195,7 +195,7 @@ void main() {
 	} else if (gl_HelperInvocation) {
 		return;
 	} else {
-		#ifndef NETHER
+		#ifdef SHADOWS_ENABLED
 			colortex2.r = floatBitsToUint(v.s_distortion);
 		#endif
 
