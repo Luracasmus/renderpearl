@@ -57,6 +57,10 @@ in
 		uniform vec3 sunDirectionPlr;
 	#endif
 
+	#ifdef DISTANT_HORIZONS
+		uniform int dhRenderDistance;
+	#endif
+
 	#include "/lib/skylight.glsl"
 	#include "/lib/sm/distort.glsl"
 	#include "/lib/light/shadows.glsl"

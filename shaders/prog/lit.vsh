@@ -25,6 +25,10 @@ uniform sampler2D gtexture;
 #ifdef SHADOWS_ENABLED
 	uniform mat4 shadowModelView;
 
+	#ifdef DISTANT_HORIZONS
+		uniform int dhRenderDistance;
+	#endif
+
 	#include "/lib/sm/distort.glsl"
 #endif
 

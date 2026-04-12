@@ -1,7 +1,13 @@
+#include "/prelude/config.glsl"
+
 #if SM_DIST == 0 || defined END || defined NETHER
 	#include "/prog/none.vsh"
 #else
-	#include "/prelude/core.glsl"
+	#version 460 compatibility
+
+	#include "/prelude/compat.glsl"
+	#include "/prelude/directive.glsl"
+	#include "/prelude/lib.glsl"
 
 	out gl_PerVertex { vec4 gl_Position; };
 
@@ -22,6 +28,10 @@
 
 	#ifdef TEXTURED
 		out VertexData { layout(location = 0) noperspective vec2 coord; } v;
+	#endif
+
+	#ifdef DISTANT_HORIZONS
+		uniform int dhRenderDistance;
 	#endif
 
 	#include "/lib/mmul.glsl"

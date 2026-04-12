@@ -1,7 +1,13 @@
+#include "/prelude/config.glsl"
+
 #if SM_DIST == 0 || defined END || defined NETHER
 	#include "/prog/none.fsh"
 #else
-	#include "/prelude/core.glsl"
+	#version 460 compatibility
+
+	#include "/prelude/compat.glsl"
+	#include "/prelude/directive.glsl"
+	#include "/prelude/lib.glsl"
 
 	/* RENDERTARGETS: 0 */
 

@@ -90,7 +90,7 @@ void sample_shadow(
 	f16vec3 w_face_normal, f16vec3 w_tex_normal, f16vec3 n_pe, vec3 pe, vec3 mv_inv_trans
 ) {
 	if (min(face_n_dot_l, tex_n_dot_l) > min_n_dot_l) {
-		const float16_t sm_dist = float16_t(shadowDistance * shadowDistanceRenderMul);
+		const float16_t sm_dist = max(float16_t(shadowDistance * shadowDistanceRenderMul), dhRenderDistance);
 		immut f16vec3 reflected = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_shadow_light, roughness, f0, is_metal, color, rcp_color);
 
 		f16vec3 dir_sky_light = sky_light_color * reflected;

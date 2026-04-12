@@ -9,6 +9,7 @@ out gl_PerVertex { vec4 gl_Position; };
 
 #ifdef SHADOWS_ENABLED
 	uniform mat4 shadowModelView;
+	uniform int dhRenderDistance;
 
 	#include "/lib/sm/distort.glsl"
 #endif

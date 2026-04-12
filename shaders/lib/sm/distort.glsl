@@ -9,9 +9,15 @@ float distortion(vec2 pos) {
 		// https://www.wikiwand.com/en/articles/Squircle#Fern%C3%A1ndez-Guasti_squircle
 		// https://www.desmos.com/3d/5vlbwkxhkb
 
+		#ifdef DISTANT_HORIZONS
+			immut float shadow_dist = max(shadowDistance, float(dhRenderDistance));
+		#else
+			const float shadow_dist = shadowDistance;
+		#endif
+
 		// Not sure if this actually scales correctly to always prevent artifacts.
-		const float squareness = 1.0 - 2.0 / shadowDistance;
-		const float s = squareness;
+		immut float squareness = 1.0 - 2.0 / shadow_dist;
+		immut float s = squareness;
 
 		// https://www.wikiwand.com/en/articles/Squircle#Linearizing_squareness
 		// const float s_denom = 1.0 - (1.0 - sqrt(2.0)) * squareness;
