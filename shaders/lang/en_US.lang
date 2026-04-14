@@ -44,6 +44,7 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 		option.SM_DIST=§c⌚§r Shadow Distance
 			option.SM_DIST.comment=Half the side of the square within which shadows are rendered\nLower values make closer shadows sharper\n\n§6⚠§r It's recommended to set this lower than or equal to your §lRender Distance§r for optimal performance and quality
 			suffix.SM_DIST=\ chunks
+			value.SM_DIST.0=§cOff
 
 		option.SM_BLUR=§c⌚§r Blur
 			value.SM_BLUR.0=§cOff
@@ -54,7 +55,6 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 		option.SM_DISTORTION=§c⌚§r Distortion
 			option.SM_DISTORTION.comment=Controls the trade-off between near and far shadow quality\nHigher values allocate more of the shadow map texels to geometry close to the center
 			suffix.SM_DISTORTION=\%
-			value.SM_DIST.0=§cOff
 
 		option.SM_ENTITY=§c⌚§r Entity Shadows
 		option.SM_PLR=§e⌚§r Player Shadows
