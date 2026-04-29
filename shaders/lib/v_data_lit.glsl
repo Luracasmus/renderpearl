@@ -17,7 +17,10 @@ VertexData {
 		#endif
 	#else
 		layout(location = 1, component = 1) flat uint unorm4x8_tint_zero;
-		layout(location = 1, component = 2) flat uint float2x16_light; // (block, sky)
+
+		#ifndef CLRWL
+			layout(location = 1, component = 2) flat uint float2x16_light; // (block, sky)
+		#endif
 
 		#ifdef SHADOWS_ENABLED
 			layout(location = 0, component = 2) float s_distortion;

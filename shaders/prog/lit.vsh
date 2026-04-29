@@ -124,8 +124,6 @@ void main() {
 	#endif
 
 	#ifdef TERRAIN
-		// The actual lowest AO level seems to be a bit above, around `0.19607`. This feels safer if precision changes. We saturate too for safety.
-		const float min_vanilla_ao = 0.1875;
 		v.ao = saturate(fma(color_alpha_or_ao.a, float16_t(1.0 / (1.0 - min_vanilla_ao)), float16_t(-min_vanilla_ao))); // Scale AO range to full [0, 1].
 		v.tint = vec3(color_alpha_or_ao.rgb);
 
@@ -247,18 +245,20 @@ void main() {
 		#endif
 	#endif
 
-	#if defined TERRAIN || defined TRANSLUCENT
-		v.misc_packed = bitfieldInsert(
-			v.misc_packed,
-			uint(fma(alpha, float16_t(2047.0), float16_t(0.5))), // Scale and round from (0.0, 1.0] to [0, 2047].
-			5, 11
-		); // Pack alpha.
-	#endif
+	#ifndef CLRWL
+		#if defined TERRAIN || defined TRANSLUCENT
+			v.misc_packed = bitfieldInsert(
+				v.misc_packed,
+				uint(fma(alpha, float16_t(2047.0), float16_t(0.5))), // Scale and round from (0.0, 1.0] to [0, 2047].
+				5, 11
+			); // Pack alpha.
+		#endif
 
-	#ifdef TERRAIN
-		v.light = vec2(norm_light_level());
-	#else
-		v.float2x16_light = packFloat2x16(norm_light_level());
+		#ifdef TERRAIN
+			v.light = vec2(norm_light_level());
+		#else
+			v.float2x16_light = packFloat2x16(norm_light_level());
+		#endif
 	#endif
 
 	#ifdef SHADOWS_ENABLED

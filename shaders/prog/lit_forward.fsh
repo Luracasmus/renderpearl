@@ -17,7 +17,9 @@
 	layout(location = 0) out f16vec3 colortex1;
 #endif
 
-#ifdef ALPHA_CHECK
+#ifdef CLRWL
+	layout(depth_greater) out float gl_FragDepth;
+#elif defined ALPHA_CHECK
 	layout(depth_greater) out float gl_FragDepth;
 
 	uniform float alphaTestRef;
@@ -104,18 +106,33 @@ in
 #endif
 
 void main() {
-	#if defined TRANSLUCENT || defined ALPHA_CHECK
-		f16vec4 color = f16vec4(texture(gtexture, v.coord));
-	#else
-		f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
-	#endif
+	#ifdef CLRWL
+		vec4 raw_clrwl_color = texture(gtexture, v.coord);
+		vec2 raw_clrwl_light;
+		float raw_clrwl_ao;
+		vec4 clrwl_overlay_color;
+		clrwl_computeFragment(raw_clrwl_color, raw_clrwl_color, raw_clrwl_light, raw_clrwl_ao, clrwl_overlay_color);
+		raw_clrwl_color.rgb = mix(raw_clrwl_color.rgb, clrwl_overlay_color.rgb, clrwl_overlay_color.a);
 
-	#ifdef ALPHA_CHECK
-		immut bool will_discard = color.a < float16_t(alphaTestRef);
+		immut f16vec2 clrwl_light = fma(f16vec2(raw_clrwl_light), f16vec2(16.0 / 15.0), f16vec2(-0.5 / 15.0));
+		immut float16_t clrwl_ao = saturate(fma(float16_t(raw_clrwl_ao), float16_t(1.0 / (1.0 - min_vanilla_ao)), float16_t(-min_vanilla_ao))); // Scale AO range to full [0, 1].
 
-		if (subgroupAll(will_discard)) { discard; }
-	#else
+		f16vec4 color = f16vec4(raw_clrwl_color);
 		const bool will_discard = false;
+	#else
+		#if defined TRANSLUCENT || defined ALPHA_CHECK
+			f16vec4 color = f16vec4(texture(gtexture, v.coord));
+		#else
+			f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
+		#endif
+
+		#ifdef ALPHA_CHECK
+			immut bool will_discard = color.a < float16_t(alphaTestRef);
+
+			if (subgroupAll(will_discard)) { discard; }
+		#else
+			const bool will_discard = false;
+		#endif
 	#endif
 
 	immut f16vec3 tint = f16vec3(
@@ -176,20 +193,31 @@ void main() {
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
-	float16_t emissiveness = float16_t(v.misc_packed & 15u) * float16_t(1.0 / 15.0);
+	float16_t emissiveness = (
+		#if defined TERRAIN || defined HAND
+			float16_t(v.misc_packed & 15u) * float16_t(1.0 / 15.0)
+		#else
+			float16_t(0.0)
+		#endif
+	);
 
 	// TODO: LabPBR.
 
 	f16vec3 light = f16vec3(float16_t(lumi_emission) * emissiveness);
 
-	immut f16vec2 block_sky_light =
-		#ifdef TERRAIN
-			f16vec2(v.light);
+	immut f16vec2 block_sky_light = (
+		#ifdef CLRWL
+			clrwl_light
+		#elif defined TERRAIN
+			f16vec2(v.light)
 		#else
-			unpackFloat2x16(v.float2x16_light);
+			unpackFloat2x16(v.float2x16_light)
 		#endif
+	);
 
-	#ifdef TERRAIN
+	#ifdef CLRWL
+		float16_t ao = corner_ao_curve(clrwl_ao);
+	#elif defined TERRAIN
 		float16_t ao = corner_ao_curve(float16_t(v.ao));
 	#else
 		float16_t ao = float16_t(1.0);
@@ -367,7 +395,7 @@ void main() {
 
 			light += block_light;
 
-			#ifdef TRANSLUCENT
+			#if defined TRANSLUCENT && !defined CLRWL
 				immut uint16_t packed_alpha = uint16_t(bitfieldExtract(v.misc_packed, 5, 11));
 				color.a *= float16_t(1.0/2047.0) * float16_t(packed_alpha);
 			#endif

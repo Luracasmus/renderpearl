@@ -2,6 +2,10 @@
 
 out gl_PerVertex { vec4 gl_Position; };
 
+#ifdef CLRWL
+	#define TEXTURED
+#endif
+
 #if SM_DIST == 0 || defined END || defined NETHER
 	void main() {
 		gl_Position = vec4(0.0/0.0, 0.0/0.0, 1.0/0.0, 1.0);
@@ -38,8 +42,12 @@ out gl_PerVertex { vec4 gl_Position; };
 			#endif
 		#endif
 
-		// `gl_ModelViewMatrix` can be cut to a `mat3` since `shadowIntervalSize == 0.0`, as long as model -> view conversion only needs rotation and/or scale, which seems to always be the case in Iris.
-		immut vec3 clip = shadow_proj_scale.xxy * (mat3(gl_ModelViewMatrix) * model);
+		#ifdef CLRWL
+			immut vec3 clip = shadow_proj_scale.xxy * rot_trans_mmul(mat4(gl_ModelViewMatrix), model);
+		#else
+			// `gl_ModelViewMatrix` can be cut to a `mat3` since `shadowIntervalSize == 0.0`, as long as model -> view conversion only needs rotation and/or scale, which seems to always be the case in Iris.
+			immut vec3 clip = shadow_proj_scale.xxy * (mat3(gl_ModelViewMatrix) * model);
+		#endif
 		gl_Position = vec4(clip.xy * distortion(clip.xy), clip.z, 1.0);
 		// RDNA4 ISA documentation states `.w` is optional, but the fallback value doesn't seem to be `1.0` on AMD drivers, so we write to it anyways.
 

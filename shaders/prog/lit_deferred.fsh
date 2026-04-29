@@ -9,7 +9,9 @@
 
 layout(location = 0) out f16vec4 colortex1;
 
-#ifdef ALPHA_CHECK
+#ifdef CLRWL
+	layout(depth_greater) out float gl_FragDepth;
+#elif defined ALPHA_CHECK
 	layout(depth_greater) out float gl_FragDepth;
 	uniform float alphaTestRef;
 #else
@@ -33,19 +35,34 @@ in
 #include "/lib/v_data_lit.glsl"
 
 void main() {
-	#ifdef TEX_ALPHA
-		f16vec4 color = f16vec4(texture(gtexture, v.coord));
+	#ifdef CLRWL
+		vec4 raw_clrwl_color = texture(gtexture, v.coord);
+		vec2 raw_clrwl_light;
+		float raw_clrwl_ao;
+		vec4 clrwl_overlay_color;
+		clrwl_computeFragment(raw_clrwl_color, raw_clrwl_color, raw_clrwl_light, raw_clrwl_ao, clrwl_overlay_color);
+		raw_clrwl_color.rgb = mix(raw_clrwl_color.rgb, clrwl_overlay_color.rgb, clrwl_overlay_color.a);
 
-		#ifdef ALPHA_CHECK
-			immut bool will_discard = color.a < float16_t(alphaTestRef);
+		immut f16vec2 clrwl_light = fma(f16vec2(raw_clrwl_light), f16vec2(16.0 / 15.0), f16vec2(-0.5 / 15.0));
+		immut float16_t clrwl_ao = saturate(fma(float16_t(raw_clrwl_ao), float16_t(1.0 / (1.0 - min_vanilla_ao)), float16_t(-min_vanilla_ao))); // Scale AO range to full [0, 1].
 
-			if (subgroupAll(will_discard)) { discard; }
+		f16vec4 color = f16vec4(raw_clrwl_color);
+		const bool will_discard = false;
+	#else
+		#ifdef TEX_ALPHA
+			f16vec4 color = f16vec4(texture(gtexture, v.coord));
+
+			#ifdef ALPHA_CHECK
+				immut bool will_discard = color.a < float16_t(alphaTestRef);
+
+				if (subgroupAll(will_discard)) { discard; }
+			#else
+				const bool will_discard = false;
+			#endif
 		#else
+			f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
 			const bool will_discard = false;
 		#endif
-	#else
-		f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
-		const bool will_discard = false;
 	#endif
 
 	immut f16vec3 tint = f16vec3(
@@ -124,14 +141,18 @@ void main() {
 
 	{
 		uint data = (
-			#ifdef TERRAIN
+			#ifdef CLRWL
+				packFloat2x16(f16vec2(clrwl_light.y, float16_t(0.0)))
+			#elif defined TERRAIN
 				packHalf2x16(vec2(v.light.y, 0.0))
 			#else
 				v.float2x16_light >> 16u
 			#endif
 		); // The sign bit (#15) is always zero.
 
-		#ifdef TERRAIN
+		#ifdef CLRWL
+			float16_t ao = corner_ao_curve(clrwl_ao);
+		#elif defined TERRAIN
 			float16_t ao = corner_ao_curve(float16_t(v.ao));
 		#else
 			float16_t ao = float16_t(1.0);
@@ -200,7 +221,9 @@ void main() {
 		#endif
 
 		immut float16_t block_light = (
-			#ifdef TERRAIN
+			#ifdef CLRWL
+				clrwl_light.x
+			#elif defined TERRAIN
 				float16_t(v.light.x)
 			#else
 				unpackFloat2x16(v.float2x16_light).x

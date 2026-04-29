@@ -4,6 +4,10 @@
 	#include "/prelude/core.glsl"
 #endif
 
+#ifdef CLRWL
+	#define TEXTURED
+#endif
+
 #ifdef DEFERRED_IGNORE
 	/* RENDERTARGETS: 1,2 */
 	#ifdef SHADOWS_ENABLED
@@ -20,7 +24,9 @@
 #else
 	layout(location = 0) out f16vec3 colortex1;
 
-	#ifdef ALPHA_CHECK
+	#ifdef CLRWL
+		layout(depth_greater) out float gl_FragDepth;
+	#elif defined ALPHA_CHECK
 		layout(depth_greater) out float gl_FragDepth;
 
 		uniform float alphaTestRef;
@@ -49,7 +55,19 @@ in VertexData {
 
 void main() {
 	#ifdef TEXTURED
-		#ifdef TINTED
+		#ifdef CLRWL
+			immut f16vec4 raw_color = f16vec4(texture(gtexture, v.coord));
+			vec4 clrwl_color; vec2 _clrwl_light; float _clrwl_ao; vec4 clrwl_overlay_color;
+			clrwl_computeFragment(raw_color, clrwl_color, _clrwl_light, _clrwl_ao, clrwl_overlay_color);
+			clrwl_color.rgb = mix(clrwl_color.rgb, clrwl_overlay_color.rgb, clrwl_overlay_color.a);
+			f16vec4 color = f16vec4(clrwl_color);
+
+			#ifdef TRANSLUCENT
+				colortex1 = f16vec4(linear(color.rgb), color.a);
+			#else
+				colortex1 = linear(color.rgb);
+			#endif
+		#elif defined TINTED
 			#ifdef TRANSLUCENT
 				immut f16vec4 color = f16vec4(texture(gtexture, v.coord));
 				colortex1 = f16vec4(unpackUnorm4x8(v.tint)) * f16vec4(linear(color.rgb), color.a);

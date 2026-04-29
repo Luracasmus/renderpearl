@@ -13,6 +13,9 @@ const float16_t min_n_dot_l = float16_t(0.0001);
 
 const uint colortex2_g_deferred_ignore = 0xE6000000u; // Just zeroes but with the "f0 enum" set to 230.
 
+// The actual lowest AO level seems to be a bit above, around `0.19607`. This feels safer if precision changes. We saturate too for safety.
+const float min_vanilla_ao = 0.1875;
+
 // Functions to simplify use of instruction arguments that make clamping essentially free:
 // See 'CLMP' in RDNA3.5 or 'CM' in RDNA4, for example.
 // Beware that clamping/saturation range depends on type.

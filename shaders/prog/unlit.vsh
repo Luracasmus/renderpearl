@@ -2,6 +2,10 @@
 
 out gl_PerVertex { vec4 gl_Position; };
 
+#ifdef CLRWL
+	#define TEXTURED
+#endif
+
 out VertexData {
 	#ifdef TINTED
 		layout(location = 0, component = 0) flat uint tint;
@@ -32,7 +36,6 @@ void main() {
 	#endif
 	{
 		vec3 model = vec3(gl_Vertex);
-
 
 		gl_Position = proj_mmul(mat4(gl_ProjectionMatrix), rot_trans_mmul(mat4(gl_ModelViewMatrix), model));
 
