@@ -64,6 +64,7 @@ Support for mods that modify the Iris shader pipeline, such as Chunks Fade In, i
   * `COMPUTE_SHADERS`
   * `CUSTOM_IMAGES`
   * `ENTITY_TRANSLUCENT`
+  * `PER_BUFFER_BLENDING`
   * `SEPARATE_HARDWARE_SAMPLERS`
   * `SSBO`
 * **Graphics drivers** with support for **GLSL 4.60.8+**.
