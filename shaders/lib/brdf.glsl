@@ -24,7 +24,7 @@
 
 #ifdef FLOAT16
 	// `float16_t` adaptation from https://google.github.io/filament/Filament.html#listing_speculardfp16
-	float16_t d_ggx(float16_t roughness, float16_t n_dot_h, f16vec3 normal, f16vec3 half_dir) {
+	float16_t d_ggx_fp16(float16_t roughness, float16_t n_dot_h, f16vec3 normal, f16vec3 half_dir) {
 		const float16_t f16_max = float16_t(65504.0);
 
 		immut f16vec3 n_x_h = cross(normal, half_dir);
@@ -34,7 +34,7 @@
 		return min(d, f16_max);
 	}
 #else
-	float d_ggx(float roughness, float n_dot_h, f16vec3 _normal, f16vec3 _half_dir) {
+	float d_ggx_fp32(float roughness, float n_dot_h) {
 		immut float a = n_dot_h * roughness;
 		immut float k = roughness / (1.0 - n_dot_h * n_dot_h + a * a);
 		immut float d = k * k * (1.0/PI);
@@ -88,13 +88,26 @@ f16vec3 brdf(
 ) {
 	immut f16vec3 f0 = is_metal ? color : f16vec3(f0_in);
 
-	immut f16vec3 half_dir = normalize(rec_to_lig_dir - obs_to_rec_dir); // Halfway between light and observer direction from receiver.
+	#ifdef FLOAT16
+		immut f16vec3 half_dir = normalize(rec_to_lig_dir - obs_to_rec_dir); // Halfway between light and observer direction from receiver.
+
+		immut float16_t n_dot_h = saturate(dot(normal, half_dir));
+		immut float16_t l_dot_h = saturate(dot(rec_to_lig_dir, half_dir));
+
+		immut float16_t d = d_ggx_fp16(roughness, n_dot_h, normal, half_dir);
+	#else
+		// Save one multiplication by `rcp_half_vec_len`.
+		immut f16vec3 half_vec = rec_to_lig_dir - obs_to_rec_dir;
+		immut float16_t rcp_half_vec_len = inversesqrt(dot(half_vec, half_vec));
+
+		immut float16_t n_dot_h = saturate(dot(normal, half_vec) * rcp_half_vec_len);
+		immut float16_t l_dot_h = saturate(dot(rec_to_lig_dir, half_vec) * rcp_half_vec_len);
+
+		immut float16_t d = d_ggx_fp32(roughness, n_dot_h);
+	#endif
 
 	immut float16_t n_dot_v = saturate(dot(normal, -obs_to_rec_dir));
-	immut float16_t n_dot_h = saturate(dot(normal, half_dir));
-	immut float16_t l_dot_h = saturate(dot(rec_to_lig_dir, half_dir));
 
-	immut float16_t d = d_ggx(roughness, n_dot_h, normal, half_dir);
 	immut float16_t v = v_smith_ggx_correlated(roughness, n_dot_v, n_dot_l);
 	immut f16vec3 f90 = saturate(float16_t(50.0) * f0);
 	immut f16vec3 f = f_schlick(f0, f90, l_dot_h);
