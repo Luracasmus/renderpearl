@@ -1,0 +1,2 @@
+#define END
+#include "/world_default/clrwl_gbuffers_additive.vsh"
