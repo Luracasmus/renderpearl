@@ -1,5 +1,5 @@
 /*
-	// TODO: Ths would be better but is broken for some reason.
+	// TODO: Broken, waiting on Colorwheel update.
 	# //define CLRWL
 	# //include "/prog/lit.vsh"
 */
