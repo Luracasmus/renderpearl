@@ -4,6 +4,7 @@ out gl_PerVertex { vec4 gl_Position; };
 
 #ifdef CLRWL
 	#define TEXTURED
+	#define TINTED
 #endif
 
 out VertexData {

@@ -6,6 +6,7 @@
 
 #ifdef CLRWL
 	#define TEXTURED
+	#define TINTED
 #endif
 
 #ifdef DEFERRED_IGNORE
@@ -61,11 +62,12 @@ void main() {
 			clrwl_computeFragment(raw_color, clrwl_color, _clrwl_light, _clrwl_ao, clrwl_overlay_color);
 			clrwl_color.rgb = mix(clrwl_color.rgb, clrwl_overlay_color.rgb, clrwl_overlay_color.a);
 			f16vec4 color = f16vec4(clrwl_color);
+			color.rgb = unpack_un11_11_10(v.tint) * linear(color.rgb);
 
 			#ifdef TRANSLUCENT
-				colortex1 = f16vec4(linear(color.rgb), color.a);
+				colortex1 = color;
 			#else
-				colortex1 = linear(color.rgb);
+				colortex1 = color.rgb;
 			#endif
 		#elif defined TINTED
 			#ifdef TRANSLUCENT
