@@ -157,6 +157,8 @@ void main() {
 	uvec3 gbuf_gba;
 	f16vec3 color;
 	float16_t block_light_level;
+	uint8_t f0_enum;
+	bool deferred_ignore;
 
 	if (is_geo) {
 		gbuf_gba = (
@@ -167,11 +169,19 @@ void main() {
 			#endif
 		);
 
-		immut f16vec4 color_block_light = f16vec4(imageLoad(colorimg1, texel));
-		color = color_block_light.rgb;
-		block_light_level = color_block_light.a;
+		f0_enum = uint8_t(gbuf_gba.x >> 24u);
+		deferred_ignore = f0_enum == uint8_t(230u);
+
+		if (deferred_ignore) {
+			is_geo = false;
+		} else {
+			immut f16vec4 color_block_light = f16vec4(imageLoad(colorimg1, texel));
+			color = color_block_light.rgb;
+			block_light_level = color_block_light.a;
+		}
 	} else {
 		gbuf_gba.xy = uvec2(0u);
+		deferred_ignore = false;
 	}
 
 	immut vec2 texel_size = 1.0 / vec2(unpackUint2x16(uint(packedView)));
@@ -286,9 +296,7 @@ void main() {
 		barrier(); // This control flow is safe since it's guaranteed to be the same across the work group.
 	}
 
-	immut uint8_t f0_enum = uint8_t(gbuf_gba.x >> 24u);
-
-	if (f0_enum != uint8_t(230u)) { // Exit on "deferred ignore" flag.
+	if (!deferred_ignore) {
 		immut f16vec3 n_pe = f16vec3(normalize(pe));
 
 		#ifdef NETHER
