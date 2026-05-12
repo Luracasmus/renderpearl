@@ -100,6 +100,8 @@ screen.POST=§6◀§r Efterbearbetning §6▶
 	option.AUTO_EXP=§e⌚§r Automatisk Exponering
 	option.AUTO_EXP_SPEED=§b⌚§r Interpolationshastighet
 		option.AUTO_EXP_SPEED.comment=Styr interpolationshastigheten i §l§b⌚§r§l Automatisk Exponering§r
+	option.AUTO_EXP_TARGET=§b⌚§r Önskad Ljusstyrka
+		option.AUTO_EXP_TARGET.comment=Önskat geometriskt medelvärde av skärmens ljusstyrka innan tonemapping.
 
 	option.SMAA_THRESHOLD=§e⌚§r Kontrasttröskel
 		option.SMAA_THRESHOLD.comment=Tröskeln som används i färgbaserad kantdetektering\nLägre värden gör att fler kanter kantutjämnas

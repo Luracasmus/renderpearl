@@ -153,6 +153,8 @@ screen.POST=§6◀§r Post Processing §6▶
 		value.AUTO_EXP.0=§cOff
 	option.AUTO_EXP_SPEED=§b⌚§r Interpolation Speed
 		option.AUTO_EXP_SPEED.comment=Controls the interpolation speed of §l§b⌚§r§l Automatic Exposure§r
+	option.AUTO_EXP_TARGET=§b⌚§r Target Brightness
+		option.AUTO_EXP_TARGET.comment=Target geometric average brightness of the screen before tonemapping.
 
 	screen.SMAA=§6◀§r SMAA §6▶
 		option.SMAA_THRESHOLD=§e⌚§r Contrast Threshold

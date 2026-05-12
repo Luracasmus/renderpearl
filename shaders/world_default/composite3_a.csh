@@ -65,13 +65,13 @@ void main() {
 		const vec2 composite_wg_size = vec2(8.0, 16.0); // Keep up to date.
 		immut vec2 work_groups = ceil(vec2(unpackUint2x16(uint(packedView))) / composite_wg_size);
 
-		const float16_t target_geo_avg_luma = float16_t(0.5);
+		const float16_t target_geo_avg_luma = float16_t(AUTO_EXP_TARGET);
 
 		immut float16_t geo_avg_luma = float16_t(exp(float(subgroupBroadcastFirst(auto_exp.sum_log_luma)) * LOG2_E / (512.0 * work_groups.x * work_groups.y)));
-		immut float16_t target_exposure = target_geo_avg_luma / geo_avg_luma;
+		immut float16_t sqrt_target_exposure = sqrt(target_geo_avg_luma) * inversesqrt(geo_avg_luma); // TODO: Is this the best way to do this?
 
 		auto_exp.exposure = max(mix(
-			mix(float16_t(1.0), sqrt(target_exposure), float16_t(AUTO_EXP)),
+			mix(float16_t(1.0), sqrt_target_exposure, float16_t(AUTO_EXP)),
 			float16_t(subgroupBroadcastFirst(auto_exp.exposure)),
 			saturate(exp2(float16_t(-AUTO_EXP_SPEED) * float16_t(frameTime)))
 		), float16_t(0.0));
