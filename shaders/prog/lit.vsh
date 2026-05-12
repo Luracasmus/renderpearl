@@ -249,7 +249,7 @@ void main() {
 		#if defined TERRAIN || defined TRANSLUCENT
 			v.misc_packed = bitfieldInsert(
 				v.misc_packed,
-				uint(fma(alpha, float16_t(2047.0), float16_t(0.5))), // Scale and round from (0.0, 1.0] to [0, 2047].
+				uint(min(uint16_t(fma(alpha, float16_t(2047.0), float16_t(0.5))), uint16_t(2047u))), // Scale and round from (0.0, 1.0] to [0, 2047].
 				5, 11
 			); // Pack alpha.
 		#endif
