@@ -14,6 +14,16 @@
 	#ifdef CHUNKS_FADE_IN_ENABLED
 		#warning "RenderPearl: Chunks Fade In support is experimental. Various issues may occur."
 	#endif
+
+	#ifdef HAS_COLORWHEEL
+		#if COLORWHEEL_VERSION < 10205
+			#warning "RenderPearl: The currently installed version of Colorwheel does not support accessing the crumbling texture in block breaking overlay vertex shaders. Please update to Colorwheel 1.2.5 or later if possible. Falling back to unlit rendering."
+		#endif
+
+		#if COLORWHEEL_VERSION < 10209 && defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI)
+			#warning "RenderPearl: Colorwheel shaders may fail to compile on this version of Colorwheel with AMD graphics drivers for Windows. Please update to Colorwheel 1.2.9 or later if you encounter any issues."
+		#endif
+	#endif
 #endif
 
 const ivec3 workGroups = ivec3(1, 1, 1);
