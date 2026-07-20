@@ -7,6 +7,11 @@ f16vec2 norm_light_level() {
 		// [8, 248] -> [0, 1]
 		immut f16vec2 scale = f16vec2(1.0/240.0);
 		immut f16vec2 offset = f16vec2(-1.0/30.0);
+	#elif MC_VERSION >= 260100
+		// `gl_TextureMatrix[1]` is broken here.
+		// [0, 240] -> [0, 1]
+		immut f16vec2 scale = f16vec2(1.0/240.0);
+		immut f16vec2 offset = f16vec2(0.0);
 	#else
 		immut mat4 lm_tex_mat = mat4(gl_TextureMatrix[1]);
 		immut f16vec2 scale = f16vec2(lm_tex_mat[0].x, lm_tex_mat[1].y) * f16vec2(16.0 / 15.0);
