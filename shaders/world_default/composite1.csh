@@ -10,7 +10,7 @@ uniform layout(rg8) restrict writeonly image2D edge;
 
 /*
 	SMAA Color Edge Detection
-	https://github.com/Luracasmus/smaa-mc/blob/main/shaders/composite1.csh
+	https://github.com/Luracasmus/smaa-mc/blob/v1.4.0/shaders/composite.csh
 
 	Copyright (C) 2013 Jorge Jimenez (jorge@iryoku.com)
 	Copyright (C) 2013 Jose I. Echevarria (joseignacioechevarria@gmail.com)

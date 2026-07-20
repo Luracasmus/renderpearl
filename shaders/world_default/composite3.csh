@@ -18,7 +18,7 @@ shared struct {
 
 /*
 	SMAA Neighborhood Blending
-	https://github.com/Luracasmus/smaa-mc/blob/main/shaders/composite2.csh
+	https://github.com/Luracasmus/smaa-mc/blob/v1.4.0/shaders/composite2.csh
 
 	Copyright (C) 2013 Jorge Jimenez (jorge@iryoku.com)
 	Copyright (C) 2013 Jose I. Echevarria (joseignacioechevarria@gmail.com)

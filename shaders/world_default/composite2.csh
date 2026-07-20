@@ -11,7 +11,7 @@ uniform int packedView;
 
 /*
 	SMAA Blending Weight Calculation
-	https://github.com/Luracasmus/smaa-mc/blob/main/shaders/composite1_a.csh
+	https://github.com/Luracasmus/smaa-mc/blob/v1.4.0/shaders/composite1.csh
 
 	Copyright (C) 2013 Jorge Jimenez (jorge@iryoku.com)
 	Copyright (C) 2013 Jose I. Echevarria (joseignacioechevarria@gmail.com)
