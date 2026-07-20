@@ -101,7 +101,7 @@ void main() {
 
 	/*
 		FidelityFX Contrast Adaptive Sharpening 1.2
-		https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/blob/main/sdk/include/FidelityFX/gpu/cas/ffx_cas.h#L107
+		https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/blob/v1.1.4/sdk/include/FidelityFX/gpu/cas/ffx_cas.h#L107
 
 		Copyright (C) 2024 Advanced Micro Devices, Inc.
 
