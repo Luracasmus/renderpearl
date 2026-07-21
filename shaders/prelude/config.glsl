@@ -68,8 +68,8 @@
 	#define AUTO_EXP_TARGET 0.3 // [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 	// SMAA
-		#define SMAA_THRESHOLD 0.02 // [0.005 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1]
-		#define SMAA_SEARCH 32 // [8 16 32 48 64 80 96 112]
+		#define SMAA_THRESHOLD 0.1 // [0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5]
+		#define SMAA_SEARCH 32 // [4 8 16 32 48 64 80 96 112]
 		#define SMAA_SEARCH_DIAG 16 // [0 4 8 12 16 20]
 		#define SMAA_CORNER 25 // [0 25 50 75 100]
 
