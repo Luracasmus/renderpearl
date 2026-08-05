@@ -122,7 +122,7 @@
 #endif
 
 // https://opengl.gpuinfo.org/listreports.php?extension=GL_KHR_shader_subgroup
-#if (SUBGROUP >= 1 && ((defined GL_KHR_shader_subgroup_basic && defined GL_KHR_shader_subgroup_vote && GL_KHR_shader_subgroup_arithmetic && GL_KHR_shader_subgroup_ballot && GL_KHR_shader_subgroup_shuffle_relative) || defined GL_KHR_shader_subgroup || defined MC_GL_KHR_shader_subgroup)) || (SUBGROUP >= 2 && (defined MC_GL_VENDOR_NVIDIA || defined MC_GL_RENDERER_RADEON)) || SUBGROUP >= 3
+#if (SUBGROUP >= 1 && ((defined GL_KHR_shader_subgroup_basic && defined GL_KHR_shader_subgroup_vote && GL_KHR_shader_subgroup_arithmetic && GL_KHR_shader_subgroup_ballot && GL_KHR_shader_subgroup_shuffle_relative) || (defined MC_GL_KHR_shader_subgroup_basic && defined MC_GL_KHR_shader_subgroup_vote && MC_GL_KHR_shader_subgroup_arithmetic && MC_GL_KHR_shader_subgroup_ballot && MC_GL_KHR_shader_subgroup_shuffle_relative) || defined GL_KHR_shader_subgroup || defined MC_GL_KHR_shader_subgroup)) || (SUBGROUP >= 2 && (defined MC_GL_VENDOR_NVIDIA || defined MC_GL_RENDERER_RADEON)) || SUBGROUP >= 3
 	#extension GL_KHR_shader_subgroup_basic : require
 	#extension GL_KHR_shader_subgroup_vote : require
 	#extension GL_KHR_shader_subgroup_arithmetic : require
