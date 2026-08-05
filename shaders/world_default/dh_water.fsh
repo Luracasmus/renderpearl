@@ -46,7 +46,7 @@ in
 #include "/lib/luminance.glsl"
 #define SKY_FSH
 #include "/lib/fog.glsl"
-#include "/lib/material/ao.glsl"
+#include "/lib/material/ao_1.glsl"
 #include "/lib/light/non_block.glsl"
 
 void main() {

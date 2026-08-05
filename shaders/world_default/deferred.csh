@@ -37,7 +37,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #include "/lib/brdf.glsl"
 #include "/lib/light/non_block.glsl"
 #include "/lib/light/sample_ll_block.glsl"
-#include "/lib/material/ao.glsl"
+#include "/lib/material/ao_1.glsl"
 
 #ifndef NETHER
 	uniform float frameTimeCounter;

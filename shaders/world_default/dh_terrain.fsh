@@ -12,11 +12,6 @@ layout(depth_unchanged) out float gl_FragDepth;
 
 #include "/lib/luminance.glsl"
 
-#if DIR_SHADING != 0
-	#include "/lib/octa_enc.glsl"
-	#include "/lib/material/ao.glsl"
-#endif
-
 in
 #include "/lib/v_data_dh.glsl"
 

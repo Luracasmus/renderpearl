@@ -71,7 +71,8 @@ in
 #include "/lib/luminance.glsl"
 #include "/lib/srgb.glsl"
 #include "/lib/material/specular.glsl"
-#include "/lib/material/ao.glsl"
+#include "/lib/material/ao_0.glsl"
+#include "/lib/material/ao_1.glsl"
 #include "/lib/light/non_block.glsl"
 
 #if !defined VOXY && !defined DISTANT_HORIZONS
@@ -115,7 +116,7 @@ void main() {
 		raw_clrwl_color.rgb = mix(raw_clrwl_color.rgb, clrwl_overlay_color.rgb, clrwl_overlay_color.a);
 
 		immut f16vec2 clrwl_light = fma(f16vec2(raw_clrwl_light), f16vec2(16.0 / 15.0), f16vec2(-0.5 / 15.0));
-		immut float16_t clrwl_ao = saturate(fma(float16_t(raw_clrwl_ao), float16_t(1.0 / (1.0 - min_vanilla_ao)), float16_t(-min_vanilla_ao))); // Scale AO range to full [0, 1].
+		immut float clrwl_ao = saturate(fma(raw_clrwl_ao, 1.0 / (1.0 - min_vanilla_ao), -min_vanilla_ao)); // Scale AO range to full [0, 1].
 
 		f16vec4 color = f16vec4(raw_clrwl_color);
 		const bool will_discard = false;
@@ -216,12 +217,17 @@ void main() {
 	);
 
 	#ifdef CLRWL
-		float16_t ao = corner_ao_curve(clrwl_ao);
+		immut float16_t linear_ao = float16_t(clrwl_ao);
+		immut f16vec3 w_ao_dir = ao_dir(w_face_normal, pe, clrwl_ao);
 	#elif defined TERRAIN
-		float16_t ao = corner_ao_curve(float16_t(v.ao));
+		immut float16_t linear_ao = float16_t(v.ao);
+		immut f16vec3 w_ao_dir = ao_dir(w_face_normal, pe, v.ao);
 	#else
-		float16_t ao = float16_t(1.0);
+		const float16_t linear_ao = float16_t(1.0);
+		const f16vec3 w_ao_dir = f16vec3(0.0);
 	#endif
+
+	float16_t ao = corner_ao_curve(linear_ao);
 
 	#if DIR_SHADING != 0
 		ao *= dir_shading(w_tex_normal);
