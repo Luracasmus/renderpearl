@@ -67,11 +67,10 @@ out gl_PerVertex { vec4 gl_Position; };
 				immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
 				immut vec3 gb_view = pe * MV_INV;
-				immut vec3 gb_ndc = proj(gbufferProjection, gb_view);
-				immut f16vec3 clamped_pe = f16vec3(MV_INV * proj_inv(gbufferProjectionInverse,
-					clamp(gb_ndc,
-					vec3(-1.0, -1.0, 0.0),
-					vec3(1.0, 1.0, 1.01)) // For some reason clamping to exactly Z <= 1.0 here breaks lights behind the camera.
+				immut vec3 gb_ndc = proj(gbufferProjection, vec3(gb_view.xy, min(gb_view.z, 0.0)));
+				immut f16vec3 clamped_pe = f16vec3(MV_INV * proj_inv(
+					gbufferProjectionInverse,
+					vec3(clamp(gb_ndc.xy, -1.0, 1.0), gb_ndc.z)
 				)); // Player eye position clamped to frustum.
 
 				immut float16_t intensity = max(float16_t(mc_Entity.x), float16_t(at_midBlock.w));
