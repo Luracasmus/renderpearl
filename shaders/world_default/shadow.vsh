@@ -20,7 +20,7 @@ out gl_PerVertex { vec4 gl_Position; };
 
 	#include "/lib/mmul.glsl"
 
-	#ifdef SOLID_TERRAIN
+	#ifdef TERRAIN
 		uniform bool LLCollect;
 		uniform vec3 cameraPosition, cameraPositionFract;
 		uniform mat4 gbufferProjection, gbufferProjectionInverse, shadowModelViewInverse;
@@ -58,7 +58,7 @@ out gl_PerVertex { vec4 gl_Position; };
 			v.coord = rot_trans_mmul(mat4(gl_TextureMatrix[0]), vec2(gl_MultiTexCoord0));
 		#endif
 
-		#ifdef SOLID_TERRAIN
+		#ifdef TERRAIN
 			if (LLCollect) {
 				immut vec3 pf = rot_trans_mmul(shadowModelViewInverse, view);
 				immut vec3 pe = pf - mvInv3;
@@ -93,7 +93,16 @@ out gl_PerVertex { vec4 gl_Position; };
 					// Cull lights too far outside frustum, using the same method as in per-work group culling when sampling.
 					light_mhtn_dist_from_bb <= offset_intensity
 				) {
-					immut bool fluid = mc_Entity.y == 1.0;
+					float16_t lod_dist = length(f16_pe) / float16_t(LL_DIST);
+
+					#ifdef SOLID_TERRAIN
+						immut bool is_fluid = mc_Entity.y == 1.0;
+						if (is_fluid) {
+							lod_dist += float16_t(LAVA_LOD_BIAS);
+						}
+					#else
+						const bool is_fluid = false;
+					#endif
 
 					immut uvec3 seed = uvec3(ivec3((0.5 + cameraPosition) + pe));
 
@@ -101,7 +110,7 @@ out gl_PerVertex { vec4 gl_Position; };
 					// Increase times two each LOD.
 					// The fact that the values resulting from higher LODs are divisible by the lower ones means that no lights will appear only further away.
 					if (uint8_t(pcg(seed.x + pcg(seed.y + pcg(seed.z)))) % (uint8_t(1u) << uint8_t(min(float16_t(7.0), fma(
-						(fluid ? float16_t(LAVA_LOD_BIAS) : float16_t(0.0)) + length(f16_pe) / float16_t(LL_DIST),
+						lod_dist,
 						float16_t(LOD_FALLOFF),
 						float16_t(0.5)
 					)))) == uint8_t(0u)) {
@@ -109,7 +118,7 @@ out gl_PerVertex { vec4 gl_Position; };
 
 						immut f16vec3 avg_col = f16vec3(gl_Color.rgb) * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
 
-						push_to_llq(offset_floor_pf, avg_col, uint(intensity), fluid);
+						push_to_llq(offset_floor_pf, avg_col, uint(intensity), is_fluid);
 					}
 				}
 			}
