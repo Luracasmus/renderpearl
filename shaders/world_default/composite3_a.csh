@@ -62,8 +62,9 @@ void main() {
 	#endif
 
 	#if AUTO_EXP
-		const vec2 composite_wg_size = vec2(8.0, 16.0); // Keep up to date.
-		immut vec2 work_groups = ceil(vec2(unpackUint2x16(uint(packedView))) / composite_wg_size);
+		const vec2 composite_wg_size = vec2(8.0, 16.0); // `composite.csh` work group size. Keep up to date.
+		const vec2 sample_wg_frequency = vec2(8.0, 4.0); // Every 8x4 work groups of `composite.csh` takes one sample.
+		immut vec2 work_groups = ceil(vec2(unpackUint2x16(uint(packedView))) / composite_wg_size) / sample_wg_frequency;
 
 		const float16_t target_geo_avg_luma = float16_t(AUTO_EXP_TARGET);
 

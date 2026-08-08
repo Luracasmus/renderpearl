@@ -194,9 +194,15 @@ void main() {
 	#endif
 
 	#if AUTO_EXP
-		if (gl_LocalInvocationIndex == 0u) {
+		if (
+			u8vec2(u16vec2(gl_WorkGroupID.xy) & u16vec2(7u, 3u)) == u8vec2(0u) &&
+			gl_LocalInvocationIndex == 0u
+		) {
 			// Clamp to avoid over- or underflowing the counter.
 			atomicAdd(auto_exp.sum_log_luma, int(roundEven(clamp(log2(luma), float16_t(-14.0), float16_t(14.0)) * float16_t(256.0))));
+
+			// DEBUG: sample positions:
+			// color = vec3(1.0);
 		}
 
 		color *= float16_t(subgroupBroadcastFirst(auto_exp.exposure));
