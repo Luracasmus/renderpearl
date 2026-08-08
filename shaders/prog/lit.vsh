@@ -17,9 +17,7 @@ out gl_PerVertex { vec4 gl_Position; };
 #include "/lib/norm_light_level.glsl"
 #include "/lib/mv_inv.glsl"
 
-// TODO: Handle these better:
 in vec2 mc_midTexCoord;
-uniform mat4 gbufferProjectionInverse;
 uniform sampler2D gtexture;
 
 #ifdef SHADOWS_ENABLED
@@ -39,6 +37,7 @@ uniform sampler2D gtexture;
 #ifdef TERRAIN
 	uniform bool LLCollect;
 	uniform vec3 cameraPosition, cameraPositionFract;
+	uniform mat4 gbufferProjectionInverse;
 
 	in vec2 mc_Entity;
 	in vec4 at_midBlock;
@@ -79,10 +78,29 @@ void main() {
 
 	v.coord = rot_trans_mmul(mat4(gl_TextureMatrix[0]), vec2(gl_MultiTexCoord0));
 
+	immut u16vec2 texels = u16vec2(fma(abs(v.coord - mc_midTexCoord), vec2(2 * textureSize(gtexture, 0)), vec2(0.5)));
+	v.uint2x16_face_tex_size = packUint2x16(texels);
+	v.unorm2x16_mid_coord = packUnorm2x16(mc_midTexCoord);
+
 	immut vec3 pe = MV_INV * view;
 	immut f16vec3 f16_pe = f16vec3(pe);
 	immut f16vec3 abs_pe = abs(f16_pe);
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
+
+	f16vec4 color_alpha_or_ao = f16vec4(gl_Color);
+	#ifdef ENTITY_COLOR
+		immut f16vec4 entity_color = f16vec4(entityColor);
+		color_alpha_or_ao.rgb = mix(color_alpha_or_ao.rgb, entity_color.rgb, entity_color.a);
+	#endif
+
+	v.misc_packed = 0u; // TODO: Optimize.
+
+	#if defined TERRAIN && !defined TRANSLUCENT
+		immut bool is_metal = abs(mc_Entity.x) < 0.1; // `mc_Entity.x == 0.0`.
+		if (is_metal) {
+			v.misc_packed = 0x80000000u; // Pack is_water_or_metal (set last bit to 1).
+		}
+	#endif
 
 	#ifdef NO_NORMAL
 		immut f16vec3 w_normal = f16vec3(mvInv2); // == MV_INV * vec3(0.0, 0.0, 1.0)
@@ -93,34 +111,12 @@ void main() {
 
 		v.snorm4x8_octa_tangent_normal = packSnorm4x8(f16vec4(octa_encode(w_tangent), octa_encode(w_normal)));
 
-		#if NORMALS != 2 && !(NORMALS == 1 && defined MC_NORMAL_MAP)
-			immut u16vec2 texels = u16vec2(fma(abs(v.coord - mc_midTexCoord), vec2(2 * textureSize(gtexture, 0)), vec2(0.5)));
-			v.uint2x16_face_tex_size = packUint2x16(texels);
-			v.unorm2x16_mid_coord = packUnorm2x16(mc_midTexCoord);
-		#endif
-
 		// Pack handedness.
 		v.misc_packed = bitfieldInsert(
 			v.misc_packed,
 			floatBitsToUint(at_tangent.w) >> 31u, // The sign bit.
 			4, 1
 		);
-	#endif
-
-	f16vec4 color_alpha_or_ao = f16vec4(gl_Color);
-	#ifdef ENTITY_COLOR
-		immut f16vec4 entity_color = f16vec4(entityColor);
-		color_alpha_or_ao.rgb = mix(color_alpha_or_ao.rgb, entity_color.rgb, entity_color.a);
-	#endif
-	immut f16vec3 avg_col = color_alpha_or_ao.rgb * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
-	immut float16_t avg_luma = luminance(avg_col);
-	v.misc_packed = packFloat2x16(f16vec2(float16_t(0.0), avg_luma));
-
-	#if defined TERRAIN && !defined TRANSLUCENT
-		immut bool is_metal = abs(mc_Entity.x) < 0.1; // `mc_Entity.x == 0.0`.
-		if (is_metal) {
-			v.misc_packed |= 0x80000000u; // Pack is_water_or_metal (set last bit to 1).
-		}
 	#endif
 
 	#ifdef TERRAIN
@@ -187,6 +183,8 @@ void main() {
 				)))) == uint8_t(0u)) {
 					immut vec3 pf = pe + mvInv3;
 					immut uvec3 offset_floor_pf = clamp(uvec3(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + cameraPositionFract + pf)), 0u, 511u);
+
+					immut f16vec3 avg_col = color_alpha_or_ao.rgb * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
 
 					push_to_llq(offset_floor_pf, avg_col, v.misc_packed, fluid);
 				}

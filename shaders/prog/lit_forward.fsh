@@ -146,7 +146,8 @@ void main() {
 	color.rgb *= tint;
 
 	immut float16_t srgb_luma = luminance(color.rgb);
-	immut float16_t avg_srgb_luma = abs(unpackFloat2x16(v.misc_packed).y);
+	immut vec2 mid_coord = unpackUnorm2x16(v.unorm2x16_mid_coord);
+	immut float16_t avg_srgb_luma = luminance(tint * f16vec3(textureLod(gtexture, mid_coord, 4.0).rgb));
 
 	immut bool is_water = uint8_t(v.misc_packed >> 31u) == uint8_t(1u);
 	const bool is_metal = false; // TODO: LabPBR.
@@ -176,7 +177,7 @@ void main() {
 			#if NORMALS == 1 && defined MC_NORMAL_MAP
 				immut f16vec3 w_tex_normal = f16vec3(w_tbn * sample_normal(texture(normals, v.coord).rg));
 			#else
-				immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, v.unorm2x16_mid_coord, v.uint2x16_face_tex_size, srgb_luma));
+				immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, mid_coord, v.uint2x16_face_tex_size, srgb_luma));
 			#endif
 		#endif
 	#endif

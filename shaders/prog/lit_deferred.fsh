@@ -76,7 +76,8 @@ void main() {
 	color.rgb *= tint;
 
 	immut float16_t srgb_luma = luminance(color.rgb);
-	immut float16_t avg_srgb_luma = abs(unpackFloat2x16(v.misc_packed).y);
+	immut vec2 mid_coord = unpackUnorm2x16(v.unorm2x16_mid_coord);
+	immut float16_t avg_srgb_luma = luminance(tint * f16vec3(textureLod(gtexture, mid_coord, 4.0).rgb));
 
 	#ifdef TERRAIN
 		/*
@@ -111,14 +112,14 @@ void main() {
 		#if NORMALS == 1 && defined MC_NORMAL_MAP
 			immut f16vec3 w_tex_normal = f16vec3(w_tbn * sample_normal(texture(normals, v.coord).rg));
 		#else
-			immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, v.unorm2x16_mid_coord, v.uint2x16_face_tex_size, srgb_luma));
+			immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, mid_coord, v.uint2x16_face_tex_size, srgb_luma));
 
 			/*
 				immut ivec2 half_texels = ivec2(unpackUint2x16(
 					v.uint2x16_face_tex_size
 				) / uint16_t(2u) - uint16_t(1u));
 
-				immut vec2 local_coord = v.coord - unpackUnorm2x16(v.unorm2x16_mid_coord);
+				immut vec2 local_coord = v.coord - mid_coord;
 				immut ivec2 local_texel = ivec2(local_coord * vec2(textureSize(gtexture, 0)));
 
 				color.rgb += vec4(
