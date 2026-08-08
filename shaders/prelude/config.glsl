@@ -93,8 +93,6 @@
 
 // SURFACE
 	#define WATER_OPACITY 70 // [50 60 70 80 90 100]
-	#define WAVE_SPEED 1.0 // [0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0]
-	#define WAVES 0 // [0 1 2 3 4 5 6 7 8 9 10]
 	// #define SM
 	#define SM_CH r // [r g b a]
 	#define SM_TYPE 2 // [0 1 2]

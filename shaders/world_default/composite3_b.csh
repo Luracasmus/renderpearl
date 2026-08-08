@@ -33,7 +33,7 @@ shared struct {
 void main() {
 	// Maybe we could average all the light colors here for ambient light color.
 
-	if (LLDedup) { // Deduplicate the light list queue.
+	if (subgroupBroadcastFirst(LLDedup)) { // Deduplicate the light list queue.
 		immut uint16_t local_invocation_i = uint16_t(gl_LocalInvocationIndex);
 		immut bool is_first_invoc = local_invocation_i == uint16_t(0u);
 		const uint16_t wg_size = uint16_t(gl_WorkGroupSize.x);

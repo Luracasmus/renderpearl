@@ -13,7 +13,6 @@ out gl_PerVertex { vec4 gl_Position; };
 
 #include "/lib/mmul.glsl"
 #include "/lib/luminance.glsl"
-#include "/lib/srgb.glsl"
 #include "/lib/norm_light_level.glsl"
 #include "/lib/mv_inv.glsl"
 
@@ -31,22 +30,13 @@ uniform sampler2D gtexture;
 
 	#if HAND_LIGHT
 		#include "/buf/hlq.glsl"
+		#include "/lib/srgb.glsl"
 	#endif
 #endif
 
 #ifdef TERRAIN
-	uniform bool LLCollect;
-	uniform vec3 cameraPosition, cameraPositionFract;
-	uniform mat4 gbufferProjectionInverse;
-
 	in vec2 mc_Entity;
 	in vec4 at_midBlock;
-
-	#if defined TRANSLUCENT || (WAVES != 0 && defined SOLID_TERRAIN)
-		#include "/lib/waves/offset.glsl"
-	#endif
-
-	#include "/lib/push_to_llq.glsl"
 #endif
 
 #ifdef ENTITY_COLOR
@@ -63,16 +53,7 @@ out
 #include "/lib/v_data_lit.glsl"
 
 void main() {
-	vec3 model = vec3(gl_Vertex);
-
-	#ifdef TERRAIN
-		#if defined TRANSLUCENT || (WAVES != 0 && defined SOLID_TERRAIN)
-			immut bool fluid = mc_Entity.y == 1.0;
-			if (fluid) { model.y += wave(model.xz); }
-		#endif
-	#endif
-
-	immut vec3 view = rot_trans_mmul(mat4(gl_ModelViewMatrix), model);
+	immut vec3 view = rot_trans_mmul(mat4(gl_ModelViewMatrix), vec3(gl_Vertex));
 	immut vec4 clip = proj_mmul(mat4(gl_ProjectionMatrix), view);
 	gl_Position = clip;
 
@@ -81,11 +62,6 @@ void main() {
 	immut u16vec2 texels = u16vec2(fma(abs(v.coord - mc_midTexCoord), vec2(2 * textureSize(gtexture, 0)), vec2(0.5)));
 	v.uint2x16_face_tex_size = packUint2x16(texels);
 	v.unorm2x16_mid_coord = packUnorm2x16(mc_midTexCoord);
-
-	immut vec3 pe = MV_INV * view;
-	immut f16vec3 f16_pe = f16vec3(pe);
-	immut f16vec3 abs_pe = abs(f16_pe);
-	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
 	f16vec4 color_alpha_or_ao = f16vec4(gl_Color);
 	#ifdef ENTITY_COLOR
@@ -137,59 +113,12 @@ void main() {
 		);
 
 		#ifdef TRANSLUCENT
-			if (fluid) {
+			immut bool is_fluid = mc_Entity.y == 1.0;
+			if (is_fluid) {
 				alpha *= float16_t(WATER_OPACITY * 0.01);
 				v.misc_packed |= 0x80000000u; // Pack is_water_or_metal (set last bit to 1).
 			}
 		#endif
-
-		if (LLCollect) {
-			immut f16vec3 clamped_pe = f16vec3(MV_INV * proj_inv(gbufferProjectionInverse,
-				clamp(clip.xyz / clip.w,
-				vec3(-1.0, -1.0, 0.0),
-				vec3(1.0, 1.0, 1.0))
-			)); // Player eye position clamped to frustum.
-
-			#if !(WAVES != 0 && defined SOLID_TERRAIN)
-				immut bool fluid = mc_Entity.y == 1.0;
-			#endif
-
-			// Add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
-			immut float16_t offset_intensity = emission + float16_t(0.5);
-
-			// Distance between light and closest point in frustum.
-			// In world-aligned space (player-eye) we can use Manhattan distance.
-			immut float16_t light_mhtn_dist_from_bb = dot(abs(f16_pe - clamped_pe), f16vec3(1.0));
-
-			if (
-				// Run once per face.
-				(gl_VertexID & 3) == 1 && // gl_VertexID % 4 == 1
-				// Cull too weak or non-lights.
-				emission >= float16_t(MIN_LL_INTENSITY) &&
-				// Cull vertices outside LL_DIST using Chebyshev distance.
-				chebyshev_dist < float16_t(LL_DIST) &&
-				// Cull lights too far outside frustum, using the same method as in per-work group culling when sampling.
-				light_mhtn_dist_from_bb <= offset_intensity
-			) {
-				immut uvec3 seed = uvec3(ivec3((0.5 + cameraPosition) + pe));
-
-				// LOD culling
-				// Increase times two each LOD.
-				// The fact that the values resulting from higher LODs are divisible by the lower ones means that no lights will appear only further away.
-				if (uint8_t(pcg(seed.x + pcg(seed.y + pcg(seed.z)))) % (uint8_t(1u) << uint8_t(min(float16_t(7.0), fma(
-					(fluid ? float16_t(LAVA_LOD_BIAS) : float16_t(0.0)) + length(clamped_pe) / float16_t(LL_DIST),
-					float16_t(LOD_FALLOFF),
-					float16_t(0.5)
-				)))) == uint8_t(0u)) {
-					immut vec3 pf = pe + mvInv3;
-					immut uvec3 offset_floor_pf = clamp(uvec3(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + cameraPositionFract + pf)), 0u, 511u);
-
-					immut f16vec3 avg_col = color_alpha_or_ao.rgb * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);
-
-					push_to_llq(offset_floor_pf, avg_col, v.misc_packed, fluid);
-				}
-			}
-		}
 	#else
 		#ifdef TRANSLUCENT
 			immut float16_t alpha = color_alpha_or_ao.a;
@@ -260,6 +189,11 @@ void main() {
 	#endif
 
 	#ifdef SHADOWS_ENABLED
+		immut vec3 pe = MV_INV * view;
+		immut f16vec3 f16_pe = f16vec3(pe);
+		immut f16vec3 abs_pe = abs(f16_pe);
+		immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
+
 		if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
 			immut vec2 s_ndc = shadow_proj_scale.x * (mat3x2(shadowModelView) * (pe + mvInv3));
 			v.s_distortion = distortion(s_ndc);

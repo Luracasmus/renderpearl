@@ -65,7 +65,7 @@ void push_to_llq(uvec3 offset_floor_pf, f16vec3 srgb_avg_col, uint intensity, bo
 				uint sg_incr_i;
 				#include "/lib/sg_incr.glsl"
 
-				uint packed_data = bitfieldInsert(packed_pf,intensity, 27, 4);
+				uint packed_data = bitfieldInsert(packed_pf, intensity, 27, 4);
 				if (fluid) { packed_data |= 0x80000000u; } // Set "wide" flag for lava.
 
 				llq.data[sg_incr_i] = packed_data;

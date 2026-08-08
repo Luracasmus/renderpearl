@@ -1,3 +1,2 @@
-#define TERRAIN
-#define MAYBE_FLUID
+#define SOLID_TERRAIN
 #include "shadow.vsh"
