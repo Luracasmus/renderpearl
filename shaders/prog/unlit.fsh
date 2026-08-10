@@ -105,8 +105,4 @@ void main() {
 			colortex1 = unpack_un11_11_10(v.tint);
 		#endif
 	#endif
-
-	#ifdef DEFERRED_IGNORE
-		colortex2 = colortex2_g_deferred_ignore;
-	#endif
 }

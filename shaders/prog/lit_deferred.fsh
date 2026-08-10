@@ -1,5 +1,7 @@
 #include "/prelude/core.glsl"
 
+#extension GL_KHR_shader_subgroup_quad : require
+
 /* RENDERTARGETS: 1,2 */
 #ifdef SHADOWS_ENABLED
 	layout(location = 1) out uvec4 colortex2;
@@ -36,6 +38,8 @@ in
 #include "/lib/v_data_lit.glsl"
 
 void main() {
+	immut int tex_lod = int(textureQueryLod(gtexture, v.coord).x);
+
 	#ifdef CLRWL
 		vec4 raw_clrwl_color = texture(gtexture, v.coord);
 		vec2 raw_clrwl_light;
@@ -74,6 +78,19 @@ void main() {
 		#endif
 	);
 	color.rgb *= tint;
+
+	bool color_quad_uniform =
+		subgroupQuadBroadcast(color, 0) == subgroupQuadBroadcast(color, 1) &&
+		subgroupQuadBroadcast(color, 1) == subgroupQuadBroadcast(color, 2) &&
+		subgroupQuadBroadcast(color, 2) == subgroupQuadBroadcast(color, 3);
+
+	if (color_quad_uniform) {
+		//color.rgb = vec3(0.0);
+	}
+
+	if (subgroupAll(color_quad_uniform)) {
+		//color.rgb = vec3(1.0);
+	}
 
 	immut float16_t srgb_luma = luminance(color.rgb);
 	immut vec2 mid_coord = unpackUnorm2x16(v.unorm2x16_mid_coord);

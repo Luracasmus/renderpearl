@@ -1,2 +1,2 @@
 #define CLRWL
-#include "/prog/lit_deferred.fsh"
+#include "/prog/lit_forward.fsh"

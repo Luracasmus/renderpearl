@@ -1,5 +1,7 @@
 #include "/prelude/core.glsl"
 
+#extension GL_KHR_shader_subgroup_quad : require
+
 #ifdef DEFERRED_IGNORE
 	/* RENDERTARGETS: 1,2 */
 	#ifdef SHADOWS_ENABLED
@@ -31,6 +33,7 @@
 #include "/lib/brdf.glsl"
 #include "/lib/mv_inv.glsl"
 uniform int packedView;
+uniform vec3 cameraPositionFract;
 uniform mat4 gbufferProjectionInverse;
 uniform sampler2D gtexture;
 
@@ -91,7 +94,6 @@ in
 
 	readonly
 	#include "/buf/ll.glsl"
-	uniform vec3 cameraPositionFract;
 	uniform ivec3 cameraPositionInt;
 #endif
 
@@ -153,6 +155,10 @@ void main() {
 	const bool is_metal = false; // TODO: LabPBR.
 	immut float16_t f0 = is_water ? float16_t(0.02) : float16_t(0.04); // Based on: https://google.github.io/filament/Filament.md.html // TODO: LabPBR.
 
+	immut int tex_lod = int(textureQueryLod(gtexture, v.coord).x);
+	immut u16vec2 face_tex_size = u16vec2(unpackUint2x16(v.uint2x16_face_tex_size)) >> uint16_t(tex_lod);
+	immut float max_face_tex_size = float(max(face_tex_size.x, face_tex_size.y));
+
 	#if defined SM && defined MC_SPECULAR_MAP
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
@@ -185,12 +191,24 @@ void main() {
 	color.rgb = linear(color.rgb);
 	immut f16vec3 rcp_color = float16_t(1.0) / max(color.rgb, float16_t(1.0e-5));
 
-	vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(unpackUint2x16(uint(packedView))), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
+	vec3 raw_ndc = fma(vec3(gl_FragCoord.xy / vec2(unpackUint2x16(uint(packedView))), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
 	#ifdef HAND
-		ndc.z /= MC_HAND_DEPTH;
+		raw_ndc.z /= MC_HAND_DEPTH;
 	#endif
-	immut vec3 view = proj_inv(gbufferProjectionInverse, ndc);
-	immut vec3 pe = MV_INV * view;
+	vec3 view = proj_inv(gbufferProjectionInverse, raw_ndc);
+	vec3 pf = (MV_INV * view) + mvInv3;
+	immut vec3 block_relative = pf + cameraPositionFract;
+	immut vec3 block_relative_snapped = trunc(block_relative * max_face_tex_size) / max_face_tex_size;
+	/*
+		#ifdef NO_NORMAL
+			// TODO: This should snap along the face
+		#else
+			immut vec3 t_block_relative = w_tbn * block_relative;
+		#endif
+	*/
+	pf = block_relative_snapped - cameraPositionFract;
+	immut vec3 pe = pf - mvInv3;
+	view = pe * MV_INV;
 	immut f16vec3 n_pe = f16vec3(normalize(pe));
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
 	immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
@@ -356,6 +374,19 @@ void main() {
 
 					// Now we actually check the lights per invocation, skipping the ones which are outside the BBs.
 
+					bool color_quad_uniform =
+						subgroupQuadBroadcast(pe, 0) == subgroupQuadBroadcast(pe, 1) &&
+						subgroupQuadBroadcast(pe, 1) == subgroupQuadBroadcast(pe, 2) &&
+						subgroupQuadBroadcast(pe, 2) == subgroupQuadBroadcast(pe, 3);
+
+					if (color_quad_uniform) {
+						//color.rgb = vec3(0.0);
+					}
+
+					if (subgroupAll(color_quad_uniform)) {
+						color.rgb = vec3(1.0);
+					}
+
 					for (uint16_t i = lsb; i <= msb; ++i) {
 						if (subgroupBallotBitExtract(in_bb_ballot, i)) { // This is always true when `i == lsb` or `i == msb`.
 							immut float16_t offset_intensity = float16_t(subgroupBroadcast(inv_light_offset_intensity, i));
@@ -396,10 +427,6 @@ void main() {
 			if (will_discard) { discard; } else
 		#endif
 		{
-			#ifdef DEFERRED_IGNORE
-				colortex2 = colortex2_g_deferred_ignore;
-			#endif
-
 			light += block_light;
 
 			#if defined TRANSLUCENT && !defined CLRWL
