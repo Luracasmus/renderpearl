@@ -1,4 +1,4 @@
 #define ALPHA_CHECK
 #define HAND
-#define MAYBE_EMISSIVE
+#define TRANSLUCENT
 #include "/prog/lit_forward.fsh"
