@@ -2,7 +2,7 @@
 
 #if IRIS_VERSION == 11007
 	#define TRANSLUCENT
-	#include "/prog/lit_forward.fsh"
+	#include "/prog/lit.fsh"
 #else
-	#include "/prog/lit_forward.fsh"
+	#include "/prog/lit.fsh"
 #endif

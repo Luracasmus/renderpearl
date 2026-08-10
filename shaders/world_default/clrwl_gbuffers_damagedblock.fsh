@@ -1,6 +1,6 @@
 #define CLRWL
 #if COLORWHEEL_VERSION >= 10205
-	#include "/prog/lit_forward.fsh"
+	#include "/prog/lit.fsh"
 #else
 	// Avoid missing `gtexture` in vertex stage, fixed in
 	// https://github.com/djefrey/Colorwheel/commit/de1da265d4ac0fb6a3e7a4c08af9e147547e58b4

@@ -1,2 +1,2 @@
 #define TERRAIN
-#include "/prog/lit_forward.fsh"
+#include "/prog/lit.fsh"
