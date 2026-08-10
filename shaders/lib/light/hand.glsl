@@ -10,18 +10,21 @@ const f16vec3 view_left_hand = f16vec3(-0.2, -0.2, -0.1);
 const f16vec3 view_right_hand = f16vec3(0.2, -0.2, -0.1);
 
 f16vec3 get_hand_light(
-	uint16_t light_level, uint packed_hl,
-	vec3 origin_view, vec3 view, vec3 pe, f16vec3 n_pe,
-	float16_t roughness, float16_t f0, bool is_metal,
-	f16vec3 w_tex_normal, f16vec3 w_face_normal,
-	f16vec3 color, f16vec3 rcp_color,
-	float16_t ind_bl, bool is_hand
+	uint16_t light_level,
+	uint packed_hl,
+	vec3 origin_view,
+	vec3 view,
+	vec3 pe,
+	f16vec3 w_face_normal,
+	float16_t ind_bl,
+	bool is_hand,
+	BrdfReceiver rec // Must be in world space.
 ) {
 	immut f16vec3 pe_to_light = f16vec3(MV_INV * origin_view - pe);
 	immut float16_t sq_dist = dot(pe_to_light, pe_to_light);
 	immut f16vec3 n_w_rel_light = pe_to_light * inversesqrt(sq_dist);
 
-	immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
+	immut float16_t tex_n_dot_l = dot(rec.normal, n_w_rel_light);
 
 	immut float16_t brightness = float16_t(light_level) * float16_t(lumi_dir_bl * float(HAND_LIGHT)) / max(sq_dist, float16_t(0.17));
 	immut f16vec3 illum = brightness * unpack_un11_11_10(packed_hl);
@@ -29,7 +32,7 @@ f16vec3 get_hand_light(
 	f16vec3 light;
 
 	if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > min_n_dot_l) {
-		f16vec3 reflected = brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness, f0, is_metal, color, rcp_color);
+		f16vec3 reflected = brdf(rec, tex_n_dot_l, n_w_rel_light);
 
 		#if HAND_LIGHT_TRACE_STEPS != 0
 			const float trace_dist = float(MAX_HAND_LIGHT_TRACE_DIST);

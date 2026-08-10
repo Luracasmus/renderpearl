@@ -263,6 +263,8 @@ void main() {
 	immut float16_t ind_bl = float16_t(IND_BL) * ao;
 	block_light *= ind_bl;
 
+	immut BrdfReceiver rec = create_brdf_rec(w_tex_normal, n_pe, roughness, f0, is_metal, color.rgb, rcp_color);
+
 	#ifdef FORWARD_LL_LIGHT_ENABLED
 		immut bool is_maybe_ll_lit = (
 			block_sky_light.x != float16_t(0.0) && chebyshev_dist < float16_t(LL_DIST) && !will_discard && !gl_HelperInvocation
@@ -455,12 +457,16 @@ void main() {
 
 				sample_shadow(
 					light,
-					chebyshev_dist, v.s_distortion,
+					chebyshev_dist,
+					v.s_distortion,
 					sky_light_color,
-					color.rgb, rcp_color,
-					roughness, f0, is_metal,
-					face_n_dot_l, tex_n_dot_l, n_w_shadow_light,
-					w_face_normal, w_tex_normal, n_pe, pe, mvInv3
+					face_n_dot_l,
+					tex_n_dot_l,
+					n_w_shadow_light,
+					w_face_normal,
+					pe,
+					mvInv3,
+					rec
 				);
 			#endif
 
@@ -478,11 +484,11 @@ void main() {
 					immut bvec2 active_lr = notEqual(hand_light_lr, u16vec2(0u));
 
 					if (active_lr.x) {
-						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), view_left_hand, view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color.rgb, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.x, subgroupBroadcastFirst(hl.unorm11_11_10_left), view_left_hand, view, pe, w_face_normal, ind_bl, is_hand, rec);
 					}
 
 					if (active_lr.y) {
-						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), view_right_hand, view, pe, n_pe, roughness, f0, is_metal, w_tex_normal, w_face_normal, color.rgb, rcp_color, ind_bl, is_hand);
+						light += get_hand_light(hand_light_lr.y, subgroupBroadcastFirst(hl.unorm11_11_10_right), view_right_hand, view, pe, w_face_normal, ind_bl, is_hand, rec);
 					}
 				}
 			#endif

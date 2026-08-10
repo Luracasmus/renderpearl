@@ -1,9 +1,14 @@
 void sample_ll_block_light(
-	inout f16vec3 reflected, f16vec3 color, f16vec3 rcp_color,
-	float16_t intensity, float16_t offset_intensity, // `offset_intensity == intensity + 0.5` to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
-	f16vec3 w_tex_normal, f16vec3 w_face_normal, f16vec3 n_pe,
-	float16_t roughness, float16_t f0, bool is_metal, float16_t ind_bl,
-	f16vec3 w_rel_light, float16_t mhtn_dist, f16vec3 light_color, bool is_wide
+	inout f16vec3 reflected,
+	float16_t intensity,
+	float16_t offset_intensity, // `offset_intensity == intensity + 0.5` to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
+	f16vec3 w_face_normal,
+	float16_t ind_bl,
+	f16vec3 w_rel_light,
+	float16_t mhtn_dist,
+	f16vec3 light_color,
+	bool is_wide,
+	BrdfReceiver rec
 ) {
 	immut float16_t sq_dist_light = dot(w_rel_light, w_rel_light);
 	immut f16vec3 n_w_rel_light = w_rel_light * inversesqrt(sq_dist_light);
@@ -21,12 +26,12 @@ void sample_ll_block_light(
 
 	light_color *= brightness;
 
-	immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_rel_light);
+	immut float16_t tex_n_dot_l = dot(rec.normal, n_w_rel_light);
 
 	f16vec3 this_reflected = ind_bl.xxx; // Very fake GI.
 
 	if (min(tex_n_dot_l, dot(w_face_normal, n_w_rel_light)) > min_n_dot_l) {
-		this_reflected += brdf(tex_n_dot_l, w_tex_normal, n_pe, n_w_rel_light, roughness, f0, is_metal, color, rcp_color);
+		this_reflected += brdf(rec, tex_n_dot_l, n_w_rel_light);
 	}
 
 	reflected = fma(this_reflected, light_color, reflected);
