@@ -186,10 +186,11 @@ void main() {
 	vec3 view = proj_inv(gbufferProjectionInverse, raw_ndc);
 	vec3 pf = (MV_INV * view) + mvInv3;
 	immut vec3 block_relative = pf + cameraPositionFract;
-	immut vec3 block_relative_snapped = trunc(block_relative * max_face_tex_size) / max_face_tex_size;
+	immut vec3 block_relative_offset = block_relative + vec3(w_face_normal * 0.001); // Offset away from the surface slightly to avoid snapping behind it.
+	immut vec3 block_relative_snapped = trunc(block_relative_offset * max_face_tex_size) / max_face_tex_size;
 	/*
 		#ifdef NO_NORMAL
-			// TODO: This should snap along the face
+			// TODO: This should snap along the face.
 		#else
 			immut vec3 t_block_relative = w_tbn * block_relative;
 		#endif
@@ -254,28 +255,6 @@ void main() {
 	immut BrdfReceiver rec = create_brdf_rec(w_tex_normal, n_pe, roughness, f0, is_metal, color.rgb, rcp_color);
 	immut uvec4 packed_rec = pack_brdf_rec(rec); // TODO: We might also want to compare `w_face_normal`.
 
-	/*
-		immut bool pair_uniform = subgroupQuadBroadcast(packed_rec, 0u) == subgroupQuadBroadcast(packed_rec, 1u);
-		immut bool pair2_uniform = subgroupQuadBroadcast(packed_rec, 0u) == subgroupQuadBroadcast(packed_rec, 2u);
-
-		immut bool quad_uniform =
-			subgroupQuadBroadcast(packed_rec, 0u) == subgroupQuadBroadcast(packed_rec, 1u) &&
-			subgroupQuadBroadcast(packed_rec, 1u) == subgroupQuadBroadcast(packed_rec, 2u) &&
-			subgroupQuadBroadcast(packed_rec, 2u) == subgroupQuadBroadcast(packed_rec, 3u); // Normals, etc. must also be uniform across the quad.
-
-		color.rgb = vec3(0.0);
-
-		if (subgroupAll(pair_uniform)) {
-			//color.rgb += vec3(0.0, 0, 1.0);
-		}
-		if (subgroupAll(pair2_uniform)) {
-			//color.rgb += vec3(1.0, 0, 0.0);
-		}
-		if (subgroupAll(quad_uniform)) {
-			color.rgb = vec3(1., 1, 1);
-		}
-	*/
-
 	#ifdef FORWARD_LL_LIGHT_ENABLED
 		immut bool is_maybe_ll_lit = (
 			block_sky_light.x != float16_t(0.0) && chebyshev_dist < float16_t(LL_DIST) && !will_discard && !gl_HelperInvocation
@@ -320,6 +299,22 @@ void main() {
 			immut uint16_t chunk_inv_id = uint16_t(gl_SubgroupInvocationID) - uint16_t(subgroupBallotFindLSB(chunk_ballot));
 
 			f16vec3 reflected = f16vec3(0.0);
+
+			immut bool quad_uniform =
+				subgroupQuadBroadcast(packed_rec, 0u) == subgroupQuadBroadcast(packed_rec, 1u) &&
+				subgroupQuadBroadcast(packed_rec, 1u) == subgroupQuadBroadcast(packed_rec, 2u) &&
+				subgroupQuadBroadcast(packed_rec, 2u) == subgroupQuadBroadcast(packed_rec, 3u); // All fragments in the quad will be lit the same by the same lights.
+
+			immut bool sg_quad_uniform = subgroupAll(quad_uniform);
+
+			bool quad_is_maybe_ll_lit;
+			if (sg_quad_uniform) {
+				quad_is_maybe_ll_lit =
+					subgroupQuadBroadcast(is_maybe_ll_lit, 0u) ||
+					subgroupQuadBroadcast(is_maybe_ll_lit, 1u) ||
+					subgroupQuadBroadcast(is_maybe_ll_lit, 2u) ||
+					subgroupQuadBroadcast(is_maybe_ll_lit, 3u);
+			}
 
 			for (uint16_t chunk_i = uint16_t(0u); chunk_i < global_len; chunk_i += chunk_invs) {
 				bool inv_is_in_bb;
@@ -387,19 +382,8 @@ void main() {
 
 					// Now we actually check the lights per invocation, skipping the ones which are outside the BBs.
 
-					immut bool quad_uniform =
-						subgroupQuadBroadcast(packed_rec, 0u) == subgroupQuadBroadcast(packed_rec, 1u) &&
-						subgroupQuadBroadcast(packed_rec, 1u) == subgroupQuadBroadcast(packed_rec, 2u) &&
-						subgroupQuadBroadcast(packed_rec, 2u) == subgroupQuadBroadcast(packed_rec, 3u); // Normals, etc. must also be uniform across the quad.
-
-					/*if (quad_uniform) {
-						//color.rgb = vec3(0.0);
-					}*/
-
-					if (subgroupAll(quad_uniform)) {
+					if (sg_quad_uniform) {
 						// Vectorize light sampling to work on chunks of 4, using quad operations.
-
-						//color.rgb = vec3(1.0);
 
 						for (uint16_t i = lsb; i <= msb; i += 4u) {
 							immut bvec4 chunk_in_bb = bvec4(
@@ -435,17 +419,8 @@ void main() {
 									f16vec3(subgroupBroadcast(inv_light_color, i + 3u))
 								);
 
-								immut bool quad_is_maybe_ll_lit =
-									subgroupQuadBroadcast(is_maybe_ll_lit, 0u) ||
-									subgroupQuadBroadcast(is_maybe_ll_lit, 1u) ||
-									subgroupQuadBroadcast(is_maybe_ll_lit, 2u) ||
-									subgroupQuadBroadcast(is_maybe_ll_lit, 3u);
-
 								if (quad_is_maybe_ll_lit) {
-									f16vec3 new_reflected = f16vec3(0.0);
-
 									immut uint8_t j = uint8_t(uint16_t(gl_SubgroupInvocationID) & uint16_t(3u)); // Invocation index within the quad.
-									immut float16_t offset_intensity = chunk_offset_intensity[j];
 
 									if (chunk_in_bb[j]) {
 										immut float16_t offset_intensity = chunk_offset_intensity[j];
@@ -456,7 +431,7 @@ void main() {
 
 										if (mhtn_dist < offset_intensity) {
 											sample_ll_block_light(
-												new_reflected,
+												reflected,
 												offset_intensity - float16_t(0.5),
 												offset_intensity,
 												w_face_normal,
@@ -469,12 +444,6 @@ void main() {
 											);
 										}
 									}
-
-									reflected +=
-										subgroupQuadBroadcast(new_reflected, 0u) +
-										subgroupQuadBroadcast(new_reflected, 1u) +
-										subgroupQuadBroadcast(new_reflected, 2u) +
-										subgroupQuadBroadcast(new_reflected, 3u);
 								}
 							}
 						}
@@ -510,6 +479,14 @@ void main() {
 						}
 					}
 				}
+			}
+
+			if (sg_quad_uniform) {
+				reflected =
+					subgroupQuadBroadcast(reflected, 0u) +
+					subgroupQuadBroadcast(reflected, 1u) +
+					subgroupQuadBroadcast(reflected, 2u) +
+					subgroupQuadBroadcast(reflected, 3u); // The different invocations in the quad processed different lights which all affect all of the quad.
 			}
 
 			block_light = mix_ll_block_light(block_light, chebyshev_dist, block_sky_light.x, reflected);
