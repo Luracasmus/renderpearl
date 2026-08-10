@@ -155,7 +155,7 @@ void main() {
 	const bool is_metal = false; // TODO: LabPBR.
 	immut float16_t f0 = is_water ? float16_t(0.02) : float16_t(0.04); // Based on: https://google.github.io/filament/Filament.md.html // TODO: LabPBR.
 
-	immut int tex_lod = int(textureQueryLod(gtexture, v.coord).x);
+	immut int tex_lod = int(ceil(textureQueryLod(gtexture, v.coord).x));
 	immut u16vec2 face_tex_size = u16vec2(unpackUint2x16(v.uint2x16_face_tex_size)) >> uint16_t(tex_lod);
 	immut float max_face_tex_size = float(max(face_tex_size.x, face_tex_size.y));
 
@@ -376,39 +376,114 @@ void main() {
 
 					// Now we actually check the lights per invocation, skipping the ones which are outside the BBs.
 
-					bool color_quad_uniform =
-						subgroupQuadBroadcast(pe, 0) == subgroupQuadBroadcast(pe, 1) &&
-						subgroupQuadBroadcast(pe, 1) == subgroupQuadBroadcast(pe, 2) &&
-						subgroupQuadBroadcast(pe, 2) == subgroupQuadBroadcast(pe, 3);
+					immut bool quad_uniform =
+						subgroupQuadBroadcast(pe, 0u) == subgroupQuadBroadcast(pe, 1u) &&
+						subgroupQuadBroadcast(pe, 1u) == subgroupQuadBroadcast(pe, 2u) &&
+						subgroupQuadBroadcast(pe, 2u) == subgroupQuadBroadcast(pe, 3u); // Normals, etc. must also be uniform across the quad.
 
-					if (color_quad_uniform) {
+					/*if (quad_uniform) {
 						//color.rgb = vec3(0.0);
-					}
+					}*/
 
-					if (subgroupAll(color_quad_uniform)) {
-						color.rgb = vec3(1.0);
-					}
+					if (subgroupAll(quad_uniform)) {
+						// Vectorize light sampling to work on chunks of 4, using quad operations.
 
-					for (uint16_t i = lsb; i <= msb; ++i) {
-						if (subgroupBallotBitExtract(in_bb_ballot, i)) { // This is always true when `i == lsb` or `i == msb`.
-							immut float16_t offset_intensity = float16_t(subgroupBroadcast(inv_light_offset_intensity, i));
-							immut f16vec3 pe_light = f16vec3(subgroupBroadcast(inv_pe_light, i));
-							immut bool is_wide = subgroupBroadcast(inv_is_wide, i);
-							f16vec3 light_color = f16vec3(subgroupBroadcast(inv_light_color, i));
+						//color.rgb = vec3(1.0);
 
-							if (is_maybe_ll_lit) {
-								immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
+						for (uint16_t i = lsb; i <= msb; i += 4u) {
+							// TODO: This check needs to be done for every light.
+							if (subgroupBallotBitExtract(in_bb_ballot, i)) { // This is always true when `i == lsb` or `i == msb`.
+								immut f16vec4 chunk_offset_intensity = f16vec4(
+									subgroupBroadcast(inv_light_offset_intensity, i),
+									subgroupBroadcast(inv_light_offset_intensity, i + 1u),
+									subgroupBroadcast(inv_light_offset_intensity, i + 2u),
+									subgroupBroadcast(inv_light_offset_intensity, i + 3u)
+								);
+								immut f16vec3 chunk_pe_light[4] = f16vec3[4](
+									f16vec3(subgroupBroadcast(inv_pe_light, i)),
+									f16vec3(subgroupBroadcast(inv_pe_light, i + 1u)),
+									f16vec3(subgroupBroadcast(inv_pe_light, i + 2u)),
+									f16vec3(subgroupBroadcast(inv_pe_light, i + 3u))
+								);
+								immut bvec4 chunk_is_wide = bvec4(
+									subgroupBroadcast(inv_is_wide, i),
+									subgroupBroadcast(inv_is_wide, i + 1u),
+									subgroupBroadcast(inv_is_wide, i + 2u),
+									subgroupBroadcast(inv_is_wide, i + 3u)
+								);
+								immut f16vec3 chunk_light_color[4] = f16vec3[4](
+									f16vec3(subgroupBroadcast(inv_light_color, i)),
+									f16vec3(subgroupBroadcast(inv_light_color, i + 1u)),
+									f16vec3(subgroupBroadcast(inv_light_color, i + 2u)),
+									f16vec3(subgroupBroadcast(inv_light_color, i + 3u))
+								);
 
-								immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
+								immut bool quad_is_maybe_ll_lit =
+									subgroupQuadBroadcast(is_maybe_ll_lit, 0u) ||
+									subgroupQuadBroadcast(is_maybe_ll_lit, 1u) ||
+									subgroupQuadBroadcast(is_maybe_ll_lit, 2u) ||
+									subgroupQuadBroadcast(is_maybe_ll_lit, 3u);
 
-								if (mhtn_dist < offset_intensity) {
-									sample_ll_block_light(
-										reflected, color.rgb, rcp_color,
-										offset_intensity - float16_t(0.5), offset_intensity,
-										w_tex_normal, w_face_normal, n_pe,
-										roughness, f0, is_metal, ind_bl,
-										w_rel_light, mhtn_dist, light_color, is_wide
-									);
+								if (quad_is_maybe_ll_lit) {
+									f16vec3 new_reflected = f16vec3(0.0);
+
+									immut uint8_t j = uint8_t(uint16_t(gl_SubgroupInvocationID) & uint16_t(3u)); // Invocation index within the quad.
+									immut float16_t offset_intensity = chunk_offset_intensity[j];
+
+									immut f16vec3 w_rel_light = f16vec3(vec3(chunk_pe_light[j]) - pe);
+
+									immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
+
+									if (mhtn_dist < offset_intensity) {
+										sample_ll_block_light(
+											new_reflected,
+											offset_intensity - float16_t(0.5),
+											offset_intensity,
+											w_face_normal,
+											ind_bl,
+											w_rel_light,
+											mhtn_dist,
+											chunk_light_color[j],
+											chunk_is_wide[j],
+											rec
+										);
+									}
+
+									reflected +=
+										subgroupQuadBroadcast(new_reflected, 0u) +
+										subgroupQuadBroadcast(new_reflected, 1u) +
+										subgroupQuadBroadcast(new_reflected, 2u) +
+										subgroupQuadBroadcast(new_reflected, 3u);
+								}
+							}
+						}
+					} else {
+						for (uint16_t i = lsb; i <= msb; ++i) {
+							if (subgroupBallotBitExtract(in_bb_ballot, i)) { // This is always true when `i == lsb` or `i == msb`.
+								immut float16_t offset_intensity = float16_t(subgroupBroadcast(inv_light_offset_intensity, i));
+								immut f16vec3 pe_light = f16vec3(subgroupBroadcast(inv_pe_light, i));
+								immut bool is_wide = subgroupBroadcast(inv_is_wide, i);
+								immut f16vec3 light_color = f16vec3(subgroupBroadcast(inv_light_color, i));
+
+								if (is_maybe_ll_lit) {
+									immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
+
+									immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
+
+									if (mhtn_dist < offset_intensity) {
+										sample_ll_block_light(
+											reflected,
+											offset_intensity - float16_t(0.5),
+											offset_intensity,
+											w_face_normal,
+											ind_bl,
+											w_rel_light,
+											mhtn_dist,
+											light_color,
+											is_wide,
+											rec
+										);
+									}
 								}
 							}
 						}
