@@ -4,6 +4,5 @@
 	#define TRANSLUCENT
 	#include "/prog/lit_forward.fsh"
 #else
-	#define TEX_ALPHA
 	#include "/prog/lit_forward.fsh"
 #endif
