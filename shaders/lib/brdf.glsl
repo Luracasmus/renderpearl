@@ -277,6 +277,15 @@ BrdfReceiver create_brdf_rec(
 	);
 }
 
+uvec4 pack_brdf_rec(BrdfReceiver rec) {
+	return uvec4(
+		packFloat2x16(octa_encode(rec.normal)),
+		packFloat2x16(octa_encode(rec.obs_to_rec_dir)),
+		packUnorm4x8(f16vec4(rec.roughness, rec.f0)),
+		packUnorm4x8(f16vec4(rec.n_dot_v, rec.specular_multiplier))
+	);
+}
+
 #ifdef FLOAT16
 	// fp16 adaptation, see https://google.github.io/filament/Filament.html#listing_speculardfp16
 	float16_t d_ggx_fp16(float16_t roughness, float16_t n_dot_h, f16vec3 normal, f16vec3 half_dir) {
