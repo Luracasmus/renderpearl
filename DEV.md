@@ -87,36 +87,10 @@ Most significant <-> Least significant
 
 ```
 ┌ colortex1 ┐
-|A |B |G |R |
+|X |B |G |R |
 └16┴16┴16┴16┘
- |  |  |  |
- |  └[color (RGB)] (float)
- └[block light] (float)
-```
-
-```
-┌ colortex2 ---------------┐
-|A    |B        |G      |R |
-└16 16┴1 3 13 15┴8 8 8 8┴32┘
- |  |  | | |  |  | | | | └[shadow distortion] (float)
- |  |  | | |  |  | | | └[roughness] (unorm)
- |  |  | | |  |  | | └[subsurface scattering] (unorm)
- |  |  | | |  |  | └[emissiveness] (unorm)
- |  |  | | |  |  └[f0 (enum)] (uint)
- |  |  | | |  └[sky light] (ufloat)
- |  |  | | └[AO] (unorm)
- |  |  | └[AO direction in 2D across the face (enum)] (uint)
- |  |  └["hand" flag] (bool)
- |  └[octahedron encoded texture normal (XY)] (snorm)
- └[octahedron encoded face normal (XY)] (snorm)
-```
-> In the nether, the ABG components above are shifted to BGR and the A component left uninitialized.
-
-```
-┌ f0 (enum) ┐
-[0, 229] - f0 / 255 (as in LabPBR)
-230      - "deferred ignore" flag
-231      - "metal" flag
+    |  |  |
+    └[color (RGB)] (float)
 ```
 
 ```

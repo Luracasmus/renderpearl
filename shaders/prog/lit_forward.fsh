@@ -2,16 +2,7 @@
 
 #extension GL_KHR_shader_subgroup_quad : require
 
-#ifdef DEFERRED_IGNORE
-	/* RENDERTARGETS: 1,2 */
-	#ifdef SHADOWS_ENABLED
-		layout(location = 1, component = 1) out uint colortex2;
-	#else
-		layout(location = 1) out uint colortex2;
-	#endif
-#else
-	/* RENDERTARGETS: 1 */
-#endif
+/* RENDERTARGETS: 1 */
 
 #ifdef TRANSLUCENT
 	layout(location = 0) out f16vec4 colortex1;

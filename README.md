@@ -44,7 +44,6 @@ The name "RenderPearl" is inspired by the Bedrock Edition [RenderDragon](https:/
 * Colored block light with physically based reflections using a light list combined with vanilla lighting and average texture color.
 * Ray traced, per-hand hand light.
 * A wide range of highly optimized post-processing effects, including compute shader implementations of [FidelityFX Contrast Adaptive Sharpening](https://gpuopen.com/fidelityfx-cas/), [SMAA](https://www.iryoku.com/smaa/) 1x from [SMAA-MC](https://modrinth.com/shader/smaa-mc), automatic exposure and a variety of tone mapping operators.
-* Customizable waves and water opacity.
 * Built-in utility features such as light level visualization and a compass overlay.
 
 ## Mod & Resource Pack Compatibility
