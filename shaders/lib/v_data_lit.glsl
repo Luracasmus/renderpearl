@@ -2,7 +2,7 @@ VertexData {
 	layout(location = 0, component = 0) vec2 coord;
 	layout(location = 1, component = 0) flat uint misc_packed;
 	// ^uint4    bool1      unorm11 none15 bool
-	// ^emission handedness alpha   none     is_water_or_metal
+	// ^emission handedness alpha   none   is_water_or_metal
 
 	#ifdef TERRAIN
 		layout(location = 0, component = 2) vec2 light; // (block, sky)

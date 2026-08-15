@@ -8,7 +8,7 @@
 #elif LL_CAPACITY < 1024
 	layout(local_size_x = LL_CAPACITY, local_size_y = 1, local_size_z = 1) in;
 #else
-	// We assume GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS >= 1024 && GL_MAX_COMPUTE_WORK_GROUP_SIZE[0] >= 1024.
+	// We assume `GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS >= 1024 && GL_MAX_COMPUTE_WORK_GROUP_SIZE[0] >= 1024`.
 	layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 #endif
 

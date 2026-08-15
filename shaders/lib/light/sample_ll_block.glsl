@@ -1,6 +1,5 @@
 void sample_ll_block_light(
 	inout f16vec3 reflected,
-	float16_t intensity,
 	float16_t offset_intensity, // `offset_intensity == intensity + 0.5` to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
 	f16vec3 w_face_normal,
 	float16_t ind_bl,
@@ -20,6 +19,7 @@ void sample_ll_block_light(
 	);
 
 	immut float16_t light_level = offset_intensity - mhtn_dist;
+	immut float16_t intensity = offset_intensity - float16_t(0.5);
 	float16_t brightness = intensity * falloff;
 	brightness *= smoothstep(float16_t(0.0), float16_t(LL_FALLOFF_MARGIN), light_level);
 	brightness /= min(light_level, float16_t(15.0)) * float16_t(1.0/15.0); // Compensate for multiplication with 'light.x' later on, in order to make the falloff follow the inverse square law as much as possible.

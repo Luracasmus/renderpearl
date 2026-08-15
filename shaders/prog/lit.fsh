@@ -24,6 +24,7 @@
 #include "/lib/octa_enc.glsl"
 #include "/lib/brdf.glsl"
 #include "/lib/mv_inv.glsl"
+
 uniform int packedView;
 uniform vec3 cameraPositionFract;
 uniform mat4 gbufferProjectionInverse;
@@ -37,9 +38,9 @@ in
 #include "/lib/v_data_lit.glsl"
 
 #ifndef NETHER
-    uniform float frameTimeCounter;
+	uniform float frameTimeCounter;
 
-    #ifdef END
+	#ifdef END
 		#include "/lib/prng/fast_rand.glsl"
 		uniform float endFlashIntensity;
 	#else
@@ -296,7 +297,7 @@ void main() {
 
 			immut uvec4 chunk_ballot = subgroupBallot(true);
 			immut uint16_t chunk_invs = uint16_t(subgroupBallotBitCount(chunk_ballot));
-			immut uint16_t chunk_inv_id = uint16_t(gl_SubgroupInvocationID) - uint16_t(subgroupBallotFindLSB(chunk_ballot));
+			immut uint16_t chunk_inv_id = uint16_t(subgroupBallotExclusiveBitCount(chunk_ballot));
 
 			f16vec3 reflected = f16vec3(0.0);
 
@@ -385,38 +386,42 @@ void main() {
 					if (sg_quad_uniform) {
 						// Vectorize light sampling to work on chunks of 4, using quad operations.
 
-						for (uint16_t i = lsb; i <= msb; i += 4u) {
+						for (uint16_t i0 = lsb; i0 <= msb; i0 += uint16_t(4u)) {
+							immut uint16_t i1 = i0 + uint16_t(1u);
+							immut uint16_t i2 = i0 + uint16_t(2u);
+							immut uint16_t i3 = i0 + uint16_t(3u);
+
 							immut bvec4 chunk_in_bb = bvec4(
-								subgroupBallotBitExtract(in_bb_ballot, i),
-								subgroupBallotBitExtract(in_bb_ballot, i + 1u),
-								subgroupBallotBitExtract(in_bb_ballot, i + 2u),
-								subgroupBallotBitExtract(in_bb_ballot, i + 3u)
+								subgroupBallotBitExtract(in_bb_ballot, i0),
+								subgroupBallotBitExtract(in_bb_ballot, i1),
+								subgroupBallotBitExtract(in_bb_ballot, i2),
+								subgroupBallotBitExtract(in_bb_ballot, i3)
 							); // These are always true when `i + ?? == lsb` or `i + ?? == msb`.
 
 							if (any(chunk_in_bb)) {
 								immut f16vec4 chunk_offset_intensity = f16vec4(
-									subgroupBroadcast(inv_light_offset_intensity, i),
-									subgroupBroadcast(inv_light_offset_intensity, i + 1u),
-									subgroupBroadcast(inv_light_offset_intensity, i + 2u),
-									subgroupBroadcast(inv_light_offset_intensity, i + 3u)
+									subgroupBroadcast(inv_light_offset_intensity, i0),
+									subgroupBroadcast(inv_light_offset_intensity, i1),
+									subgroupBroadcast(inv_light_offset_intensity, i2),
+									subgroupBroadcast(inv_light_offset_intensity, i3)
 								);
 								immut f16vec3 chunk_pe_light[4] = f16vec3[4](
-									f16vec3(subgroupBroadcast(inv_pe_light, i)),
-									f16vec3(subgroupBroadcast(inv_pe_light, i + 1u)),
-									f16vec3(subgroupBroadcast(inv_pe_light, i + 2u)),
-									f16vec3(subgroupBroadcast(inv_pe_light, i + 3u))
+									f16vec3(subgroupBroadcast(inv_pe_light, i0)),
+									f16vec3(subgroupBroadcast(inv_pe_light, i1)),
+									f16vec3(subgroupBroadcast(inv_pe_light, i2)),
+									f16vec3(subgroupBroadcast(inv_pe_light, i3))
 								);
 								immut bvec4 chunk_is_wide = bvec4(
-									subgroupBroadcast(inv_is_wide, i),
-									subgroupBroadcast(inv_is_wide, i + 1u),
-									subgroupBroadcast(inv_is_wide, i + 2u),
-									subgroupBroadcast(inv_is_wide, i + 3u)
+									subgroupBroadcast(inv_is_wide, i0),
+									subgroupBroadcast(inv_is_wide, i1),
+									subgroupBroadcast(inv_is_wide, i2),
+									subgroupBroadcast(inv_is_wide, i3)
 								);
 								immut f16vec3 chunk_light_color[4] = f16vec3[4](
-									f16vec3(subgroupBroadcast(inv_light_color, i)),
-									f16vec3(subgroupBroadcast(inv_light_color, i + 1u)),
-									f16vec3(subgroupBroadcast(inv_light_color, i + 2u)),
-									f16vec3(subgroupBroadcast(inv_light_color, i + 3u))
+									f16vec3(subgroupBroadcast(inv_light_color, i0)),
+									f16vec3(subgroupBroadcast(inv_light_color, i1)),
+									f16vec3(subgroupBroadcast(inv_light_color, i2)),
+									f16vec3(subgroupBroadcast(inv_light_color, i3))
 								);
 
 								if (quad_is_maybe_ll_lit) {
@@ -432,7 +437,6 @@ void main() {
 										if (mhtn_dist < offset_intensity) {
 											sample_ll_block_light(
 												reflected,
-												offset_intensity - float16_t(0.5),
 												offset_intensity,
 												w_face_normal,
 												ind_bl,
@@ -463,7 +467,6 @@ void main() {
 									if (mhtn_dist < offset_intensity) {
 										sample_ll_block_light(
 											reflected,
-											offset_intensity - float16_t(0.5),
 											offset_intensity,
 											w_face_normal,
 											ind_bl,
