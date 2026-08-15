@@ -158,13 +158,16 @@ screen.POST=§6◀§r Post Processing §6▶
 
 	screen.SMAA=§6◀§r SMAA §6▶
 		option.SMAA_THRESHOLD=§e⌚§r Contrast Threshold
-			option.SMAA_THRESHOLD.comment=The threshold used in color-based edge detection\nLower values cause more edges to be anti-aliased
+			option.SMAA_THRESHOLD.comment=The threshold used in SMAA edge detection\nLower values cause more edges to be detected and possibly anti-aliased\nHigher values usually improve performance
+
+		option.SMAA_LCA=§e⌚§r Local contrast adaptation factor
+			option.SMAA_LCA.comment=Lower values cause more edges to be skipped when higher contrast edges are nearby, which usually improves performance
 
 		option.SMAA_SEARCH=§e⌚§r Search Steps
-			option.SMAA_SEARCH.comment=The maximum amount of steps in vertical and horizontal pattern searches\nDistance searched in pixels is double this value
+			option.SMAA_SEARCH.comment=The maximum amount of steps in vertical and horizontal pattern searches\nDistance searched in pixels is double this value\nHigher values improve quality at the cost of performance
 
 		option.SMAA_SEARCH_DIAG=§e⌚§r Diagonal Search Steps
-			option.SMAA_SEARCH_DIAG.comment=The maximum amount of diagonal steps/pixels searched in pattern searches
+			option.SMAA_SEARCH_DIAG.comment=The maximum amount of diagonal steps/pixels searched in pattern searches\nHigher values improve quality at the cost of performance
 			value.SMAA_SEARCH_DIAG.0=§cOff
 
 		option.SMAA_CORNER=§e⌚§r Corner Rounding

@@ -104,13 +104,16 @@ screen.POST=§6◀§r Efterbearbetning §6▶
 		option.AUTO_EXP_TARGET.comment=Önskat geometriskt medelvärde av skärmens ljusstyrka innan tonemapping.
 
 	option.SMAA_THRESHOLD=§e⌚§r Kontrasttröskel
-		option.SMAA_THRESHOLD.comment=Tröskeln som används i färgbaserad kantdetektering\nLägre värden gör att fler kanter kantutjämnas
+		option.SMAA_THRESHOLD.comment=Tröskeln som används i färgbaserad kantdetektering\nLägre värden gör att fler kanter detekteras och möjligtvis kantutjämnas\nHögre värden leder oftast till bättre prestanda
+
+	option.SMAA_LCA=§e⌚§r Local contrast adaptation-faktor
+		option.SMAA_LCA.comment=Lägre värden gör att fler kanter hoppas över när kanter med högre kontrast finns i närheten, vilket brukar leda till bättre prestanda
 
 	option.SMAA_SEARCH=§e⌚§r Söksteg
-		option.SMAA_SEARCH.comment=Det maximala antalet steg i vertikala och horisontella mönstersökningar\nAvståndet sökt i pixlar är dubbelt så stort
+		option.SMAA_SEARCH.comment=Det maximala antalet steg i vertikala och horisontella mönstersökningar\nAvståndet sökt i pixlar är dubbelt så stort\nHögre värden förbättrar kvalitet men försämrar prestanda
 
 	option.SMAA_SEARCH_DIAG=§e⌚§r Diagonala Söksteg
-		option.SMAA_SEARCH_DIAG.comment=Det maximala antalet diagonala steg/pixlar som söks i mönstersökningar
+		option.SMAA_SEARCH_DIAG.comment=Det maximala antalet diagonala steg/pixlar som söks i mönstersökningar\nHögre värden förbättrar kvalitet men försämrar prestanda
 
 	option.SMAA_CORNER=§e⌚§r Hörnrundning
 

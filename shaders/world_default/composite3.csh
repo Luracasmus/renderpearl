@@ -18,14 +18,14 @@ shared struct {
 
 /*
 	SMAA Neighborhood Blending
-	https://github.com/Luracasmus/smaa-mc/blob/v1.4.0/shaders/composite2.csh
+	https://github.com/Luracasmus/smaa-mc
 
 	Copyright (C) 2013 Jorge Jimenez (jorge@iryoku.com)
 	Copyright (C) 2013 Jose I. Echevarria (joseignacioechevarria@gmail.com)
 	Copyright (C) 2013 Belen Masia (bmasia@unizar.es)
 	Copyright (C) 2013 Fernando Navarro (fernandn@microsoft.com)
 	Copyright (C) 2013 Diego Gutierrez (diegog@unizar.es)
-	Copyright (C) 2024-2025 Luracasmus
+	Copyright (C) 2024-2026 Luracasmus
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	this software and associated documentation files (the "Software"), to deal in
