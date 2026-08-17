@@ -1,7 +1,5 @@
 #include "/prelude/core.glsl"
 
-#extension GL_KHR_shader_subgroup_quad : require
-
 /* RENDERTARGETS: 1 */
 
 #ifdef TRANSLUCENT
@@ -309,12 +307,15 @@ void main() {
 			immut bool sg_quad_uniform = subgroupAll(quad_uniform);
 
 			bool quad_is_maybe_ll_lit;
+			uint8_t quad_inv_id; // Invocation index within the quad.
 			if (sg_quad_uniform) {
 				quad_is_maybe_ll_lit =
 					subgroupQuadBroadcast(is_maybe_ll_lit, 0u) ||
 					subgroupQuadBroadcast(is_maybe_ll_lit, 1u) ||
 					subgroupQuadBroadcast(is_maybe_ll_lit, 2u) ||
 					subgroupQuadBroadcast(is_maybe_ll_lit, 3u);
+
+				quad_inv_id = uint8_t(uint16_t(gl_SubgroupInvocationID) & uint16_t(3u));
 			}
 
 			for (uint16_t chunk_i = uint16_t(0u); chunk_i < global_len; chunk_i += chunk_invs) {
@@ -387,66 +388,38 @@ void main() {
 						// Vectorize light sampling to work on chunks of 4, using quad operations.
 
 						for (uint16_t i0 = lsb; i0 <= msb; i0 += uint16_t(4u)) {
-							immut uint16_t i1 = i0 + uint16_t(1u);
-							immut uint16_t i2 = i0 + uint16_t(2u);
-							immut uint16_t i3 = i0 + uint16_t(3u);
-
 							immut bvec4 chunk_in_bb = bvec4(
 								subgroupBallotBitExtract(in_bb_ballot, i0),
-								subgroupBallotBitExtract(in_bb_ballot, i1),
-								subgroupBallotBitExtract(in_bb_ballot, i2),
-								subgroupBallotBitExtract(in_bb_ballot, i3)
+								subgroupBallotBitExtract(in_bb_ballot, i0 + uint16_t(1u)),
+								subgroupBallotBitExtract(in_bb_ballot, i0 + uint16_t(2u)),
+								subgroupBallotBitExtract(in_bb_ballot, i0 + uint16_t(3u))
 							); // These are always true when `i + ?? == lsb` or `i + ?? == msb`.
 
 							if (any(chunk_in_bb)) {
-								immut f16vec4 chunk_offset_intensity = f16vec4(
-									subgroupBroadcast(inv_light_offset_intensity, i0),
-									subgroupBroadcast(inv_light_offset_intensity, i1),
-									subgroupBroadcast(inv_light_offset_intensity, i2),
-									subgroupBroadcast(inv_light_offset_intensity, i3)
-								);
-								immut f16vec3 chunk_pe_light[4] = f16vec3[4](
-									f16vec3(subgroupBroadcast(inv_pe_light, i0)),
-									f16vec3(subgroupBroadcast(inv_pe_light, i1)),
-									f16vec3(subgroupBroadcast(inv_pe_light, i2)),
-									f16vec3(subgroupBroadcast(inv_pe_light, i3))
-								);
-								immut bvec4 chunk_is_wide = bvec4(
-									subgroupBroadcast(inv_is_wide, i0),
-									subgroupBroadcast(inv_is_wide, i1),
-									subgroupBroadcast(inv_is_wide, i2),
-									subgroupBroadcast(inv_is_wide, i3)
-								);
-								immut f16vec3 chunk_light_color[4] = f16vec3[4](
-									f16vec3(subgroupBroadcast(inv_light_color, i0)),
-									f16vec3(subgroupBroadcast(inv_light_color, i1)),
-									f16vec3(subgroupBroadcast(inv_light_color, i2)),
-									f16vec3(subgroupBroadcast(inv_light_color, i3))
-								);
+								immut uint8_t i = i0 + quad_inv_id;
 
-								if (quad_is_maybe_ll_lit) {
-									immut uint8_t j = uint8_t(uint16_t(gl_SubgroupInvocationID) & uint16_t(3u)); // Invocation index within the quad.
+								immut float16_t offset_intensity = float16_t(subgroupShuffle(inv_light_offset_intensity, i));
+								immut f16vec3 pe_light = f16vec3(subgroupShuffle(inv_pe_light, i));
+								immut bool is_wide = subgroupShuffle(inv_is_wide, i);
+								immut f16vec3 light_color = f16vec3(subgroupShuffle(inv_light_color, i));
 
-									if (chunk_in_bb[j]) {
-										immut float16_t offset_intensity = chunk_offset_intensity[j];
+								if (quad_is_maybe_ll_lit && chunk_in_bb[quad_inv_id]) {
+									immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
 
-										immut f16vec3 w_rel_light = f16vec3(vec3(chunk_pe_light[j]) - pe);
+									immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
 
-										immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
-
-										if (mhtn_dist < offset_intensity) {
-											sample_ll_block_light(
-												reflected,
-												offset_intensity,
-												w_face_normal,
-												ind_bl,
-												w_rel_light,
-												mhtn_dist,
-												chunk_light_color[j],
-												chunk_is_wide[j],
-												rec
-											);
-										}
+									if (mhtn_dist < offset_intensity) {
+										sample_ll_block_light(
+											reflected,
+											offset_intensity,
+											w_face_normal,
+											ind_bl,
+											w_rel_light,
+											mhtn_dist,
+											light_color,
+											is_wide,
+											rec
+										);
 									}
 								}
 							}
