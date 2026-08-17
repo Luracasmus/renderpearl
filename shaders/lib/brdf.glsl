@@ -286,6 +286,17 @@ uvec4 pack_brdf_rec(BrdfReceiver rec) {
 	);
 }
 
+BrdfReceiver sg_broadcast_brdf_rec(BrdfReceiver rec) {
+	return BrdfReceiver(
+		f16vec3(subgroupBroadcastFirst(rec.normal)),
+		f16vec3(subgroupBroadcastFirst(rec.obs_to_rec_dir)),
+		float16_t(subgroupBroadcastFirst(rec.roughness)),
+		f16vec3(subgroupBroadcastFirst(rec.f0)),
+		float16_t(subgroupBroadcastFirst(rec.n_dot_v)),
+		f16vec3(subgroupBroadcastFirst(rec.specular_multiplier))
+	);
+}
+
 #ifdef FLOAT16
 	// fp16 adaptation, see https://google.github.io/filament/Filament.html#listing_speculardfp16
 	float16_t d_ggx_fp16(float16_t roughness, float16_t n_dot_h, f16vec3 normal, f16vec3 half_dir) {

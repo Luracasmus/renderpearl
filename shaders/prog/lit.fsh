@@ -299,23 +299,48 @@ void main() {
 
 			f16vec3 reflected = f16vec3(0.0);
 
-			immut bool quad_uniform =
-				subgroupQuadBroadcast(packed_rec, 0u) == subgroupQuadBroadcast(packed_rec, 1u) &&
-				subgroupQuadBroadcast(packed_rec, 1u) == subgroupQuadBroadcast(packed_rec, 2u) &&
-				subgroupQuadBroadcast(packed_rec, 2u) == subgroupQuadBroadcast(packed_rec, 3u); // All fragments in the quad will be lit the same by the same lights.
+			/*
+				uint16_t cluster_size = 1u; // All fragments in clusters of this size will be lit the same by the same lights.
+				const uint16_t sg_size = uint16_t(gl_SubgroupSize);
+				for (uint16_t i = uint16_t(2u); i <= sg_size; ++i) {
+					if (
+						uint16_t(subgroupClusteredAdd(uint16_t(1u), i)) == i && // Make sure all invocations in each active cluster are active.
+						subgroupClusteredAnd(packed_rec, i) == subgroupClusteredOr(packed_rec, i) // Check if the receiver data is uniform across the cluster/equal between all invocations.
+					) {
+						cluster_size = i;
+					} else {
+						break;
+					}
+				}
 
-			immut bool sg_quad_uniform = subgroupAll(quad_uniform);
+				color.rgb = vec3(cluster_size);
+			*/
 
+			immut bool sg_uniform = subgroupAllEqual(packed_rec);
+
+			bool sg_quad_uniform;
 			bool quad_is_maybe_ll_lit;
 			uint8_t quad_inv_id; // Invocation index within the quad.
-			if (sg_quad_uniform) {
-				quad_is_maybe_ll_lit =
-					subgroupQuadBroadcast(is_maybe_ll_lit, 0u) ||
-					subgroupQuadBroadcast(is_maybe_ll_lit, 1u) ||
-					subgroupQuadBroadcast(is_maybe_ll_lit, 2u) ||
-					subgroupQuadBroadcast(is_maybe_ll_lit, 3u);
+			if (sg_uniform) {
+				rec = sg_broadcast_brdf_rec(rec);
+			} else {
+				// TODO: Make sure the quad uniform stuff is actually worth it. It seems to also have a somewhat significant cost (maybe the shuffling instead of broadcasting is bad?).
+				immut bool quad_uniform =
+					subgroupQuadBroadcast(packed_rec, 0u) == subgroupQuadBroadcast(packed_rec, 1u) &&
+					subgroupQuadBroadcast(packed_rec, 1u) == subgroupQuadBroadcast(packed_rec, 2u) &&
+					subgroupQuadBroadcast(packed_rec, 2u) == subgroupQuadBroadcast(packed_rec, 3u); // All fragments in the quad will be lit the same by the same lights.
 
-				quad_inv_id = uint8_t(uint16_t(gl_SubgroupInvocationID) & uint16_t(3u));
+				sg_quad_uniform = subgroupAll(quad_uniform);
+
+				if (sg_quad_uniform) {
+					quad_is_maybe_ll_lit =
+						subgroupQuadBroadcast(is_maybe_ll_lit, 0u) ||
+						subgroupQuadBroadcast(is_maybe_ll_lit, 1u) ||
+						subgroupQuadBroadcast(is_maybe_ll_lit, 2u) ||
+						subgroupQuadBroadcast(is_maybe_ll_lit, 3u);
+
+					quad_inv_id = uint8_t(uint16_t(gl_SubgroupInvocationID) & uint16_t(3u));
+				}
 			}
 
 			for (uint16_t chunk_i = uint16_t(0u); chunk_i < global_len; chunk_i += chunk_invs) {
@@ -378,77 +403,71 @@ void main() {
 				}
 
 				if (subgroupAny(inv_is_in_bb)) {
-					immut uvec4 in_bb_ballot = subgroupBallot(inv_is_in_bb);
-					immut uint16_t lsb = uint16_t(subgroupBallotFindLSB(in_bb_ballot));
-					immut uint16_t msb = uint16_t(subgroupBallotFindMSB(in_bb_ballot));
-
 					// Now we actually check the lights per invocation, skipping the ones which are outside the BBs.
 
-					if (sg_quad_uniform) {
-						// Vectorize light sampling to work on chunks of 4, using quad operations.
+					if (sg_uniform) {
+						// Vectorize light sampling to work the whole subgroup as one chunk.
 
-						for (uint16_t i0 = lsb; i0 <= msb; i0 += uint16_t(4u)) {
-							immut bvec4 chunk_in_bb = bvec4(
-								subgroupBallotBitExtract(in_bb_ballot, i0),
-								subgroupBallotBitExtract(in_bb_ballot, i0 + uint16_t(1u)),
-								subgroupBallotBitExtract(in_bb_ballot, i0 + uint16_t(2u)),
-								subgroupBallotBitExtract(in_bb_ballot, i0 + uint16_t(3u))
-							); // These are always true when `i + ?? == lsb` or `i + ?? == msb`.
+						if (inv_is_in_bb) {
+							immut f16vec3 w_rel_light = f16vec3(vec3(inv_pe_light) - pe);
 
-							if (any(chunk_in_bb)) {
-								immut uint8_t i = i0 + quad_inv_id;
+							immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
 
-								immut float16_t offset_intensity = float16_t(subgroupShuffle(inv_light_offset_intensity, i));
-								immut f16vec3 pe_light = f16vec3(subgroupShuffle(inv_pe_light, i));
-								immut bool is_wide = subgroupShuffle(inv_is_wide, i);
-								immut f16vec3 light_color = f16vec3(subgroupShuffle(inv_light_color, i));
-
-								if (quad_is_maybe_ll_lit && chunk_in_bb[quad_inv_id]) {
-									immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
-
-									immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
-
-									if (mhtn_dist < offset_intensity) {
-										sample_ll_block_light(
-											reflected,
-											offset_intensity,
-											w_face_normal,
-											ind_bl,
-											w_rel_light,
-											mhtn_dist,
-											light_color,
-											is_wide,
-											rec
-										);
-									}
-								}
+							if (mhtn_dist < inv_light_offset_intensity) {
+								sample_ll_block_light(reflected, inv_light_offset_intensity, w_face_normal, ind_bl, w_rel_light, mhtn_dist, inv_light_color, inv_is_wide, rec);
 							}
 						}
 					} else {
-						for (uint16_t i = lsb; i <= msb; ++i) {
-							if (subgroupBallotBitExtract(in_bb_ballot, i)) { // This is always true when `i == lsb` or `i == msb`.
-								immut float16_t offset_intensity = float16_t(subgroupBroadcast(inv_light_offset_intensity, i));
-								immut f16vec3 pe_light = f16vec3(subgroupBroadcast(inv_pe_light, i));
-								immut bool is_wide = subgroupBroadcast(inv_is_wide, i);
-								immut f16vec3 light_color = f16vec3(subgroupBroadcast(inv_light_color, i));
+						immut uvec4 in_bb_ballot = subgroupBallot(inv_is_in_bb);
+						immut uint16_t lsb = uint16_t(subgroupBallotFindLSB(in_bb_ballot));
+						immut uint16_t msb = uint16_t(subgroupBallotFindMSB(in_bb_ballot));
 
-								if (is_maybe_ll_lit) {
-									immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
+						if (sg_quad_uniform) {
+							// Vectorize light sampling to work on chunks of 4, using quad operations.
 
-									immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
+							for (uint16_t i0 = lsb; i0 <= msb; i0 += uint16_t(4u)) {
+								immut bvec4 chunk_in_bb = bvec4(
+									subgroupBallotBitExtract(in_bb_ballot, i0),
+									subgroupBallotBitExtract(in_bb_ballot, i0 + uint16_t(1u)),
+									subgroupBallotBitExtract(in_bb_ballot, i0 + uint16_t(2u)),
+									subgroupBallotBitExtract(in_bb_ballot, i0 + uint16_t(3u))
+								); // These are always true when `i + ?? == lsb` or `i + ?? == msb`.
 
-									if (mhtn_dist < offset_intensity) {
-										sample_ll_block_light(
-											reflected,
-											offset_intensity,
-											w_face_normal,
-											ind_bl,
-											w_rel_light,
-											mhtn_dist,
-											light_color,
-											is_wide,
-											rec
-										);
+								if (any(chunk_in_bb)) {
+									immut uint8_t i = i0 + quad_inv_id;
+
+									immut float16_t offset_intensity = float16_t(subgroupShuffle(inv_light_offset_intensity, i));
+									immut f16vec3 pe_light = f16vec3(subgroupShuffle(inv_pe_light, i));
+									immut bool is_wide = subgroupShuffle(inv_is_wide, i);
+									immut f16vec3 light_color = f16vec3(subgroupShuffle(inv_light_color, i));
+
+									if (quad_is_maybe_ll_lit && chunk_in_bb[quad_inv_id]) {
+										immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
+
+										immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
+
+										if (mhtn_dist < offset_intensity) {
+											sample_ll_block_light(reflected, offset_intensity, w_face_normal, ind_bl, w_rel_light, mhtn_dist, light_color, is_wide, rec);
+										}
+									}
+								}
+							}
+						} else {
+							for (uint16_t i = lsb; i <= msb; ++i) {
+								if (subgroupBallotBitExtract(in_bb_ballot, i)) { // This is always true when `i == lsb` or `i == msb`.
+									immut float16_t offset_intensity = float16_t(subgroupBroadcast(inv_light_offset_intensity, i));
+									immut f16vec3 pe_light = f16vec3(subgroupBroadcast(inv_pe_light, i));
+									immut bool is_wide = subgroupBroadcast(inv_is_wide, i);
+									immut f16vec3 light_color = f16vec3(subgroupBroadcast(inv_light_color, i));
+
+									if (is_maybe_ll_lit) {
+										immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
+
+										immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
+
+										if (mhtn_dist < offset_intensity) {
+											sample_ll_block_light(reflected, offset_intensity, w_face_normal, ind_bl, w_rel_light, mhtn_dist, light_color, is_wide, rec);
+										}
 									}
 								}
 							}
@@ -457,12 +476,14 @@ void main() {
 				}
 			}
 
-			if (sg_quad_uniform) {
+			if (sg_uniform) {
+				reflected = subgroupAdd(reflected); // The different invocations in the subgroup processed different lights which all affect all of the subgroup.
+			} else if (sg_quad_uniform) {
 				reflected =
 					subgroupQuadBroadcast(reflected, 0u) +
 					subgroupQuadBroadcast(reflected, 1u) +
 					subgroupQuadBroadcast(reflected, 2u) +
-					subgroupQuadBroadcast(reflected, 3u); // The different invocations in the quad processed different lights which all affect all of the quad.
+					subgroupQuadBroadcast(reflected, 3u); // Same as above but just per-quad.
 			}
 
 			block_light = mix_ll_block_light(block_light, chebyshev_dist, block_sky_light.x, reflected);
