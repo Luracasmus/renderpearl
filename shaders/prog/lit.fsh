@@ -223,6 +223,9 @@ void main() {
 		#endif
 	);
 
+	immut BrdfReceiver rec = create_brdf_rec(w_tex_normal, n_pe, roughness, f0, is_metal, color.rgb, rcp_color);
+	immut uvec4 packed_rec = pack_brdf_rec(rec); // TODO: We might also want to compare `w_face_normal`.
+
 	#ifdef CLRWL
 		immut float16_t linear_ao = float16_t(clrwl_ao);
 		immut f16vec3 w_ao_dir = ao_dir(w_face_normal, pe, clrwl_ao);
@@ -237,7 +240,7 @@ void main() {
 	float16_t ao = corner_ao_curve(linear_ao);
 
 	#if DIR_SHADING != 0
-		ao *= dir_shading(w_tex_normal);
+		ao *= dir_shading(rec.normal);
 	#endif
 
 	ao *= gen_tex_ao(srgb_luma, avg_srgb_luma); // TODO: LabPBR AO.
@@ -250,9 +253,6 @@ void main() {
 
 	immut float16_t ind_bl = float16_t(IND_BL) * ao;
 	block_light *= ind_bl;
-
-	immut BrdfReceiver rec = create_brdf_rec(w_tex_normal, n_pe, roughness, f0, is_metal, color.rgb, rcp_color);
-	immut uvec4 packed_rec = pack_brdf_rec(rec); // TODO: We might also want to compare `w_face_normal`.
 
 	#ifdef FORWARD_LL_LIGHT_ENABLED
 		immut bool is_maybe_ll_lit = (
@@ -406,7 +406,7 @@ void main() {
 					// Now we actually check the lights per invocation, skipping the ones which are outside the BBs.
 
 					if (sg_uniform) {
-						// Vectorize light sampling to work the whole subgroup as one chunk.
+						// Vectorize light sampling to work on the whole subgroup as one chunk.
 
 						if (inv_is_in_bb) {
 							immut f16vec3 w_rel_light = f16vec3(vec3(inv_pe_light) - pe);
@@ -522,7 +522,7 @@ void main() {
 					const float16_t tex_n_dot_l = float16_t(1.0);
 				#else
 					immut float16_t face_n_dot_l = dot(w_face_normal, n_w_shadow_light);
-					immut float16_t tex_n_dot_l = dot(w_tex_normal, n_w_shadow_light);
+					immut float16_t tex_n_dot_l = dot(rec.normal, n_w_shadow_light);
 				#endif
 
 				sample_shadow(
