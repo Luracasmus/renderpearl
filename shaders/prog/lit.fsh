@@ -141,9 +141,22 @@ void main() {
 	immut vec2 mid_coord = unpackUnorm2x16(v.unorm2x16_mid_coord);
 	immut float16_t avg_srgb_luma = luminance(tint * f16vec3(textureLod(gtexture, mid_coord, 4.0).rgb));
 
-	immut bool is_water = uint8_t(v.misc_packed >> 31u) == uint8_t(1u);
-	const bool is_metal = false; // TODO: LabPBR.
-	immut float16_t f0 = is_water ? float16_t(0.02) : float16_t(0.04); // Based on: https://google.github.io/filament/Filament.md.html // TODO: LabPBR.
+	color.rgb = linear(color.rgb);
+
+	// TODO: LabPBR.
+	#ifdef TERRAIN
+		immut bool is_water_or_metal = uint8_t(v.misc_packed >> 31u) == uint8_t(1u); // TODO: LabPBR.
+		#ifdef TRANSLUCENT
+			// Water or default.
+			immut f16vec3 f0 = (is_water_or_metal ? float16_t(0.02) : float16_t(0.04)).xxx; // Based on: https://google.github.io/filament/Filament.md.html
+		#else
+			// Metal or default.
+			immut f16vec3 f0 = is_water_or_metal ? color.rgb : f16vec3(0.04); // Based on: https://google.github.io/filament/Filament.md.html
+		#endif
+	#else
+		const bool is_water_or_metal = false;
+		const f16vec3 f0 = f16vec3(0.04);
+	#endif
 
 	immut int tex_lod = int(ceil(textureQueryLod(gtexture, v.coord).x));
 	immut u16vec2 face_tex_size = u16vec2(unpackUint2x16(v.uint2x16_face_tex_size)) >> uint16_t(tex_lod);
@@ -152,7 +165,7 @@ void main() {
 	#if defined SM && defined MC_SPECULAR_MAP
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));
 	#else
-		immut float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma, is_water ? float16_t(-0.15) : float16_t(-0.1)); // TODO: Change when `is_metal` is also possible.
+		immut float16_t roughness = gen_roughness(srgb_luma, avg_srgb_luma, is_water_or_metal ? float16_t(-0.15) : float16_t(-0.1));
 	#endif
 
 	#ifdef NO_NORMAL
@@ -177,9 +190,6 @@ void main() {
 			#endif
 		#endif
 	#endif
-
-	color.rgb = linear(color.rgb);
-	immut f16vec3 rcp_color = float16_t(1.0) / max(color.rgb, float16_t(1.0e-5));
 
 	vec3 raw_ndc = fma(vec3(gl_FragCoord.xy / vec2(unpackUint2x16(uint(packedView))), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
 	#ifdef HAND
@@ -226,7 +236,8 @@ void main() {
 		#endif
 	);
 
-	immut BrdfReceiver rec = create_brdf_rec(w_tex_normal, n_pe, roughness, f0, is_metal, color.rgb, rcp_color);
+	immut f16vec3 rcp_color = float16_t(1.0) / max(color.rgb, float16_t(1.0e-5));
+	immut BrdfReceiver rec = create_brdf_rec(w_tex_normal, n_pe, roughness, f0, rcp_color);
 	immut uvec4 packed_rec = pack_brdf_rec(rec); // TODO: We might also want to compare `w_face_normal`.
 
 	#ifdef CLRWL
@@ -353,23 +364,6 @@ void main() {
 
 				immut f16vec3 chunk_view_min = f16vec3(subgroupMin(lit_min_view));
 				immut f16vec3 chunk_view_max = f16vec3(subgroupMax(lit_max_view));
-
-				/*
-					uint16_t cluster_size = 1u; // All fragments in clusters of this size will be lit the same by the same lights.
-					const uint16_t sg_size = uint16_t(gl_SubgroupSize);
-					for (uint16_t i = uint16_t(2u); i <= sg_size; ++i) {
-						if (
-							uint16_t(subgroupClusteredAdd(uint16_t(1u), i)) == i && // Make sure all invocations in each active cluster are active.
-							subgroupClusteredAnd(packed_rec, i) == subgroupClusteredOr(packed_rec, i) // Check if the receiver data is uniform across the cluster/equal between all invocations.
-						) {
-							cluster_size = i;
-						} else {
-							break;
-						}
-					}
-
-					color.rgb = vec3(cluster_size);
-				*/
 
 				bool sg_quad_uniform;
 				bool quad_is_maybe_ll_lit;

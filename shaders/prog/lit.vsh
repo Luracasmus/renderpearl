@@ -69,17 +69,9 @@ void main() {
 		color_alpha_or_ao.rgb = mix(color_alpha_or_ao.rgb, entity_color.rgb, entity_color.a);
 	#endif
 
-	v.misc_packed = 0u; // TODO: Optimize.
-
-	#if defined TERRAIN && !defined TRANSLUCENT
-		immut bool is_metal = abs(mc_Entity.x) < 0.1; // `mc_Entity.x == 0.0`.
-		if (is_metal) {
-			v.misc_packed = 0x80000000u; // Pack is_water_or_metal (set last bit to 1).
-		}
-	#endif
-
 	#ifdef NO_NORMAL
 		immut f16vec3 w_normal = f16vec3(mvInv2); // == MV_INV * vec3(0.0, 0.0, 1.0)
+		v.misc_packed = 0u; // TODO: Optimize more.
 	#else
 		immut mat3 normal_model_view_inverse = MV_INV * mat3(gl_NormalMatrix);
 		immut f16vec3 w_normal = f16vec3(normal_model_view_inverse * normalize(vec3(gl_Normal)));
@@ -88,11 +80,7 @@ void main() {
 		v.snorm4x8_octa_tangent_normal = packSnorm4x8(f16vec4(octa_encode(w_tangent), octa_encode(w_normal)));
 
 		// Pack handedness.
-		v.misc_packed = bitfieldInsert(
-			v.misc_packed,
-			floatBitsToUint(at_tangent.w) >> 31u, // The sign bit.
-			4, 1
-		);
+		v.misc_packed = (floatBitsToUint(at_tangent.w) >> 31u) << 4u; // The sign bit.
 	#endif
 
 	#ifdef TERRAIN
@@ -116,7 +104,12 @@ void main() {
 			immut bool is_fluid = mc_Entity.y == 1.0;
 			if (is_fluid) {
 				alpha *= float16_t(WATER_OPACITY * 0.01);
-				v.misc_packed |= 0x80000000u; // Pack is_water_or_metal (set last bit to 1).
+				v.misc_packed |= 0x80000000u; // Pack `is_water_or_metal` (set last bit to 1).
+			}
+		#else
+			immut bool is_metal = abs(mc_Entity.x) < 0.1; // `mc_Entity.x == 0.0`.
+			if (is_metal) {
+				v.misc_packed |= 0x80000000u; // Pack `is_water_or_metal` (set last bit to 1).
 			}
 		#endif
 	#else

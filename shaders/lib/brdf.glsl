@@ -255,15 +255,11 @@ BrdfReceiver create_brdf_rec(
 	f16vec3 normal,
 	f16vec3 obs_to_rec_dir, // Receiver direction from observer.
 	float16_t roughness,
-	float16_t f0_in,
-	bool is_metal,
-	f16vec3 color,
+	f16vec3 f0,
 	f16vec3 rcp_color
 ) {
 	// Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886".
 	immut float16_t n_dot_v = max(dot(normal, -obs_to_rec_dir), float16_t(0.0001));
-
-	immut f16vec3 f0 = is_metal ? color : f16vec3(f0_in);
 
 	immut f16vec3 specular_multiplier = (float16_t(1.0) + (f0 / f_ab_sum(roughness, n_dot_v) - f0)) * rcp_color;
 
