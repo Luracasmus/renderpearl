@@ -250,6 +250,7 @@ void main() {
 		const float16_t linear_ao = float16_t(1.0);
 		const f16vec3 w_ao_dir = f16vec3(0.0);
 	#endif
+	// TODO: Use^
 
 	float16_t ao = corner_ao_curve(linear_ao);
 
