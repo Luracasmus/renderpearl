@@ -188,7 +188,7 @@ void main() {
 		immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
 		if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
-			immut vec2 s_ndc = shadow_proj_scale.x * (mat3x2(shadowModelView) * (pe + mvInv3));
+			immut vec2 s_ndc = shadow_proj_scale.x * (mat3x2(shadowModelView) * (pe + mvInv3) + shadowModelView[3].xy);
 			v.s_distortion = distortion(s_ndc);
 		}
 	#endif

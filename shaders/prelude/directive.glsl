@@ -3,7 +3,7 @@
 #define CHUNKS_FADE_IN_NO_INJECT
 
 /*
-	const float shadowIntervalSize = 0.0;
+	const float shadowIntervalSize = 4.0;
 
 	const bool shadowHardwareFiltering0 = true;
 	const bool shadowHardwareFiltering1 = true;

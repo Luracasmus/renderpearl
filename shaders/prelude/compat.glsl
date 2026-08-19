@@ -100,10 +100,6 @@
 	// https://discord.com/channels/774352792659820594/774354522361299006/1360611068812198001 (The Iris Project)
 #endif
 
-// #extension GL_EXT_shader_integer_mix : require
-// #extension GL_ARB_gpu_shader_int64 : require
-// #extension GL_AMD_gpu_shader_int64 : require
-
 // It seems like this is always supported on non-NVIDIA or Intel+Windows drivers.
 // https://opengl.gpuinfo.org/listreports.php?extension=GL_AMD_shader_trinary_minmax
 #if (MINMAX_3 >= 1 && (defined GL_AMD_shader_trinary_minmax || defined MC_GL_AMD_shader_trinary_minmax)) || (MINMAX_3 >= 2 && !defined MC_GL_VENDOR_NVIDIA && !(defined MC_GL_VENDOR_INTEL && defined MC_OS_WINDOWS)) || MINMAX_3 >= 3

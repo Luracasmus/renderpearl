@@ -91,7 +91,7 @@ void main() {
 
 	#ifdef SHADOWS_ENABLED
 		if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
-			immut vec2 s_ndc = shadow_proj_scale.x * (mat3x2(shadowModelView) * (pe + mvInv3));
+			immut vec2 s_ndc = shadow_proj_scale.x * (mat3x2(shadowModelView) * (pe + mvInv3) + shadowModelView[3].xy);
 			v.s_distortion = distortion(s_ndc);
 		}
 	#endif

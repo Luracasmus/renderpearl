@@ -85,7 +85,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		immut float chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
 		if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
-			immut vec2 s_ndc = shadow_proj_scale.x * (mat3x2(shadowModelView) * (pe + vxModelViewInv[3].xyz));
+			immut vec2 s_ndc = shadow_proj_scale.x * (mat3x2(shadowModelView) * (pe + vxModelViewInv[3].xyz) + shadowModelView[3].xy);
 
 			colortex2.r = floatBitsToUint(distortion(s_ndc)); // Would ideally be per-vertex but this should be mostly alright.
 		}
