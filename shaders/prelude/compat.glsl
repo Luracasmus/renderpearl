@@ -113,14 +113,6 @@
 	#define max3(v0, v1, v2) max(v0, max(v1, v2))
 #endif
 
-// It seems like this is always supported on Mesa drivers for Intel GPUs (excluding some mobile or very old GPUs).
-// https://opengl.gpuinfo.org/listreports.php?extension=GL_INTEL_shader_integer_functions2
-#if (MUL_32x16 >= 1 && (defined GL_INTEL_shader_integer_functions2 || defined MC_GL_INTEL_shader_integer_functions2)) || (MUL_32x16 >= 2 && defined MC_GL_VENDOR_MESA && defined MC_GL_RENDERER_INTEL) || MUL_32x16 >= 3
-	#extension GL_INTEL_shader_integer_functions2 : require
-#else
-	#define multiply32x16(v0, v1) (v0 * v1)
-#endif
-
 // https://opengl.gpuinfo.org/listreports.php?extension=GL_KHR_shader_subgroup
 #if (SUBGROUP >= 1 && ((defined GL_KHR_shader_subgroup_basic && defined GL_KHR_shader_subgroup_vote && GL_KHR_shader_subgroup_arithmetic && GL_KHR_shader_subgroup_ballot && GL_KHR_shader_subgroup_shuffle && GL_KHR_shader_subgroup_shuffle_relative && GL_KHR_shader_subgroup_quad) || (defined MC_GL_KHR_shader_subgroup_basic && defined MC_GL_KHR_shader_subgroup_vote && MC_GL_KHR_shader_subgroup_arithmetic && MC_GL_KHR_shader_subgroup_ballot && MC_GL_KHR_shader_subgroup_shuffle && MC_GL_KHR_shader_subgroup_shuffle_relative && MC_GL_KHR_shader_subgroup_quad) || defined GL_KHR_shader_subgroup || defined MC_GL_KHR_shader_subgroup)) || (SUBGROUP >= 2 && (defined MC_GL_VENDOR_NVIDIA || defined MC_GL_RENDERER_RADEON)) || SUBGROUP >= 3
 	#extension GL_KHR_shader_subgroup_basic : require
