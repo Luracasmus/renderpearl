@@ -72,10 +72,13 @@ in
 	#include "/lib/fog.glsl"
 #endif
 
-#if defined SUBGROUP_ENABLED && !(defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI))
-	// AMD drivers for Windows don't support non-constant indices in `subgroupBroadcast` (<= SPIR-V 1.4 limitation),
-	// so the implementation here doesn't work.
-	#define FORWARD_LL_LIGHT_ENABLED
+#ifdef SUBGROUP_ENABLED
+	// AMD drivers for Windows don't support non-constant indices in `subgroupBroadcast` (<= SPIR-V 1.4 limitation).
+	#if defined MC_OS_WINDOWS && (defined MC_GL_VENDOR_AMD || defined MC_GL_VENDOR_ATI)
+		#define SG_BROADCAST_NONCONST(value, id) subgroupBroadcastFirst(subgroupShuffle(value, subgroupBroadcastFirst(id)))
+	#else
+		#define SG_BROADCAST_NONCONST(value, id) subgroupBroadcast(value, id)
+	#endif
 
 	#include "/lib/light/sample_ll_block.glsl"
 
@@ -251,44 +254,15 @@ void main() {
 		f16vec3 block_light = block_sky_light.x * f16vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B);
 	#endif
 
-	immut float16_t ind_bl = float16_t(IND_BL) * ao;
+	immut float16_t ind_bl = float16_t(IND_BL) * ao; // TODO: This needs to also snap to texels, or we need to stop using it in the light list sampling since it varies between "uniform" invocations.
 	block_light *= ind_bl;
 
-	#ifdef FORWARD_LL_LIGHT_ENABLED
+	#ifdef SUBGROUP_ENABLED
 		immut bool is_maybe_ll_lit = (
 			block_sky_light.x != float16_t(0.0) && chebyshev_dist < float16_t(LL_DIST) && !will_discard && !gl_HelperInvocation
 		);
 
 		if (subgroupAny(is_maybe_ll_lit)) {
-			f16vec3 lit_max_pe, lit_max_view, lit_min_pe, lit_min_view;
-			if (is_maybe_ll_lit) {
-				lit_max_pe = f16vec3(pe);
-				lit_max_view = f16vec3(view);
-
-				lit_min_pe = lit_max_pe;
-				lit_min_view = lit_max_view;
-			} else { // We don't want unlit or helper invocations making the bounding boxes bigger but we still need them to be active.
-				#ifdef FLOAT16
-					const float16_t minus_inf = uint16BitsToFloat16(uint16_t(0xFC00u));
-					const float16_t inf = uint16BitsToFloat16(uint16_t(0x7C00u));
-				#else
-					const float minus_inf = uintBitsToFloat(0xFF800000u);
-					const float inf = uintBitsToFloat(0x7F800000u);
-				#endif
-
-				lit_max_pe = minus_inf.xxx;
-				lit_max_view = minus_inf.xxx;
-
-				lit_min_pe = inf.xxx;
-				lit_min_view = inf.xxx;
-			}
-
-			immut f16vec3 chunk_pe_min = f16vec3(subgroupMin(lit_min_pe));
-			immut f16vec3 chunk_pe_max = f16vec3(subgroupMax(lit_max_pe));
-
-			immut f16vec3 chunk_view_min = f16vec3(subgroupMin(lit_min_view));
-			immut f16vec3 chunk_view_max = f16vec3(subgroupMax(lit_max_view));
-
 			immut vec3 ll_origin_offset = vec3(subgroupBroadcastFirst(ll.origin) - cameraPositionInt);
 			immut f16vec3 ll_offset = f16vec3(vec3(-255.5) + ll_origin_offset - cameraPositionFract - mvInv3);
 			immut uint16_t global_len = uint16_t(subgroupBroadcastFirst(ll.len));
@@ -299,31 +273,107 @@ void main() {
 
 			f16vec3 reflected = f16vec3(0.0);
 
-			/*
-				uint16_t cluster_size = 1u; // All fragments in clusters of this size will be lit the same by the same lights.
-				const uint16_t sg_size = uint16_t(gl_SubgroupSize);
-				for (uint16_t i = uint16_t(2u); i <= sg_size; ++i) {
-					if (
-						uint16_t(subgroupClusteredAdd(uint16_t(1u), i)) == i && // Make sure all invocations in each active cluster are active.
-						subgroupClusteredAnd(packed_rec, i) == subgroupClusteredOr(packed_rec, i) // Check if the receiver data is uniform across the cluster/equal between all invocations.
-					) {
-						cluster_size = i;
-					} else {
-						break;
+			if (subgroupAllEqual(packed_rec)) {
+				// Vectorize light sampling to work on the whole subgroup as one chunk.
+
+				rec = sg_broadcast_brdf_rec(rec);
+				pe = subgroupBroadcastFirst(pe);
+				w_face_normal = f16vec3(subgroupBroadcastFirst(w_face_normal));
+
+				for (uint16_t chunk_i = uint16_t(0u); chunk_i < global_len; chunk_i += chunk_invs) {
+					// Check if light is inside the subgroup bounding boxes.
+					immut uint16_t collab_inv_i = chunk_i + chunk_inv_id;
+
+					if (collab_inv_i < global_len) {
+						immut uint light_data = ll.data[collab_inv_i];
+
+						immut f16vec3 pe_light = f16vec3(
+							light_data & 511u,
+							bitfieldExtract(light_data, 9, 9),
+							bitfieldExtract(light_data, 18, 9)
+						) + ll_offset;
+
+						immut float16_t offset_intensity = float16_t(bitfieldExtract(light_data, 27, 4)) + float16_t(0.5);
+
+						immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
+
+						immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
+
+						if (mhtn_dist < offset_intensity) {
+							immut bool is_wide = light_data >= 0x80000000u;
+
+							#ifdef INT16
+								immut uint16_t packed_light_color = ll.color[collab_inv_i];
+								immut f16vec3 light_color = f16vec3(
+									(packed_light_color >> uint16_t(6u)) & uint16_t(31u),
+									packed_light_color & uint16_t(63u),
+									(packed_light_color >> uint16_t(11u))
+								);
+							#else
+								immut uint packed_light_color = bitfieldExtract(ll.color[collab_inv_i/2u], int(16u * (collab_inv_i & 1u)), 16);
+								immut f16vec3 light_color = f16vec3(
+									bitfieldExtract(uint(packed_light_color), 6, 5),
+									packed_light_color & uint16_t(63u),
+									(packed_light_color >> uint16_t(11u))
+								);
+							#endif
+
+							sample_ll_block_light(reflected, offset_intensity, w_face_normal, ind_bl, w_rel_light, mhtn_dist, light_color, is_wide, rec);
+						}
 					}
 				}
 
-				color.rgb = vec3(cluster_size);
-			*/
-
-			immut bool sg_uniform = subgroupAllEqual(packed_rec);
-
-			bool sg_quad_uniform;
-			bool quad_is_maybe_ll_lit;
-			uint8_t quad_inv_id; // Invocation index within the quad.
-			if (sg_uniform) {
-				rec = sg_broadcast_brdf_rec(rec);
+				reflected = subgroupAdd(reflected); // The different invocations in the subgroup processed different lights which all affect all of the subgroup.
 			} else {
+				f16vec3 lit_max_pe, lit_max_view, lit_min_pe, lit_min_view;
+				if (is_maybe_ll_lit) {
+					lit_max_pe = f16vec3(pe);
+					lit_max_view = f16vec3(view);
+
+					lit_min_pe = lit_max_pe;
+					lit_min_view = lit_max_view;
+				} else { // We don't want unlit or helper invocations making the bounding boxes bigger but we still need them to be active.
+					#ifdef FLOAT16
+						const float16_t minus_inf = uint16BitsToFloat16(uint16_t(0xFC00u));
+						const float16_t inf = uint16BitsToFloat16(uint16_t(0x7C00u));
+					#else
+						const float minus_inf = uintBitsToFloat(0xFF800000u);
+						const float inf = uintBitsToFloat(0x7F800000u);
+					#endif
+
+					lit_max_pe = minus_inf.xxx;
+					lit_max_view = minus_inf.xxx;
+
+					lit_min_pe = inf.xxx;
+					lit_min_view = inf.xxx;
+				}
+
+				immut f16vec3 chunk_pe_min = f16vec3(subgroupMin(lit_min_pe));
+				immut f16vec3 chunk_pe_max = f16vec3(subgroupMax(lit_max_pe));
+
+				immut f16vec3 chunk_view_min = f16vec3(subgroupMin(lit_min_view));
+				immut f16vec3 chunk_view_max = f16vec3(subgroupMax(lit_max_view));
+
+				/*
+					uint16_t cluster_size = 1u; // All fragments in clusters of this size will be lit the same by the same lights.
+					const uint16_t sg_size = uint16_t(gl_SubgroupSize);
+					for (uint16_t i = uint16_t(2u); i <= sg_size; ++i) {
+						if (
+							uint16_t(subgroupClusteredAdd(uint16_t(1u), i)) == i && // Make sure all invocations in each active cluster are active.
+							subgroupClusteredAnd(packed_rec, i) == subgroupClusteredOr(packed_rec, i) // Check if the receiver data is uniform across the cluster/equal between all invocations.
+						) {
+							cluster_size = i;
+						} else {
+							break;
+						}
+					}
+
+					color.rgb = vec3(cluster_size);
+				*/
+
+				bool sg_quad_uniform;
+				bool quad_is_maybe_ll_lit;
+				uint8_t quad_inv_id; // Invocation index within the quad.
 				// TODO: Make sure the quad uniform stuff is actually worth it. It seems to also have a somewhat significant cost (maybe the shuffling instead of broadcasting is bad?).
 				immut bool quad_uniform =
 					subgroupQuadBroadcast(packed_rec, 0u) == subgroupQuadBroadcast(packed_rec, 1u) &&
@@ -341,83 +391,68 @@ void main() {
 
 					quad_inv_id = uint8_t(uint16_t(gl_SubgroupInvocationID) & uint16_t(3u));
 				}
-			}
 
-			for (uint16_t chunk_i = uint16_t(0u); chunk_i < global_len; chunk_i += chunk_invs) {
-				bool inv_is_in_bb;
-				float16_t inv_light_offset_intensity;
-				f16vec3 inv_pe_light;
-				f16vec3 inv_light_color;
-				bool inv_is_wide;
+				for (uint16_t chunk_i = uint16_t(0u); chunk_i < global_len; chunk_i += chunk_invs) {
+					bool inv_is_in_bb;
+					float16_t inv_offset_intensity;
+					f16vec3 inv_pe_light;
+					f16vec3 inv_light_color;
+					bool inv_is_wide;
 
-				// Check if light is inside the subgroup bounding boxes.
-				immut uint16_t collab_inv_i = chunk_i + chunk_inv_id;
+					// Check if light is inside the subgroup bounding boxes.
+					immut uint16_t collab_inv_i = chunk_i + chunk_inv_id;
 
-				if (collab_inv_i < global_len) {
-					immut uint light_data = ll.data[collab_inv_i];
+					if (collab_inv_i < global_len) {
+						immut uint light_data = ll.data[collab_inv_i];
 
-					inv_pe_light = f16vec3(
-						light_data & 511u,
-						bitfieldExtract(light_data, 9, 9),
-						bitfieldExtract(light_data, 18, 9)
-					) + ll_offset;
+						inv_pe_light = f16vec3(
+							light_data & 511u,
+							bitfieldExtract(light_data, 9, 9),
+							bitfieldExtract(light_data, 18, 9)
+						) + ll_offset;
 
-					// We add '0.5' to account for the distance from the light source to the edge of the block it belongs to, where the falloff actually starts in vanilla lighting.
-					inv_light_offset_intensity = float16_t(bitfieldExtract(light_data, 27, 4)) + float16_t(0.5);
+						inv_offset_intensity = float16_t(bitfieldExtract(light_data, 27, 4)) + float16_t(0.5);
 
-					// Distance between light and closest point on bounding box.
-					// In world-aligned space (player-eye) we can use Manhattan distance.
-					immut float16_t mhtn_dist_from_pe_bb = dot(abs(inv_pe_light - clamp(inv_pe_light, chunk_pe_min, chunk_pe_max)), f16vec3(1.0));
+						// Distance between light and closest point on bounding box.
+						// In world-aligned space (player-eye) we can use Manhattan distance.
+						immut float16_t mhtn_dist_from_pe_bb = dot(abs(inv_pe_light - clamp(inv_pe_light, chunk_pe_min, chunk_pe_max)), f16vec3(1.0));
 
-					inv_is_in_bb = mhtn_dist_from_pe_bb <= inv_light_offset_intensity;
-
-					if (inv_is_in_bb) {
-						immut f16vec3 v_light = f16vec3(inv_pe_light * MV_INV);
-						immut float16_t euclid_dist_from_view_bb = distance(v_light, clamp(v_light, chunk_view_min, chunk_view_max));
-
-						inv_is_in_bb = euclid_dist_from_view_bb <= inv_light_offset_intensity;
-						// TODO: Maybe check for when the light is closer than the size of the bounding box, meaning it will be applying to all invocations.
+						inv_is_in_bb = mhtn_dist_from_pe_bb <= inv_offset_intensity;
 
 						if (inv_is_in_bb) {
-							inv_is_wide = light_data >= 0x80000000u;
+							immut f16vec3 v_light = f16vec3(inv_pe_light * MV_INV);
+							immut float16_t euclid_dist_from_view_bb = distance(v_light, clamp(v_light, chunk_view_min, chunk_view_max));
 
-							#ifdef INT16
-								immut uint16_t packed_light_color = ll.color[collab_inv_i];
-								inv_light_color = f16vec3(
-									(packed_light_color >> uint16_t(6u)) & uint16_t(31u),
-									packed_light_color & uint16_t(63u),
-									(packed_light_color >> uint16_t(11u))
-								);
-							#else
-								immut uint packed_light_color = bitfieldExtract(ll.color[collab_inv_i/2u], int(16u * (collab_inv_i & 1u)), 16);
-								inv_light_color = f16vec3(
-									bitfieldExtract(uint(packed_light_color), 6, 5),
-									packed_light_color & uint16_t(63u),
-									(packed_light_color >> uint16_t(11u))
-								);
-							#endif
-						}
-					}
-				} else {
-					inv_is_in_bb = false;
-				}
+							inv_is_in_bb = euclid_dist_from_view_bb <= inv_offset_intensity;
+							// TODO: Maybe check for when the light is closer than the size of the bounding box, meaning it will be applying to all invocations.
 
-				if (subgroupAny(inv_is_in_bb)) {
-					// Now we actually check the lights per invocation, skipping the ones which are outside the BBs.
+							if (inv_is_in_bb) {
+								inv_is_wide = light_data >= 0x80000000u;
 
-					if (sg_uniform) {
-						// Vectorize light sampling to work on the whole subgroup as one chunk.
-
-						if (inv_is_in_bb) {
-							immut f16vec3 w_rel_light = f16vec3(vec3(inv_pe_light) - pe);
-
-							immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
-
-							if (mhtn_dist < inv_light_offset_intensity) {
-								sample_ll_block_light(reflected, inv_light_offset_intensity, w_face_normal, ind_bl, w_rel_light, mhtn_dist, inv_light_color, inv_is_wide, rec);
+								#ifdef INT16
+									immut uint16_t packed_light_color = ll.color[collab_inv_i];
+									inv_light_color = f16vec3(
+										(packed_light_color >> uint16_t(6u)) & uint16_t(31u),
+										packed_light_color & uint16_t(63u),
+										(packed_light_color >> uint16_t(11u))
+									);
+								#else
+									immut uint packed_light_color = bitfieldExtract(ll.color[collab_inv_i/2u], int(16u * (collab_inv_i & 1u)), 16);
+									inv_light_color = f16vec3(
+										bitfieldExtract(uint(packed_light_color), 6, 5),
+										packed_light_color & uint16_t(63u),
+										(packed_light_color >> uint16_t(11u))
+									);
+								#endif
 							}
 						}
 					} else {
+						inv_is_in_bb = false;
+					}
+
+					if (subgroupAny(inv_is_in_bb)) {
+						// Now we actually check the lights per invocation, skipping the ones which are outside the BBs.
+
 						immut uvec4 in_bb_ballot = subgroupBallot(inv_is_in_bb);
 						immut uint16_t lsb = uint16_t(subgroupBallotFindLSB(in_bb_ballot));
 						immut uint16_t msb = uint16_t(subgroupBallotFindMSB(in_bb_ballot));
@@ -436,12 +471,12 @@ void main() {
 								if (any(chunk_in_bb)) {
 									immut uint8_t i = i0 + quad_inv_id;
 
-									immut float16_t offset_intensity = float16_t(subgroupShuffle(inv_light_offset_intensity, i));
+									immut float16_t offset_intensity = float16_t(subgroupShuffle(inv_offset_intensity, i));
 									immut f16vec3 pe_light = f16vec3(subgroupShuffle(inv_pe_light, i));
 									immut bool is_wide = subgroupShuffle(inv_is_wide, i);
 									immut f16vec3 light_color = f16vec3(subgroupShuffle(inv_light_color, i));
 
-									if (quad_is_maybe_ll_lit && chunk_in_bb[quad_inv_id]) {
+									if (chunk_in_bb[quad_inv_id]) {
 										immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
 
 										immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
@@ -455,35 +490,30 @@ void main() {
 						} else {
 							for (uint16_t i = lsb; i <= msb; ++i) {
 								if (subgroupBallotBitExtract(in_bb_ballot, i)) { // This is always true when `i == lsb` or `i == msb`.
-									immut float16_t offset_intensity = float16_t(subgroupBroadcast(inv_light_offset_intensity, i));
-									immut f16vec3 pe_light = f16vec3(subgroupBroadcast(inv_pe_light, i));
-									immut bool is_wide = subgroupBroadcast(inv_is_wide, i);
-									immut f16vec3 light_color = f16vec3(subgroupBroadcast(inv_light_color, i));
+									immut float16_t offset_intensity = float16_t(SG_BROADCAST_NONCONST(inv_offset_intensity, i));
+									immut f16vec3 pe_light = f16vec3(SG_BROADCAST_NONCONST(inv_pe_light, i));
+									immut bool is_wide = SG_BROADCAST_NONCONST(inv_is_wide, i);
+									immut f16vec3 light_color = f16vec3(SG_BROADCAST_NONCONST(inv_light_color, i));
 
-									if (is_maybe_ll_lit) {
-										immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
+									immut f16vec3 w_rel_light = f16vec3(vec3(pe_light) - pe);
+									immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
 
-										immut float16_t mhtn_dist = dot(abs(w_rel_light), f16vec3(1.0));
-
-										if (mhtn_dist < offset_intensity) {
-											sample_ll_block_light(reflected, offset_intensity, w_face_normal, ind_bl, w_rel_light, mhtn_dist, light_color, is_wide, rec);
-										}
+									if (mhtn_dist < offset_intensity) {
+										sample_ll_block_light(reflected, offset_intensity, w_face_normal, ind_bl, w_rel_light, mhtn_dist, light_color, is_wide, rec);
 									}
 								}
 							}
 						}
 					}
 				}
-			}
 
-			if (sg_uniform) {
-				reflected = subgroupAdd(reflected); // The different invocations in the subgroup processed different lights which all affect all of the subgroup.
-			} else if (sg_quad_uniform) {
-				reflected =
-					subgroupQuadBroadcast(reflected, 0u) +
-					subgroupQuadBroadcast(reflected, 1u) +
-					subgroupQuadBroadcast(reflected, 2u) +
-					subgroupQuadBroadcast(reflected, 3u); // Same as above but just per-quad.
+				if (sg_quad_uniform) {
+					reflected =
+						f16vec3(subgroupQuadBroadcast(reflected, 0u)) +
+						f16vec3(subgroupQuadBroadcast(reflected, 1u)) +
+						f16vec3(subgroupQuadBroadcast(reflected, 2u)) +
+						f16vec3(subgroupQuadBroadcast(reflected, 3u)); // The different invocations in the quad processed different lights which all affect all of the quad.
+				}
 			}
 
 			block_light = mix_ll_block_light(block_light, chebyshev_dist, block_sky_light.x, reflected);
@@ -525,19 +555,7 @@ void main() {
 					immut float16_t tex_n_dot_l = dot(rec.normal, n_w_shadow_light);
 				#endif
 
-				sample_shadow(
-					light,
-					chebyshev_dist,
-					v.s_distortion,
-					sky_light_color,
-					face_n_dot_l,
-					tex_n_dot_l,
-					n_w_shadow_light,
-					w_face_normal,
-					pe,
-					mvInv3,
-					rec
-				);
+				sample_shadow(light, chebyshev_dist, v.s_distortion, sky_light_color, face_n_dot_l, tex_n_dot_l, n_w_shadow_light, w_face_normal, pe, mvInv3, rec);
 			#endif
 
 			#if HAND_LIGHT != 0
