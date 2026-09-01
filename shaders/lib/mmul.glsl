@@ -27,17 +27,32 @@ vec3 proj(mat4 proj_mat, vec3 view) {
 }
 
 // Inverse perspective projection matrix multiplication.
-vec4 proj_inv_mmul(mat4 inv_proj_mat, vec3 ndc) {
-	return vec4(
-		vec2(inv_proj_mat[0].x, inv_proj_mat[1].y) * ndc.xy,
-		inv_proj_mat[3].z,
-		fma(inv_proj_mat[2].w, ndc.z, inv_proj_mat[3].w)
-	);
-}
+	vec4 proj_inv_mmul(mat4 inv_proj_mat, vec3 ndc) {
+		return vec4(
+			vec2(inv_proj_mat[0].x, inv_proj_mat[1].y) * ndc.xy,
+			inv_proj_mat[3].z,
+			fma(inv_proj_mat[2].w, ndc.z, inv_proj_mat[3].w)
+		);
+	}
+
+	// Assuming an NDC-space Z of zero.
+	vec4 proj_inv_mmul(mat4 inv_proj_mat, vec2 ndc) {
+		return vec4(
+			vec2(inv_proj_mat[0].x, inv_proj_mat[1].y) * ndc,
+			inv_proj_mat[3].zw
+		);
+	}
 
 // Inverse perspective projection matrix multiplication with divide.
-vec3 proj_inv(mat4 inv_proj_mat, vec3 ndc) {
-	immut vec4 view_undiv = proj_inv_mmul(inv_proj_mat, ndc);
+	vec3 proj_inv(mat4 inv_proj_mat, vec3 ndc) {
+		immut vec4 view_undiv = proj_inv_mmul(inv_proj_mat, ndc);
 
-	return view_undiv.xyz / view_undiv.w;
-}
+		return view_undiv.xyz / view_undiv.w;
+	}
+
+	// Assuming an NDC-space Z of zero.
+	vec3 proj_inv(mat4 inv_proj_mat, vec2 ndc) {
+		immut vec4 view_undiv = proj_inv_mmul(inv_proj_mat, ndc);
+
+		return view_undiv.xyz / view_undiv.w;
+	}

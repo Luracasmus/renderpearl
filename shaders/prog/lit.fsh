@@ -550,7 +550,7 @@ void main() {
 					immut float16_t tex_n_dot_l = dot(rec.normal, n_w_shadow_light);
 				#endif
 
-				sample_shadow(light, chebyshev_dist, v.s_distortion, sky_light_color, face_n_dot_l, tex_n_dot_l, n_w_shadow_light, w_face_normal, pe, mvInv3, rec);
+				sample_shadow(light, chebyshev_dist, v.s_distortion, sky_light_color, face_n_dot_l, tex_n_dot_l, n_w_shadow_light, w_face_normal, pf, rec);
 			#endif
 
 			#if HAND_LIGHT != 0

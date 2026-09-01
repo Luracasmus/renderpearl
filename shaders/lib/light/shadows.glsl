@@ -89,8 +89,7 @@ void sample_shadow(
 	float16_t tex_n_dot_l,
 	f16vec3 n_w_shadow_light,
 	f16vec3 w_face_normal,
-	vec3 pe,
-	vec3 mv_inv_trans,
+	vec3 pf,
 	BrdfReceiver rec
 ) {
 	if (min(face_n_dot_l, tex_n_dot_l) > min_n_dot_l) {
@@ -108,7 +107,7 @@ void sample_shadow(
 			*/
 			//                               (-0.3, 32.0) // Seems to also work and gives slightly different results. Remember to uncomment the depth bias application when using that.
 			immut f16vec2 bias = f16vec2(vec2(-0.0, 64.0) / shadowMapResolution) * f16vec2(sine, min(float16_t(2.0), tangent)); // (normal_bias, slope_scaled_bias)
-			vec3 s_ndc = shadow_proj_scale.xxy * rot_trans_mmul(shadowModelView, pe + mv_inv_trans + vec3(bias.y * w_face_normal));
+			vec3 s_ndc = shadow_proj_scale.xxy * rot_trans_mmul(shadowModelView, pf + vec3(bias.y * w_face_normal));
 			s_ndc.xy *= s_distortion;
 			// s_ndc.z += float(bias.x);
 

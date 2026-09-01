@@ -89,6 +89,7 @@ void main() {
 			light += ao * non_block_light(sky_light_color, block_sky_light.y);
 
 			immut vec3 pe = MV_INV * view;
+			immut vec3 pf = pe + mvInv3;
 
 			#ifdef SHADOWS_ENABLED
 				immut f16vec3 n_pe = f16vec3(normalize(pe));
@@ -117,17 +118,15 @@ void main() {
 					color.rgb, rcp_color,
 					roughness, f0, is_metal,
 					n_dot_l, n_dot_l, n_w_shadow_light,
-					w_normal, w_normal, n_pe, pe, mvInv3
+					w_normal, w_normal, n_pe, pf
 				);
 			#endif
-
-			immut f16vec3 pf = f16vec3(pe + mvInv3);
 
 			colortex1 = color * f16vec4(
 				light,
 				// Fade in where regular translucents fade out, and then fade out again at DH render distance. TODO: It might be possible to make the transition smoother.
 				// TODO: Skip shading and stuff far inside the regular RD.
-				1.0 - vanilla_fog(pf, float16_t(dhRenderDistance))
+				1.0 - vanilla_fog(f16vec3(pf), float16_t(dhRenderDistance))
 			);
 		}
 	}

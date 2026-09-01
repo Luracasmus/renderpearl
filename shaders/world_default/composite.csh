@@ -69,18 +69,18 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 			immut vec3 ndc = fma(vec3(coord, depth), vec3(2.0), vec3(-1.0));
 			pe = MV_INV * proj_inv(gbufferProjectionInverse, ndc);
 			immut float pe_dist = length(pe);
+			immut vec3 pf = pe + mvInv3;
 
-			immut vec4 view_undiv_zero = gbufferProjectionInverse * vec4(ndc.xy, 0.0, 1.0);
-			immut vec3 view_zero = view_undiv_zero.xyz / view_undiv_zero.w;
-			immut vec3 pe_zero = MV_INV * view_zero;
+			immut vec3 view_zero = proj_inv(gbufferProjectionInverse, ndc.xy);
+			immut vec3 pf_zero = MV_INV * view_zero + mvInv3;
 
 			// immut float16_t density = float16_t(-0.02) * float16_t(fogState.y);
 
 			for (uint i = 0u; i < uint(VL_SAMPLES); ++i) {
 				immut float dist = ign(vec2(texel), float(frameCounter + i)); // pow(..., 1.5) ?
-				immut vec3 sample_pe = mix(pe_zero, pe, dist);
+				immut vec3 sample_pf = mix(pf_zero, pf, dist);
 
-				immut vec3 sample_s_ndc = shadow_proj_scale.xxy * rot_trans_mmul(shadowModelView, sample_pe + mvInv3);
+				immut vec3 sample_s_ndc = shadow_proj_scale.xxy * rot_trans_mmul(shadowModelView, sample_pf);
 				immut vec3 s_scrn = fma(vec3(sample_s_ndc.xy * distortion(sample_s_ndc.xy), sample_s_ndc.z), vec3(0.5), vec3(0.5));
 
 				ray += sample_sm(float16_t(1.0) - float16_t(exp(-0.1 / pbrFogDensity * pe_dist * dist)), s_scrn);
@@ -93,6 +93,16 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 		}
 
 		return ray;
+	}
+
+	void add_nbh_ray(inout f16vec3 accum_ray, uvec2 nbh_pos) {
+		immut uint16_t packed_ray = sh.nbh[nbh_pos.x][nbh_pos.y];
+
+		accum_ray = fma(f16vec3(
+			packed_ray & uint16_t(31u),
+			bitfieldExtract(uint(packed_ray), 5, 6),
+			packed_ray >> uint16_t(11u)
+		), f16vec3(1.0 / vec3(31.0, 63.0, 31.0)), accum_ray);
 	}
 #endif
 
@@ -147,22 +157,20 @@ void main() {
 			// We use the average VL color of a 3x3 neighborhood of invocations
 			// to take advantage of IGN's low discrepancy
 			// and get reasonably good results with very few samples.
-			const uvec2[8] offsets = uvec2[8](
-				uvec2(0u, 0u), uvec2(1u, 0u), uvec2(2u, 0u), uvec2(2u, 1u), uvec2(2u, 2u), uvec2(1u, 2u), uvec2(0u, 2u), uvec2(0u, 1u)
-			);
 
-			for (uint i = 0u; i < offsets.length(); ++i) {
-				immut uvec2 nbh_pos = gl_LocalInvocationID.xy + offsets[i];
-				immut uint16_t packed_ray = sh.nbh[nbh_pos.x][nbh_pos.y];
+			// Remember that our current ray is at (+1, +1) offset. We add all the other ones here.
+			add_nbh_ray(ray, gl_LocalInvocationID.xy);
+			add_nbh_ray(ray, uvec2(gl_LocalInvocationID.x, gl_LocalInvocationID.y + 1u));
+			add_nbh_ray(ray, uvec2(gl_LocalInvocationID.x, gl_LocalInvocationID.y + 2u));
 
-				ray = fma(f16vec3(
-					packed_ray & uint16_t(31u),
-					bitfieldExtract(uint(packed_ray), 5, 6),
-					packed_ray >> uint16_t(11u)
-				), f16vec3(1.0 / vec3(31.0, 63.0, 31.0)), ray);
-			}
+			add_nbh_ray(ray, uvec2(gl_LocalInvocationID.x + 1u, gl_LocalInvocationID.y));
+			add_nbh_ray(ray, gl_LocalInvocationID.xy + uvec2(1u, 2u));
 
-			ray *= float16_t(float(VL) * 0.001 / float((offsets.length() + 1u) * uint(VL_SAMPLES))) * (float16_t(1.0) - fog);
+			add_nbh_ray(ray, uvec2(gl_LocalInvocationID.x + 2u, gl_LocalInvocationID.y));
+			add_nbh_ray(ray, gl_LocalInvocationID.xy + uvec2(2u, 1u));
+			add_nbh_ray(ray, gl_LocalInvocationID.xy + 2u);
+
+			ray *= float16_t(float(VL) * 0.001 / float(9u * uint(VL_SAMPLES))) * (float16_t(1.0) - fog);
 			color = fma(ray, skylight(), color);
 		}
 	#endif
