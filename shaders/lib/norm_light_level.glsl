@@ -18,5 +18,5 @@ f16vec2 norm_light_level() {
 		immut f16vec2 offset = fma(f16vec2(lm_tex_mat[0].w, lm_tex_mat[1].w), f16vec2(16.0 / 15.0), f16vec2(-0.5 / 15.0));
 	#endif
 
-	return fma(lm_raw_coord, scale, offset);
+	return saturate(fma(lm_raw_coord, scale, offset));
 }
