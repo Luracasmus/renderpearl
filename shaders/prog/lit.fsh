@@ -172,12 +172,12 @@ void main() {
 	#endif
 
 	#ifdef NO_NORMAL
-		immut f16vec3 w_face_normal = f16vec3(mvInv2);
+		f16vec3 w_face_normal = f16vec3(mvInv2);
 		immut f16vec3 w_tex_normal = w_face_normal;
 	#else
 		immut f16vec4 octa_tangent_normal = f16vec4(unpackSnorm4x8(v.snorm4x8_octa_tangent_normal));
 		immut f16vec3 w_face_tangent = normalize(octa_decode(octa_tangent_normal.xy));
-		immut f16vec3 w_face_normal = normalize(octa_decode(octa_tangent_normal.zw));
+		f16vec3 w_face_normal = normalize(octa_decode(octa_tangent_normal.zw));
 
 		#if NORMALS == 2
 			immut f16vec3 w_tex_normal = w_face_normal;
@@ -211,7 +211,7 @@ void main() {
 		#endif
 	*/
 	pf = block_relative_snapped - cameraPositionFract;
-	immut vec3 pe = pf - mvInv3;
+	vec3 pe = pf - mvInv3;
 	view = pe * MV_INV;
 	immut f16vec3 n_pe = f16vec3(normalize(pe));
 	immut f16vec3 abs_pe = abs(f16vec3(pe));
@@ -239,7 +239,7 @@ void main() {
 		#endif
 	);
 
-	immut BrdfReceiver rec = create_brdf_rec(reflects_diffuse, w_tex_normal, n_pe, roughness, f0, color.rgb);
+	BrdfReceiver rec = create_brdf_rec(reflects_diffuse, w_tex_normal, n_pe, roughness, f0, color.rgb);
 	immut uvec3 packed_rec = pack_brdf_rec(rec); // TODO: We might also want to compare `w_face_normal`.
 
 	#ifdef CLRWL

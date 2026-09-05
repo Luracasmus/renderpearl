@@ -11,7 +11,7 @@
 #ifdef ASSUME_AMD_GPU_SHADER_INT16
 #endif
 
-#if (CONST_IMMUT == 1 && (defined MC_GL_VENDOR_NVIDIA || (defined MC_OS_LINUX && defined MC_GL_RENDERER_RADEON))) || CONST_IMMUT == 2
+#if (CONST_IMMUT == 1 && (defined MC_GL_VENDOR_NVIDIA || defined MC_OS_LINUX)) || CONST_IMMUT == 2
 	#define immut const
 #else
 	#define immut
