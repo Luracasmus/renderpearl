@@ -148,13 +148,16 @@ void main() {
 		immut bool is_water_or_metal = uint8_t(v.misc_packed >> 31u) == uint8_t(1u); // TODO: LabPBR.
 		#ifdef TRANSLUCENT
 			// Water or default.
+			const bool reflects_diffuse = true;
 			immut f16vec3 f0 = (is_water_or_metal ? float16_t(0.02) : float16_t(0.04)).xxx; // Based on: https://google.github.io/filament/Filament.md.html
 		#else
 			// Metal or default.
+			immut bool reflects_diffuse = !is_water_or_metal;
 			immut f16vec3 f0 = is_water_or_metal ? color.rgb : f16vec3(0.04); // Based on: https://google.github.io/filament/Filament.md.html
 		#endif
 	#else
 		const bool is_water_or_metal = false;
+		const bool reflects_diffuse = true;
 		const f16vec3 f0 = f16vec3(0.04);
 	#endif
 
@@ -236,9 +239,8 @@ void main() {
 		#endif
 	);
 
-	immut f16vec3 rcp_color = float16_t(1.0) / max(color.rgb, float16_t(1.0e-5));
-	immut BrdfReceiver rec = create_brdf_rec(w_tex_normal, n_pe, roughness, f0, rcp_color);
-	immut uvec4 packed_rec = pack_brdf_rec(rec); // TODO: We might also want to compare `w_face_normal`.
+	immut BrdfReceiver rec = create_brdf_rec(reflects_diffuse, w_tex_normal, n_pe, roughness, f0, color.rgb);
+	immut uvec3 packed_rec = pack_brdf_rec(rec); // TODO: We might also want to compare `w_face_normal`.
 
 	#ifdef CLRWL
 		immut float16_t linear_ao = float16_t(clrwl_ao);

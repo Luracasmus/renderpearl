@@ -243,53 +243,58 @@ float16_t f_ab_sum(float16_t roughness, float16_t n_dot_v) {
 
 // Properties of a surface receiving light.
 struct BrdfReceiver {
+	bool reflects_diffuse;
 	f16vec3 normal;
 	f16vec3 obs_to_rec_dir; // Receiver direction from observer.
 	float16_t roughness;
 	f16vec3 f0;
-	float16_t n_dot_v;
 	f16vec3 specular_multiplier;
+	float16_t n_dot_v;
 };
 
 BrdfReceiver create_brdf_rec(
+	bool reflects_diffuse,
 	f16vec3 normal,
 	f16vec3 obs_to_rec_dir, // Receiver direction from observer.
 	float16_t roughness,
 	f16vec3 f0,
-	f16vec3 rcp_color
+	f16vec3 color
 ) {
 	// Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886".
 	immut float16_t n_dot_v = max(dot(normal, -obs_to_rec_dir), float16_t(0.0001));
 
+	immut f16vec3 rcp_color = float16_t(1.0) / max(color, float16_t(1.0e-5));
 	immut f16vec3 specular_multiplier = (float16_t(1.0) + (f0 / f_ab_sum(roughness, n_dot_v) - f0)) * rcp_color;
 
 	return BrdfReceiver(
+		reflects_diffuse,
 		normal,
 		obs_to_rec_dir,
 		roughness,
 		f0,
-		n_dot_v,
-		specular_multiplier
+		specular_multiplier,
+		n_dot_v
 	);
 }
 
-uvec4 pack_brdf_rec(BrdfReceiver rec) {
-	return uvec4(
-		packFloat2x16(octa_encode(rec.normal)),
-		packFloat2x16(octa_encode(rec.obs_to_rec_dir)),
+// Lossily pack properties to a format that can quickly be compared to determine if two receivers are equal (or very similar).
+uvec3 pack_brdf_rec(BrdfReceiver rec) {
+	return uvec3(
+		packSnorm4x8(f16vec4(octa_encode(rec.normal), octa_encode(rec.obs_to_rec_dir))),
 		packUnorm4x8(f16vec4(rec.roughness, rec.f0)),
-		packUnorm4x8(f16vec4(rec.n_dot_v, rec.specular_multiplier))
+		packUnorm4x8(f16vec4(rec.specular_multiplier, float16_t(rec.reflects_diffuse)))
 	);
 }
 
 BrdfReceiver sg_broadcast_brdf_rec(BrdfReceiver rec) {
 	return BrdfReceiver(
+		subgroupBroadcastFirst(rec.reflects_diffuse),
 		f16vec3(subgroupBroadcastFirst(rec.normal)),
 		f16vec3(subgroupBroadcastFirst(rec.obs_to_rec_dir)),
 		float16_t(subgroupBroadcastFirst(rec.roughness)),
 		f16vec3(subgroupBroadcastFirst(rec.f0)),
-		float16_t(subgroupBroadcastFirst(rec.n_dot_v)),
-		f16vec3(subgroupBroadcastFirst(rec.specular_multiplier))
+		f16vec3(subgroupBroadcastFirst(rec.specular_multiplier)),
+		float16_t(subgroupBroadcastFirst(rec.n_dot_v))
 	);
 }
 
@@ -377,9 +382,11 @@ f16vec3 brdf(
 	immut f16vec3 f = fresnel(rec.f0, l_dot_h);
 
 	immut f16vec3 specular = (d * v) * f; // Distribution * visibility * Fresnel term.
+	f16vec3 reflected = specular * rec.specular_multiplier;
 
-	return n_dot_l * (
-		fd_burley(rec.roughness, rec.n_dot_v, float16_t(n_dot_l), l_dot_h) +
-		specular * rec.specular_multiplier // TODO: Is this correct for metals?
-	);
+	if (rec.reflects_diffuse) {
+		reflected += fd_burley(rec.roughness, rec.n_dot_v, float16_t(n_dot_l), l_dot_h); // Add diffuse reflection.
+	}
+
+	return n_dot_l * reflected; // TODO: Is this correct for metals?
 }
