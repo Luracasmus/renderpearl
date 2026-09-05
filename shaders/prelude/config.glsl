@@ -29,7 +29,6 @@
 		#define LL_RATE 16 // [2 3 4 8 16 32 64 128 256]
 		#define LOD_FALLOFF 3 // [1 2 3 4 5 6 7]
 		#define LAVA_LOD_BIAS 0.8 // [0.0 0.2 0.4 0.6 0.8 1.0 1.2]
-		#define LDS_RATIO 0.25 // [0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.5 0.6 0.7 0.8 0.9 1.0]
 
 	// HAND_LIGHT
 		#define HAND_LIGHT 1 // [0 1 2 3 4 5]

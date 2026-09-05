@@ -63,9 +63,6 @@ screen.LIGHTING=§6◀§r Ljus §6▶
 		option.LAVA_LOD_BIAS=§6⌚§r Detaljnivå-Bias på Lava
 			option.LAVA_LOD_BIAS.comment=Ytterligare Detaljnivå-bias som adderas till lava för att minska dess annars ofta överväldigande antal ljuskällor
 
-		option.LDS_RATIO=§6⌚§r LDS-förhållande
-			option.LDS_RATIO.comment=Mängden Local Data Share-minne som allokeras per ruta (work group) som en andel av §l§c⌚§r§l Kapacitet§r\n\nDetta påverkar den maximala mängden ljus som kan bearbetas §oefter utsortering§r innan artifakter uppstår
-
 		screen.FALLBACK_BLOCK=§6◀§r Reserv-Blockljus §6▶
 			screen.FALLBACK_BLOCK.comment=Reserv-blockljusfärg för ljus utanför ljuslistans avstånd
 
