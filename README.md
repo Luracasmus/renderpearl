@@ -6,6 +6,8 @@ RenderPearl is an incredibly lightweight shader pack using the latest Iris featu
 
 If you want to report a bug or give feedback/suggestions, the best way to do so is by opening an issue on the [GitHub issue tracker](https://github.com/Luracasmus/renderpearl/issues). I rely heavily on user feedback in bug fixing and design.
 
+> **This project is NOT associated with Mojang's new rendering abstraction layer also named "RenderRearl" (`com.mojang.RenderPearl`)**
+
 <details>
 <summary>Trivia</summary>
 
