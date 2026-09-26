@@ -230,15 +230,27 @@
 */
 
 uniform sampler2D dfgLut;
+uniform sampler2D dfgLut2;
 
 // F_ab.x + F_ab.y
 float16_t f_ab_sum(float16_t roughness, float16_t n_dot_v) {
 	immut float16_t perceptual_roughness = sqrt(roughness);
 
-	return dot(
+	float16_t res0 = dot(
 		f16vec2(textureLod(dfgLut, f16vec2(n_dot_v, perceptual_roughness), 0.0).rg),
 		f16vec2(1.0)
 	);
+
+	float16_t res1 = dot(
+		f16vec2(textureLod(dfgLut2, f16vec2(n_dot_v, perceptual_roughness), 0.0).r, 0.0),
+		f16vec2(1.0)
+	);
+
+	if (abs(res0 - res1) > 0.001) {
+		discard;
+	}
+
+	return res1;
 }
 
 // Properties of a surface receiving light.
