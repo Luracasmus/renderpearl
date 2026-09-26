@@ -21,7 +21,7 @@ screen.LIGHTING=§6◀§r Ljus §6▶
 
 	option.ambientOcclusionLevel.comment=Gör hörn mellan block mörkare
 
-	option.shadowMapResolution=§c⌚§r Shadow Map-upplösning
+	option.SM_RES=§c⌚§r Shadow Map-upplösning
 
 	option.SM_DIST=§c⌚§r Skuggavstånd
 		option.SM_DIST.comment=Avståndet inom vilket skuggor återges\nLägre värden gör också närmare skuggor skarpare\n\n§6⚠§r Det är rekommenderat att ställa in detta lägre än eller lika med inställningen för §lSynligt Avstånd§r för optimal prestanda och kvalitet

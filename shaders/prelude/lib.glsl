@@ -1,9 +1,7 @@
 #define PI 3.14159265358979323846264338327950288
 #define LOG2_E 1.44269504088896340735992468100189214
 
-#if SM_DIST != 0 && !(defined END || defined NETHER)
-	#define SHADOWS_ENABLED
-
+#ifdef SM_ACTIVE
 	// Because we use orthographic projection with constant parameters we can use this instead of ´shadowProjection´.
 	// The first component applies to XY, and the last to Z.
 	const vec2 shadow_proj_scale = vec2(1.0 / shadowDistance, -2.0 / (shadowFarPlane - shadowNearPlane));

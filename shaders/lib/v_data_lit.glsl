@@ -12,11 +12,11 @@ VertexData {
 		layout(location = 2, component = 0) vec3 tint;
 		layout(location = 2, component = 3) float ao;
 
-		#ifdef SHADOWS_ENABLED
+		#ifdef SM_ACTIVE
 			layout(location = 3, component = 0) float s_distortion;
 		#endif
 	#else
-		#ifdef SHADOWS_ENABLED
+		#ifdef SM_ACTIVE
 			layout(location = 0, component = 2) float s_distortion;
 		#endif
 

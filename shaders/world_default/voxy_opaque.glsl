@@ -12,7 +12,7 @@
 /* RENDERTARGETS: 1,2 */
 layout(location = 0) out vec4 colortex1;
 
-#ifdef SHADOWS_ENABLED
+#ifdef SM_ACTIVE
 	layout(location = 1) out uvec4 colortex2;
 
 	#include "/lib/mmul.glsl"
@@ -38,7 +38,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		immut vec3 w_normal = vec3(uint((face >> 1u) == 2u), uint((face >> 1u) == 0u), uint((face >> 1u) == 1u)) * fma(float(int(face) & 1), 2.0, -1.0);
 		immut vec2 octa_w_normal = octa_encode(w_normal);
 
-		#ifdef SHADOWS_ENABLED
+		#ifdef SM_ACTIVE
 			colortex2.a
 		#else
 			colortex2.b
@@ -55,7 +55,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 			15, 13
 		);
 
-		#ifdef SHADOWS_ENABLED
+		#ifdef SM_ACTIVE
 			colortex2.b
 		#else
 			colortex2.g
@@ -69,7 +69,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 
 		// TODO: f0 enum.
 
-		#ifdef SHADOWS_ENABLED
+		#ifdef SM_ACTIVE
 			colortex2.g
 		#else
 			colortex2.r
@@ -77,7 +77,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 			= data;
 	}
 
-	#ifdef SHADOWS_ENABLED
+	#ifdef SM_ACTIVE
 		immut uvec2 view_size = unpackUint2x16(uint(packedView)); // We have to do this manually to not include the uniform declaration.
 		immut vec3 ndc = fma(vec3(gl_FragCoord.xy / vec2(view_size), gl_FragCoord.z), vec3(2.0), vec3(-1.0));
 		immut vec3 pe = mat3(vxModelViewInv) * proj_inv(vxProjInv, ndc);

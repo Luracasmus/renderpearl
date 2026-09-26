@@ -48,7 +48,7 @@ in
 	#include "/lib/skylight.glsl"
 #endif
 
-#ifdef SHADOWS_ENABLED
+#ifdef SM_ACTIVE
 	uniform vec3 shadowLightDirectionPlr;
 	uniform mat4 shadowModelView;
 
@@ -517,8 +517,6 @@ void main() {
 		}
 	#endif
 
-	block_light *= float16_t(lumi_dir_bl);
-
 	// We probably want to have everything in this that doesn't require derivatives or SG stuff.
 	// I think (?) it should usually be slightly faster.
 	if (!gl_HelperInvocation) {
@@ -526,6 +524,7 @@ void main() {
 			if (will_discard) { discard; } else
 		#endif
 		{
+			block_light *= float16_t(lumi_dir_bl);
 			light += block_light;
 
 			#if defined TRANSLUCENT && !defined CLRWL
@@ -533,7 +532,7 @@ void main() {
 				color.a *= float16_t(1.0/2047.0) * float16_t(packed_alpha);
 			#endif
 
-			#ifdef SHADOWS_ENABLED
+			#ifdef SM_ACTIVE
 				immut f16vec3 sky_light_color = skylight();
 			#else
 				const f16vec3 sky_light_color = f16vec3(0.0);
@@ -541,7 +540,7 @@ void main() {
 
 			light += ao * non_block_light(sky_light_color, block_sky_light.y);
 
-			#ifdef SHADOWS_ENABLED
+			#ifdef SM_ACTIVE
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
 
 				#ifdef NO_NORMAL

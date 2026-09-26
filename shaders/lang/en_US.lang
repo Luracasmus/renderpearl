@@ -39,12 +39,11 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 		value.ambientOcclusionLevel.1.0=100%
 
 	screen.SHADOW_MAP=§6◀§r Shadow Map §6▶
-		option.shadowMapResolution=§c⌚§r Shadow Map Resolution
-			suffix.shadowMapResolution=\ px
+		option.SM_RES=§c⌚§r Shadow Map Resolution
+			suffix.SM_RES=\ px
 		option.SM_DIST=§c⌚§r Shadow Distance
 			option.SM_DIST.comment=Half the side of the square within which shadows are rendered\nLower values make closer shadows sharper\n\n§6⚠§r It's recommended to set this lower than or equal to your §lRender Distance§r for optimal performance and quality
 			suffix.SM_DIST=\ chunks
-			value.SM_DIST.0=§cOff
 
 		option.SM_BLUR=§c⌚§r Blur
 			value.SM_BLUR.0=§cOff

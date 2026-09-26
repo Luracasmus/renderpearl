@@ -106,7 +106,7 @@ void sample_shadow(
 				s_view.z += bias.x;
 			*/
 			//                               (-0.3, 32.0) // Seems to also work and gives slightly different results. Remember to uncomment the depth bias application when using that.
-			immut f16vec2 bias = f16vec2(vec2(-0.0, 64.0) / shadowMapResolution) * f16vec2(sine, min(float16_t(2.0), tangent)); // (normal_bias, slope_scaled_bias)
+			immut f16vec2 bias = f16vec2(vec2(-0.0, 64.0) / float(shadowMapResolution)) * f16vec2(sine, min(float16_t(2.0), tangent)); // (normal_bias, slope_scaled_bias)
 			vec3 s_ndc = shadow_proj_scale.xxy * rot_trans_mmul(shadowModelView, pf + vec3(bias.y * w_face_normal));
 			s_ndc.xy *= s_distortion;
 			// s_ndc.z += float(bias.x);

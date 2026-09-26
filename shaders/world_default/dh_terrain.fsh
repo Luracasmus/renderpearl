@@ -3,7 +3,7 @@
 // TODO
 
 /* RENDERTARGETS: 1,2 */
-#ifdef SHADOWS_ENABLED
+#ifdef SM_ACTIVE
 	layout(location = 1) out uvec4 colortex2;
 #else
 	layout(location = 1) out uvec3 colortex2;
@@ -21,7 +21,7 @@ void main() {
 	if (!gl_HelperInvocation) {
 		immut f16vec3 color = f16vec3(unpackUnorm4x8(v.unorm4x8_color).rgb);
 
-		#ifdef SHADOWS_ENABLED
+		#ifdef SM_ACTIVE
 			colortex2.a
 		#else
 			colortex2.b
@@ -41,7 +41,7 @@ void main() {
 				15, 13
 			);
 
-			#ifdef SHADOWS_ENABLED
+			#ifdef SM_ACTIVE
 				colortex2.b
 			#else
 				colortex2.g
@@ -60,7 +60,7 @@ void main() {
 
 			// TODO: f0 enum.
 
-			#ifdef SHADOWS_ENABLED
+			#ifdef SM_ACTIVE
 				colortex2.g
 			#else
 				colortex2.r
@@ -68,7 +68,7 @@ void main() {
 				= data;
 		}
 
-		#ifdef SHADOWS_ENABLED
+		#ifdef SM_ACTIVE
 			colortex2.r = floatBitsToUint(v.s_distortion);
 		#endif
 

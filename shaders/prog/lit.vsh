@@ -19,7 +19,7 @@ out gl_PerVertex { vec4 gl_Position; };
 in vec2 mc_midTexCoord;
 uniform sampler2D gtexture;
 
-#ifdef SHADOWS_ENABLED
+#ifdef SM_ACTIVE
 	uniform mat4 shadowModelView;
 
 	#include "/lib/sm/distort.glsl"
@@ -181,7 +181,7 @@ void main() {
 		#endif
 	#endif
 
-	#ifdef SHADOWS_ENABLED
+	#ifdef SM_ACTIVE
 		immut vec3 pe = MV_INV * view;
 		immut f16vec3 f16_pe = f16vec3(pe);
 		immut f16vec3 abs_pe = abs(f16_pe);

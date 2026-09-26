@@ -33,7 +33,7 @@ in
 	#include "/lib/skylight.glsl"
 #endif
 
-#ifdef SHADOWS_ENABLED
+#ifdef SM_ACTIVE
 	uniform vec3 shadowLightDirectionPlr;
 	uniform mat4 shadowModelView;
 
@@ -91,7 +91,7 @@ void main() {
 			immut vec3 pe = MV_INV * view;
 			immut vec3 pf = pe + mvInv3;
 
-			#ifdef SHADOWS_ENABLED
+			#ifdef SM_ACTIVE
 				immut f16vec3 n_pe = f16vec3(normalize(pe));
 				immut f16vec3 abs_pe = abs(f16vec3(pe));
 				immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);

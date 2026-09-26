@@ -7,7 +7,7 @@ out gl_PerVertex { vec4 gl_Position; };
 #include "/lib/srgb.glsl"
 #include "/lib/octa_enc.glsl"
 
-#ifdef SHADOWS_ENABLED
+#ifdef SM_ACTIVE
 	uniform mat4 shadowModelView;
 
 	#include "/lib/sm/distort.glsl"
@@ -89,7 +89,7 @@ void main() {
 
 	v.float2x16_light = packFloat2x16(f16vec2(gl_MultiTexCoord2));
 
-	#ifdef SHADOWS_ENABLED
+	#ifdef SM_ACTIVE
 		if (chebyshev_dist < float16_t(shadowDistance * shadowDistanceRenderMul)) {
 			immut vec2 s_ndc = shadow_proj_scale.x * (mat3x2(shadowModelView) * (pe + mvInv3) + shadowModelView[3].xy);
 			v.s_distortion = distortion(s_ndc);

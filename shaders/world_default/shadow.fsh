@@ -4,12 +4,7 @@
 	#define TEXTURED
 #endif
 
-#if SM_DIST == 0 || defined END || defined NETHER
-	/* DRAWBUFFERS: */
-	layout(depth_unchanged) out float gl_FragDepth;
-
-	void main() {}
-#else
+#ifdef SM_ACTIVE
 	#ifdef TEXTURED
 		uniform sampler2D gtexture;
 
@@ -69,4 +64,9 @@
 			#endif
 		#endif
 	}
+#else
+	/* DRAWBUFFERS: */
+	layout(depth_unchanged) out float gl_FragDepth;
+
+	void main() {}
 #endif
