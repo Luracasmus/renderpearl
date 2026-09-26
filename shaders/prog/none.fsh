@@ -1,6 +1,6 @@
 #include "/prelude/core.glsl"
 
-/* RENDERTARGETS: 1 */
+/* DRAWBUFFERS: */
 layout(depth_unchanged) out float gl_FragDepth;
 
 void main() {}

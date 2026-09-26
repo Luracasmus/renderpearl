@@ -1,12 +1,11 @@
 #include "/prelude/core.glsl"
 
-/* RENDERTARGETS: 0 */
-
 #ifdef CLRWL
 	#define TEXTURED
 #endif
 
 #if SM_DIST == 0 || defined END || defined NETHER
+	/* DRAWBUFFERS: */
 	layout(depth_unchanged) out float gl_FragDepth;
 
 	void main() {}
@@ -17,6 +16,7 @@
 		in VertexData { layout(location = 0) noperspective vec2 coord; } v;
 
 		#ifdef TRANSLUCENT
+			/* RENDERTARGETS: 0 */
 			layout(location = 0) out f16vec3 shadowcolor0;
 			layout(depth_unchanged) out float gl_FragDepth;
 
@@ -24,11 +24,13 @@
 
 			#include "/lib/srgb.glsl"
 		#else
+			/* DRAWBUFFERS: */
 			layout(depth_greater) out float gl_FragDepth;
 
 			uniform float alphaTestRef;
 		#endif
 	#else
+		/* DRAWBUFFERS: */
 		layout(depth_unchanged) out float gl_FragDepth;
 	#endif
 
