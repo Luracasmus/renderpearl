@@ -163,7 +163,7 @@ void main() {
 
 	immut int tex_lod = int(ceil(textureQueryLod(gtexture, v.coord).x));
 	immut u16vec2 face_tex_size = u16vec2(unpackUint2x16(v.uint2x16_face_tex_size)) >> uint16_t(tex_lod);
-	immut float max_face_tex_size = float(max(face_tex_size.x, face_tex_size.y));
+	immut float max_face_tex_size = float(max(face_tex_size.x, face_tex_size.y)); // TODO: Make snapping steps configurable?
 
 	#if defined SM && defined MC_SPECULAR_MAP
 		immut float16_t roughness = map_roughness(float16_t(texture(specular, v.coord).SM_CH));

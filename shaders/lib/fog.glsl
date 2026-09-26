@@ -62,7 +62,7 @@ float16_t sky_fog(float16_t height) {
 							day + float16_t(0.5),
 							float16_t(1.0)) * f16vec3(float16_t(SUN_BLOOM) * float16_t(pow(sun, 256.0)) + day * float16_t(SKY_BLOOM) * pow(float16_t(sun), float16_t(3.0))
 						),
-						float16_t(0.15) * skylight_col,
+						float16_t(0.35) * skylight_col,
 						color
 					);
 
