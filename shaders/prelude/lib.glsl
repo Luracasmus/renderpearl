@@ -7,6 +7,8 @@
 	const vec2 shadow_proj_scale = vec2(1.0 / shadowDistance, -2.0 / (shadowFarPlane - shadowNearPlane));
 #endif
 
+const float16_t shadow_rd = float16_t(shadowDistance * shadowDistanceRenderMul);
+
 const float16_t min_n_dot_l = float16_t(0.0001);
 
 // The actual lowest AO level seems to be a bit above, around `0.19607`. This feels safer if precision changes. We saturate too for safety.

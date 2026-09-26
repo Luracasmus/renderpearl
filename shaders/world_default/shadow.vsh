@@ -89,32 +89,34 @@ void main() {
 				(gl_VertexID & 3) == 1 && // gl_VertexID % 4 == 1
 				// Cull too weak or non-lights.
 				intensity >= float16_t(MIN_LL_INTENSITY) &&
-				// Cull vertices outside LL_DIST using Chebyshev distance.
-				chebyshev_dist < float16_t(LL_DIST) &&
 				// Cull lights too far outside frustum, using the same method as in per-work group culling when sampling.
 				light_mhtn_dist_from_bb <= offset_intensity
 			) {
-				float16_t lod_dist = length(f16_pe) / float16_t(LL_DIST);
+				const float lod_falloff_scale = 0.00625;
+				float16_t lod_dist = length(f16_pe);
 
 				#ifdef SOLID_TERRAIN
 					immut bool is_fluid = mc_Entity.y == 1.0;
 					if (is_fluid) {
-						lod_dist += float16_t(LAVA_LOD_BIAS);
+						lod_dist += float16_t(float(LAVA_LOD_BIAS) * lod_falloff_scale);
 					}
 				#else
 					const bool is_fluid = false;
 				#endif
 
 				immut uvec3 seed = uvec3(ivec3((0.5 + cameraPosition) + pe));
+				immut uint8_t random = uint8_t(pcg(seed.x + pcg(seed.y + pcg(seed.z))));
+
+				immut uint8_t rcp_chance = uint8_t(1u) << uint8_t(min(float16_t(7.0), fma(
+					lod_dist,
+					float16_t(float(LOD_FALLOFF) * lod_falloff_scale),
+					float16_t(0.5)
+				)));
 
 				// LOD culling
 				// Increase times two each LOD.
 				// The fact that the values resulting from higher LODs are divisible by the lower ones means that no lights will appear only further away.
-				if (uint8_t(pcg(seed.x + pcg(seed.y + pcg(seed.z)))) % (uint8_t(1u) << uint8_t(min(float16_t(7.0), fma(
-					lod_dist,
-					float16_t(LOD_FALLOFF),
-					float16_t(0.5)
-				)))) == uint8_t(0u)) {
+				if (random % rcp_chance == uint8_t(0u)) {
 					immut uvec3 offset_floor_pf = clamp(uvec3(fma(at_midBlock.xyz, vec3(1.0/64.0), 256.0 + cameraPositionFract + pf)), 0u, 511u);
 
 					immut f16vec3 avg_col = f16vec3(gl_Color.rgb) * f16vec3(textureLod(gtexture, mc_midTexCoord, 4.0).rgb);

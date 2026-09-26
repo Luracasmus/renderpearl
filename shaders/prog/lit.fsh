@@ -273,7 +273,7 @@ void main() {
 
 	#ifdef SUBGROUP_ENABLED
 		immut bool is_maybe_ll_lit = (
-			block_sky_light.x > float16_t(0.0) && chebyshev_dist < float16_t(LL_DIST) && !will_discard && !gl_HelperInvocation
+			block_sky_light.x > float16_t(0.0) && chebyshev_dist < shadow_rd && !will_discard && !gl_HelperInvocation
 		);
 
 		if (subgroupAny(is_maybe_ll_lit)) {
