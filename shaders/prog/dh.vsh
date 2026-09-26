@@ -69,13 +69,13 @@ void main() {
 		if (
 			(gl_VertexID & 3) == 1 &&
 			is_emissive &&
-			chebyshev_dist < shadow_rd &&
+			chebyshev_dist < float16_t(LL_DIST) &&
 			light_mhtn_dist_from_bb <= offset_intensity
 		) {
 			immut uvec3 seed = uvec3(ivec3((0.5 + cameraPosition) + pe));
 
 			if (uint8_t(pcg(seed.x + pcg(seed.y + pcg(seed.z)))) % (uint8_t(1u) << uint8_t(min(float16_t(7.0), fma(
-				length(clamped_pe) / shadow_rd,
+				length(clamped_pe) / float16_t(LL_DIST),
 				float16_t(LOD_FALLOFF),
 				float16_t(0.5)
 			)))) == uint8_t(0u)) {

@@ -65,6 +65,10 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 			value.DIR_SHADING.0=§cOff
 
 	screen.LIGHT_LIST=§6◀§r Light List §6▶
+		option.LL_DIST=§c⌚§r Distance
+			option.LL_DIST.comment=Chebychev distance within which lights are added to the light list\n\n§6⚠§r Changing this sometimes requires modifying §l§c⌚§r§l Capacity§r and/or §l§6⌚§r§l LDS Ratio§r to avoid artifacts and maintain optimal performance - It is therefore recommended to use the Profile option instead
+			suffix.LL_DIST=\ blocks
+
 		option.LL_CAPACITY=§c⌚§r Capacity
 			option.LL_CAPACITY.comment=Controls the amount of lights §obefore culling§r that can be registered before artifacts occur\n\n§c⚠§r The maximum supported value depends on active GPU, graphics drivers and §l§6⌚§r§l 16/8-Bit Types§r status and support
 			value.LL_CAPACITY.6144=§c⚠§r 6144 lights

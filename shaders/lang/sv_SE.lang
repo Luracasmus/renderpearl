@@ -44,6 +44,9 @@ screen.LIGHTING=§6◀§r Ljus §6▶
 		option.DIR_SHADING.comment=Aktiverar riktningsbaserad skuggning likt i Vanilla applicerad på ambient occlusion
 
 	screen.LIGHT_LIST=§6◀§r Ljuslista §6▶
+		option.LL_DIST=§c⌚§r Avstånd
+			option.LL_DIST.comment=Chebyshev-avstånd inom vilket ljus läggs till i ljuslistan\n\n§6⚠§r Att ändra detta kräver ibland modifiering av §l§c⌚§r§l Kapacitet§r och/eller §l§6⌚§r§l LDS-förhållande§r för att undvika artefakter och bibehålla optimal prestanda - Det rekommenderas därför att använda Profil-inställningen istället
+
 		option.LL_CAPACITY=§c⌚§r Kapacitet
 			option.LL_CAPACITY.comment=Styr antalet ljus §oföre utsortering§r som kan bli registrerade innan artifakter uppstår\n\n§c⚠§r Det maximala värdet som stöds beror på aktiv GPU, grafikdrivrutiner och läge och stöd av §l§6⌚§r §l16/8-Bitars Typer§r
 

@@ -43,5 +43,5 @@ f16vec3 mix_ll_block_light(f16vec3 fallback_block_light, float16_t chebyshev_dis
 	immut f16vec3 ll_block_light = f16vec3(1.0 / packing_scale) * block_light_level * reflected;
 
 	// Mix based on distance.
-	return mix(ll_block_light, fallback_block_light, smoothstep(shadow_rd - float16_t(15.0), shadow_rd, chebyshev_dist));
+	return mix(ll_block_light, fallback_block_light, smoothstep(float16_t(LL_DIST - 15), float16_t(LL_DIST), chebyshev_dist));
 }
