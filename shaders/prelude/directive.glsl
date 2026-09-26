@@ -17,11 +17,11 @@
 	const vec4 shadowcolor0ClearColor = vec4(0.0, 0.0, 0.0, 0.0);
 	const int shadowcolor0Format = RGB565;
 
-	const bool colortex0Clear = false;
+	const bool colortex0Clear = true;
 	const vec4 colortex0ClearColor = vec4(0.0, 0.0, 0.0, 0.0);
 	const int colortex0Format = RGBA8;
 
-	const bool colortex1Clear = false;
+	const bool colortex1Clear = true;
 	const vec4 colortex1ClearColor = vec4(0.0, 0.0, 0.0, 0.0);
 	const int colortex1Format = RGBA16F;
 */
