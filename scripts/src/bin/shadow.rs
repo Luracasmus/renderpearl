@@ -1,3 +1,5 @@
+use std::f64::consts::{PI, SQRT_2};
+
 /// Used in `shaders/prelude/directive.glsl`.
 fn main() {
     const REN_MUL: f64 = 0.85; // `shadowDistanceRenderMul`
@@ -6,9 +8,9 @@ fn main() {
 
     let mut elif = "if";
 
-    let cos_a = (std::f64::consts::PI * 0.25 - MAX_ROT.to_radians()).cos();
+    let cos_a = (PI * 0.25 - MAX_ROT.to_radians()).cos();
 
-    for i in 1..=32 {
+    for i in 2..=32 {
         let dist = i * 16;
 
         println!("#{elif} SM_DIST == {i}");
@@ -17,7 +19,7 @@ fn main() {
         let visible = dist as f64 * REN_MUL;
 
         let max_y = visible.min(Y_RANGE);
-        let max_xz = (2.0_f64).sqrt() * visible * visible * cos_a;
+        let max_xz = SQRT_2 * visible * cos_a;
         let plane = (max_xz * max_xz + max_y * max_y).sqrt().ceil();
         println!("	const float shadowNearPlane = -{plane};");
         println!("	const float shadowFarPlane = {plane};");
