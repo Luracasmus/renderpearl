@@ -42,7 +42,7 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 		option.SM_RES=§c⌚§r Shadow Map Resolution
 			suffix.SM_RES=\ px
 		option.SM_DIST=§c⌚§r Shadow Distance
-			option.SM_DIST.comment=Half the side of the square within which shadows are rendered\nLower values make closer shadows sharper\n\n§6⚠§r It's recommended to set this lower than or equal to your §lRender Distance§r for optimal performance and quality
+			option.SM_DIST.comment=Chebychev distance within which shadows are rendered and lights are added to the light list\nLower values make closer shadows sharper\n\n§6⚠§r It's recommended to set this lower than or equal to your §lRender Distance§r for optimal performance and quality
 			suffix.SM_DIST=\ chunks
 
 		option.SM_BLUR=§c⌚§r Blur
@@ -66,7 +66,7 @@ screen.LIGHTING=§6◀§r Lighting §6▶
 
 	screen.LIGHT_LIST=§6◀§r Light List §6▶
 		option.LL_DIST=§c⌚§r Distance
-			option.LL_DIST.comment=Chebychev distance within which lights are added to the light list\n\n§6⚠§r Changing this sometimes requires modifying §l§c⌚§r§l Capacity§r and/or §l§6⌚§r§l LDS Ratio§r to avoid artifacts and maintain optimal performance - It is therefore recommended to use the Profile option instead
+			option.LL_DIST.comment=Chebychev distance within which lights are added to the light list\nThis is also limited by §c⌚§r§l Shadow Distance§r\n\n§6⚠§r Changing this sometimes requires modifying §l§c⌚§r§l Capacity§r and/or §l§6⌚§r§l LDS Ratio§r to avoid artifacts and maintain optimal performance - It is therefore recommended to use the Profile option instead
 			suffix.LL_DIST=\ blocks
 
 		option.LL_CAPACITY=§c⌚§r Capacity
