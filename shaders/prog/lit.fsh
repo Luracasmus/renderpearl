@@ -265,7 +265,7 @@ void main() {
 	#ifdef LIGHT_LEVELS
 		f16vec3 block_light = f16vec3(visualize_ll(block_sky_light.x));
 	#else
-		f16vec3 block_light = block_sky_light.x * f16vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B);
+		f16vec3 block_light = smoothstep(float16_t(0.0), float16_t(1.0), block_sky_light.x) * f16vec3(0.075 * vec3(BL_FALLBACK_R, BL_FALLBACK_G, BL_FALLBACK_B));
 	#endif
 
 	immut float16_t ind_bl = float16_t(IND_BL) * ao; // TODO: This needs to also snap to texels, or we need to stop using it in the light list sampling since it varies between "uniform" invocations.
