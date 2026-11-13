@@ -59,9 +59,10 @@ void main() {
 
 	v.coord = rot_trans_mmul(mat4(gl_TextureMatrix[0]), vec2(gl_MultiTexCoord0));
 
-	immut u16vec2 texels = u16vec2(fma(abs(v.coord - mc_midTexCoord), vec2(2 * textureSize(gtexture, 0)), vec2(0.5)));
+	immut vec2 mid_coord = mc_midTexCoord;
+	immut u16vec2 texels = u16vec2(fma(abs(v.coord - mid_coord), vec2(2 * textureSize(gtexture, 0)), vec2(0.5)));
 	v.uint2x16_face_tex_size = packUint2x16(texels);
-	v.unorm2x16_mid_coord = packUnorm2x16(mc_midTexCoord);
+	v.unorm2x16_mid_coord = packUnorm2x16(mid_coord);
 
 	f16vec4 color_alpha_or_ao = f16vec4(gl_Color);
 	#ifdef ENTITY_COLOR
@@ -129,7 +130,7 @@ void main() {
 				if (this_hand_light != uint16_t(0u) && abs(view.x) > 0.3) { // Use a margin around the center to not register e.g. a swinging sword as being on the opposite side.
 					// Scale and round to fit packing.
 					immut u16vec3 scaled_color = u16vec3(fma(
-						linear(color_alpha_or_ao.rgb * f16vec3(textureLod(gtexture, mix(v.coord, mc_midTexCoord, 0.5), 3.0).rgb)),
+						linear(color_alpha_or_ao.rgb * f16vec3(textureLod(gtexture, mix(v.coord, mid_coord, 0.5), 3.0).rgb)),
 						f16vec3(hand_light_pack_scale),
 						f16vec3(0.5)
 					));
