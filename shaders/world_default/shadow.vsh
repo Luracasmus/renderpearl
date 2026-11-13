@@ -113,12 +113,12 @@ void main() {
 								const bool is_fluid = false;
 							#endif
 
-							immut uvec3 seed = uvec3(ivec3((0.5 + cameraPosition) + pe));
+							immut uint8_t random = uint8_t(pcg(uvec3(ivec3((0.5 + cameraPosition) + pe))));
 
 							// LOD culling
 							// Increase times two each LOD.
 							// The fact that the values resulting from higher LODs are divisible by the lower ones means that no lights will appear only further away.
-							if (uint8_t(pcg(seed.x + pcg(seed.y + pcg(seed.z)))) % (uint8_t(1u) << uint8_t(min(float16_t(7.0), fma(
+							if (random % (uint8_t(1u) << uint8_t(min(float16_t(7.0), fma(
 								lod_dist,
 								float16_t(LOD_FALLOFF),
 								float16_t(0.5)

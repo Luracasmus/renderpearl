@@ -46,10 +46,10 @@ void main() {
 	);
 
 	immut uvec4 noise = uvec4(
-		pcg(quant_pe[0].x + pcg(quant_pe[0].y)),
-		pcg(quant_pe[1].x + pcg(quant_pe[1].y)),
-		pcg(quant_pe[2].x + pcg(quant_pe[2].y)),
-		pcg(quant_pe[3].x + pcg(quant_pe[3].y))
+		pcg(quant_pe[0]),
+		pcg(quant_pe[1]),
+		pcg(quant_pe[2]),
+		pcg(quant_pe[3])
 	);
 
 	immut f16vec4 norm_noise = mix(

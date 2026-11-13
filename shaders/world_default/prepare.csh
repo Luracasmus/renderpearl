@@ -54,18 +54,16 @@ void main() {
 			immut float16_t sky_fog_val = sky_fog(float16_t(n_pe.y));
 			immut f16vec3 fog_color = sky(sky_fog_val, n_pe, sunDirectionPlr);
 
-			immut uvec2 seed = uvec2(ivec2(n_pe.xz * 1000.0 + sin(frameTimeCounter * 1000.0) * 0.2));
+			immut float16_t random = float16_t(
+				float(
+					pcg(uvec2(ivec2(n_pe.xz * 1000.0 + sin(frameTimeCounter * 1000.0) * 0.2)))
+				) / float(0xFFFFFFFFu)
+			);
 
 			immut float16_t stars = max(
 				float16_t(1.0) - sky_fog_val - float16_t(skyState.x),
 				float16_t(0.0)
-			) * smoothstep(
-				float16_t(0.9995),
-				float16_t(1.0),
-				float16_t(
-					float(pcg(seed.x + pcg(seed.y))) / float(0xFFFFFFFFu)
-				)
-			);
+			) * smoothstep(float16_t(0.9995), float16_t(1.0), random);
 
 			f16vec3 color = stars + fog_color;
 
