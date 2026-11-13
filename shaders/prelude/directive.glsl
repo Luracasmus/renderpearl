@@ -15,7 +15,6 @@
 
 	const bool shadowcolor0Clear = true;
 	const vec4 shadowcolor0ClearColor = vec4(0.0, 0.0, 0.0, 0.0);
-	const int shadowcolor0Format = RGB565;
 
 	const bool colortex0Clear = true;
 	const vec4 colortex0ClearColor = vec4(0.0, 0.0, 0.0, 0.0);
@@ -25,6 +24,18 @@
 	const vec4 colortex1ClearColor = vec4(0.0, 0.0, 0.0, 0.0);
 	const int colortex1Format = RGBA16F;
 */
+
+#ifdef VULKAN
+	// RGB565 isn't supported.
+
+	/*
+		const int shadowcolor0Format = RGBA8;
+	*/
+#else
+	/*
+		const int shadowcolor0Format = RGB565;
+	*/
+#endif
 
 const float shadowDistanceRenderMul = 0.85;
 const float voxelDistance = 15.0;
