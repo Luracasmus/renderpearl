@@ -258,7 +258,7 @@ BrdfReceiver create_brdf_rec(
 	f16vec3 color
 ) {
 	// Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886".
-	immut float16_t n_dot_v = max(dot(normal, -obs_to_rec_dir), float16_t(0.0001));
+	immut float16_t n_dot_v = max(saturate(dot(normal, -obs_to_rec_dir)), float16_t(0.0001));
 
 	immut f16vec3 rcp_color = float16_t(1.0) / max(color, float16_t(1.0e-5));
 	immut f16vec3 specular_multiplier = (float16_t(1.0) + (f0 / f_ab_sum(roughness, n_dot_v) - f0)) * rcp_color;
@@ -329,11 +329,11 @@ float16_t v_smith_ggx_correlated(float16_t roughness, float16_t n_dot_v, float16
 }
 
 float16_t f_schlick(float16_t f0, float16_t f90, float16_t v_dot_h) {
-	return fma(pow(float16_t(1.0) - v_dot_h, float16_t(5.0)), f90 - f0, f0);
+	return fma(pow(saturate(float16_t(1.0) - v_dot_h), float16_t(5.0)), f90 - f0, f0);
 }
 
 f16vec3 f_schlick(f16vec3 f0, float16_t f90, float16_t v_dot_h) {
-	return fma(pow(float16_t(1.0) - v_dot_h, float16_t(5.0)).xxx, f90 - f0, f0);
+	return fma(pow(saturate(float16_t(1.0) - v_dot_h), float16_t(5.0)).xxx, f90 - f0, f0);
 }
 
 f16vec3 fresnel(f16vec3 f0, float16_t l_dot_h) {
