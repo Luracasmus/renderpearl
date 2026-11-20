@@ -237,3 +237,18 @@
 	f16vec3 _uint16BitsToFloat16(u16vec3 v) { return f16vec3(uint16BitsToFloat16(v.xy), uint16BitsToFloat16(v.z)); }
 	f16vec4 _uint16BitsToFloat16(u16vec4 v) { return f16vec4(uint16BitsToFloat16(v.xy), uint16BitsToFloat16(v.zw)); }
 #endif
+
+// `IO_*` are meant to be used in fragment shader outputs etc.
+#if defined VULKAN && defined MC_GL_VENDOR_NVIDIA
+	// NVIDIA doesn't support `storageInputOutput16`.
+	// TODO: This might need testing with more drivers.
+	#define IO_FLOAT16 float
+	#define IO_F16VEC2 vec2
+	#define IO_F16VEC3 vec3
+	#define IO_F16VEC4 vec4
+#else
+	#define IO_FLOAT16 float16_t
+	#define IO_F16VEC2 f16vec2
+	#define IO_F16VEC3 f16vec3
+	#define IO_F16VEC4 f16vec4
+#endif

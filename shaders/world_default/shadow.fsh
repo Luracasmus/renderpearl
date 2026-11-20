@@ -12,7 +12,7 @@
 
 		#ifdef TRANSLUCENT
 			/* RENDERTARGETS: 0 */
-			layout(location = 0) out f16vec3 shadowcolor0;
+			layout(location = 0) out IO_F16VEC3 shadowcolor0;
 			layout(depth_unchanged) out float gl_FragDepth;
 
 			uniform sampler2D shadowtex1;

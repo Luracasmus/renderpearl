@@ -1,7 +1,7 @@
 #include "/prelude/core.glsl"
 
 /* RENDERTARGETS: 1 */
-layout(location = 0) out f16vec4 colortex1;
+layout(location = 0) out IO_F16VEC4 colortex1;
 layout(depth_unchanged) out float gl_FragDepth;
 
 #include "/lib/mv_inv.glsl"

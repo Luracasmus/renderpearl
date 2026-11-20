@@ -3,9 +3,9 @@
 /* RENDERTARGETS: 1 */
 
 #ifdef TRANSLUCENT
-	layout(location = 0) out f16vec4 colortex1;
+	layout(location = 0) out IO_F16VEC4 colortex1;
 #else
-	layout(location = 0) out f16vec3 colortex1;
+	layout(location = 0) out IO_F16VEC3 colortex1;
 #endif
 
 #ifdef CLRWL
