@@ -29,8 +29,12 @@
 const ivec3 workGroups = ivec3(1, 1, 1);
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
+/*
 writeonly
-#include "/buf/ll.glsl"
+//#include "/buf/ll.glsl"
+*/
+
+#include "/lib/ll_cluster.glsl"
 
 writeonly
 #include "/buf/llq.glsl"
@@ -54,8 +58,8 @@ void main() {
 		auto_exp.exposure = float16_t(1.0);
 	#endif
 
-	llq.len = 0u;
-	ll.len = uint16_t(0u);
+	// TODO: More LL stuff.
+	llq.cluster_len = 16u;
 
 	#if HAND_LIGHT
 		hl.unorm11_11_10_left = 0u;

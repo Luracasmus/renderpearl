@@ -2,21 +2,19 @@
 
 /* Light Index Deduplication */
 
-// Work around compiler bug on Intel drivers.
-#ifndef MC_GL_VENDOR_INTEL
-	layout(local_size_x = min(gl_MaxComputeWorkGroupSize.x, LL_CAPACITY), local_size_y = 1, local_size_z = 1) in;
-#elif LL_CAPACITY < 1024
-	layout(local_size_x = LL_CAPACITY, local_size_y = 1, local_size_z = 1) in;
-#else
-	// We assume `GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS >= 1024 && GL_MAX_COMPUTE_WORK_GROUP_SIZE[0] >= 1024`.
-	layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
-#endif
+#define WG_SIZE 256
+// TODO: Maybe we want this to match subgroup sizes.
+#define MAX_CLUSTER_LEN 16
+#define CLUSTERS_PER_WG 8
 
-const ivec3 workGroups = ivec3(1, 1, 1);
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+const ivec3 workGroups = ivec3(512, 1, 1); // TODO
 
 uniform bool LLDedup;
 uniform ivec3 previousCameraPositionInt;
 
+#include "/lib/ll_cluster.glsl"
 #include "/buf/llq.glsl"
 
 #ifndef INT16
@@ -25,88 +23,74 @@ uniform ivec3 previousCameraPositionInt;
 #include "/buf/ll.glsl"
 
 shared struct {
-	uint culled_len;
-	uint[ll.data.length()] index_data;
-	uint16_t[ll.data.length()] index_color;
+	uint[CLUSTERS_PER_WG][MAX_CLUSTER_LEN] temp_ll;
 } sh;
 
 void main() {
 	// Maybe we could average all the light colors here for ambient light color.
 
-	if (subgroupBroadcastFirst(LLDedup)) { // Deduplicate the light list queue.
+	if (subgroupBroadcastFirst(LLDedup)) { // Deduplicate a cluster in the light list queue.
 		immut uint16_t local_invocation_i = uint16_t(gl_LocalInvocationIndex);
-		immut bool is_first_invoc = local_invocation_i == uint16_t(0u);
-		const uint16_t wg_size = uint16_t(gl_WorkGroupSize.x);
 
-		if (is_first_invoc) {
-			sh.culled_len = 0u;
+		uint16_t cluster_invocation_i = local_invocation_i % uint16_t(MAX_CLUSTER_LEN); // TODO: I think we might be wasting the first thread in each "subgroup".
+		immut uint16_t wg_cluster_i = local_invocation_i / uint16_t(MAX_CLUSTER_LEN); // Cluster index in work group.
+
+		immut uint cluster_base = (gl_WorkGroupID.x * CLUSTERS_PER_WG + uint(wg_cluster_i)) * 16;
+
+		immut bool is_first_cluster_invoc = cluster_invocation_i == uint16_t(0u);
+
+		if (is_first_cluster_invoc) {
+			sh.temp_ll[wg_cluster_i][0u] = 1u; // Zero the length of the temporary cluster.
 		}
 
-		// if (llq.len > ll.data.length()) { llq.len = uint16_t(0u); return; }
+		cluster_invocation_i += 1u; // Since the first slot in the cluster in the actual light list is the length.
 
-		#if !defined SUBGROUP_ENABLED && defined AMD_INT16
-			// Work around very strange AMD compiler bug.
-			// Casting to `uint16_t` before the `min` causes incorrect behavior
-			// if `GL_EXT_shader_subgroup_extended_types_int16` is disabled.
-			immut uint16_t len = uint16_t(min(llq.len, ll.data.length()));
-		#else
-			immut uint16_t len = min(uint16_t(subgroupBroadcastFirst(llq.len)), uint16_t(ll.data.length()));
-		#endif
 
-		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
-			sh.index_data[i] = llq.data[i];
-			sh.index_color[i] = llq.color[i];
+		immut uint this_cluster_len = min(llq.data[cluster_base], MAX_CLUSTER_LEN);
 
-			#ifndef INT16
-				if (i < len / 2u) {
-					ll.color[i] = 0u; // Clear the slot in the light list that we will be `atomicOr`-ing into to later.
-				}
-			#endif
-		}
+		// TODO: If this_cluster_len is too big...
+
+		immut uint i = cluster_base + cluster_invocation_i; // Light index of the current thread.
+		immut uint this_light = llq.data[i];
+
+		ll.data[i] = this_light;
+		/*sh.temp_ll[wg_cluster_i][cluster_invocation_i] = this_light;
 
 		barrier();
-		#ifndef INT16
-			groupMemoryBarrier(); // Requires 'coherent' SSBO.
-		#endif
 
-		for (uint16_t i = local_invocation_i; i < len; i += wg_size) {
-			immut uint data = sh.index_data[i];
-			immut uint16_t color = sh.index_color[i];
-
+		if (cluster_invocation_i <= this_cluster_len) {
 			bool unique = true;
+
+			//immut uint data = sh.temp_ll[wg_cluster_i][cluster_invocation_i];
 
 			// Remove our light if there is another one at the same position with a higher color value,
 			// or there is an identical light at a lower index.
+			/* TODO
 			for (uint16_t j = uint16_t(0u); unique && j < len; ++j) {
-				immut uint16_t other_color = sh.index_color[j];
+				immut uint16_t other_color = sh.ll_color[j];
 
-				if (sh.index_data[j] == data && ((other_color > color) || ((other_color == color) && (j < i)))) {
+				if (sh.temp_ll[j] == this_light && ((other_color > color) || ((other_color == color) && (j < i)))) {
 					unique = false;
 				}
-			}
+			}/
 
 			if (unique) {
-				#define SG_INCR_COUNTER sh.culled_len
-				uint sg_incr_i;
-				#include "/lib/sg_incr.glsl"
-
-				ll.data[sg_incr_i] = data;
-
-				#ifdef INT16
-					ll.color[sg_incr_i] = color;
-				#else
-					atomicOr(ll.color[sg_incr_i/2], color << (16u * (sg_incr_i & 1u)));
-				#endif
+				ll.data[cluster_base + atomicAdd(sh.temp_ll[wg_cluster_i][0u], 1u)] = this_light;
 			}
-		}
+		}*/
 
 		barrier();
 
-		if (is_first_invoc) {
-			ll.len = uint16_t(sh.culled_len);
-			ll.origin = previousCameraPositionInt;
+		if (is_first_cluster_invoc) {
+			//ll.data[cluster_base] = sh.temp_ll[wg_cluster_i][0u];
+			ll.data[cluster_base] = this_cluster_len;
+			ll.cluster_len = llq.cluster_len; // TODO
 
-			llq.len = 0u;
+			llq.data[cluster_base] = 1u; // 1 since the first slot is occupied by this length variable itself.
+
+			if (gl_LocalInvocationIndex == 0u) {
+				ll.origin = previousCameraPositionInt;
+			}
 		}
 	}
 }
