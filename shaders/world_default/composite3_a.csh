@@ -29,6 +29,7 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 #if AUTO_EXP
 	#include "/buf/auto_exp.glsl"
 
+	uniform bool autoExpReset;
 	uniform int packedView;
 	uniform float frameTime;
 #endif
@@ -77,6 +78,8 @@ void main() {
 			saturate(exp2(float16_t(-AUTO_EXP_SPEED) * float16_t(frameTime)))
 		), float16_t(0.0));
 
-		auto_exp.sum_log_luma = 0;
+		if (autoExpReset) {
+			auto_exp.sum_log_luma = 0;
+		}
 	#endif
 }
