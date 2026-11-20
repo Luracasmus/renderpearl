@@ -36,7 +36,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	}
 
 	#ifdef END
-		#include "/lib/prng/fast_rand.glsl"
+		#include "/lib/prng/pcg.glsl"
 		uniform float frameTimeCounter;
 	#endif
 

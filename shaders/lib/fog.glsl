@@ -36,11 +36,15 @@ float16_t sky_fog(float16_t height) {
 				immut vec2 texel_pos = vec2(gl_GlobalInvocationID.xy);
 			#endif
 
-			return mix(
-				f16vec3(rand(fma(trunc(texel_pos * 0.25), vec2(4.0), frameTimeCounter.xx))),
-				f16vec3(rand(floor(n_pe.xz * 1024.0 + frameTimeCounter * 1))) * f16vec3(0.05, 0.0, 0.05) * (float16_t(1.25) - float16_t(n_pe.y)),
-				float16_t(0.99)
-			) * fma(float16_t(endFlashIntensity), float16_t(1.5), float16_t(0.5));
+			immut float pe_noise = float(
+				pcg(uvec3(floatBitsToUint(floor(n_pe.xyz * 512.0 + frameTimeCounter * sunDirectionPlr)))) // `sunDirectionPlr` is the direction to the last end flash on versions that support that.
+			) / float(0xFFFFFFFFu);
+
+			return
+				f16vec3(pe_noise) *
+				f16vec3(0.05, 0.0, 0.05) *
+				(float16_t(1.25) - float16_t(n_pe.y)) *
+				fma(float16_t(endFlashIntensity), float16_t(1.5), float16_t(0.5));
 		}
 	#else
 		f16vec3 sky(float16_t sky_fog, vec3 n_pe, vec3 sun_dir) {

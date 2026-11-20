@@ -21,12 +21,10 @@ in
 
 #ifndef NETHER
 	uniform float frameTimeCounter;
+	uniform vec3 sunDirectionPlr;
 
 	#ifdef END
-		#include "/lib/prng/fast_rand.glsl"
 		uniform float endFlashIntensity;
-	#else
-		uniform vec3 sunDirectionPlr;
 	#endif
 
 	#include "/lib/prng/pcg.glsl"

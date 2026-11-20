@@ -21,14 +21,9 @@ uniform layout(rgba16f) writeonly restrict image2D colorimg1;
 
 #ifndef NETHER
 	uniform float frameTimeCounter;
+	uniform vec3 sunDirectionPlr;
 
 	#include "/lib/prng/pcg.glsl"
-
-	#ifdef END
-		#include "/lib/prng/fast_rand.glsl"
-	#else
-		uniform vec3 sunDirectionPlr;
-	#endif
 #endif
 
 #include "/lib/fog.glsl"
