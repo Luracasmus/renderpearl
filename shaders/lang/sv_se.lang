@@ -93,8 +93,9 @@ screen.POST=§6◀§r Efterbearbetning §6▶
 	option.TONEMAP=§b⌚§r Tonemap-Operatör
 		option.TONEMAP.comment=Avgör metoden som används för att omvandla färger till ett intervall som displayen kan visa
 
-	option.SHARPNESS=§b⌚§r FFX CAS-Skärpa
-		option.SHARPNESS.comment=Styr skärpan på RenderPearls modifierade variant av FidelityFX Contrast Adaptive Sharpening 1.2
+	option.FFX_CAS.comment=Aktiverar RenderPearls modifierade variant av FidelityFX Contrast Adaptive Sharpening 1.2
+
+	option.CAS_SHARPNESS=§b⌚§r FFX CAS-Skärpa
 
 	option.AUTO_EXP=§e⌚§r Automatisk Exponering
 	option.AUTO_EXP_SPEED=§b⌚§r Interpolationshastighet

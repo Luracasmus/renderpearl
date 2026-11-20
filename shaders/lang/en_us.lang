@@ -144,8 +144,10 @@ screen.POST=§6◀§r Post Processing §6▶
 		value.TONEMAP.3=ACES Fitted
 		value.TONEMAP.4=SBDT
 
-	option.SHARPNESS=§b⌚§r FFX CAS Sharpness
-		option.SHARPNESS.comment=Controlls the sharpness of RenderPearl's modified variant of FidelityFX Contrast Adaptive Sharpening 1.2
+	option.FFX_CAS=§e⌚§r FFX Contrast Adaptive Sharpening
+		option.FFX_CAS.comment=Enables RenderPearl's modified variant of FidelityFX Contrast Adaptive Sharpening 1.2
+
+	option.CAS_SHARPNESS=§b⌚§r FFX CAS Sharpness
 
 	option.AUTO_EXP=§e⌚§r Automatic Exposure
 		value.AUTO_EXP.0=§cOff
