@@ -278,7 +278,7 @@ void main() {
 
 		if (subgroupAny(is_maybe_ll_lit)) {
 			immut vec3 ll_origin_offset = vec3(subgroupBroadcastFirst(ll.origin) - cameraPositionInt);
-			immut f16vec3 ll_offset = f16vec3(vec3(-255.5) + ll_origin_offset - cameraPositionFract - mvInv3);
+			immut vec3 ll_offset = vec3(-255.5) + ll_origin_offset - cameraPositionFract - mvInv3;
 			immut uint16_t global_len = uint16_t(subgroupBroadcastFirst(ll.len));
 
 			immut uvec4 chunk_ballot = subgroupBallot(true);
@@ -301,11 +301,11 @@ void main() {
 					if (collab_inv_i < global_len) {
 						immut uint light_data = ll.data[collab_inv_i];
 
-						immut f16vec3 pe_light = f16vec3(
+						immut f16vec3 pe_light = f16vec3(vec3(
 							light_data & 511u,
 							bitfieldExtract(light_data, 9, 9),
 							bitfieldExtract(light_data, 18, 9)
-						) + ll_offset;
+						) + ll_offset);
 
 						immut float16_t offset_intensity = float16_t(bitfieldExtract(light_data, 27, 4)) + float16_t(0.5);
 
@@ -402,11 +402,11 @@ void main() {
 					if (collab_inv_i < global_len) {
 						immut uint light_data = ll.data[collab_inv_i];
 
-						inv_pe_light = f16vec3(
+						inv_pe_light = f16vec3(vec3(
 							light_data & 511u,
 							bitfieldExtract(light_data, 9, 9),
 							bitfieldExtract(light_data, 18, 9)
-						) + ll_offset;
+						) + ll_offset);
 
 						inv_offset_intensity = float16_t(bitfieldExtract(light_data, 27, 4)) + float16_t(0.5);
 
