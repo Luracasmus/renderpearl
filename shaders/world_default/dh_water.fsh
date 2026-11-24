@@ -94,7 +94,7 @@ void main() {
 				immut f16vec3 abs_pe = abs(f16vec3(pe));
 				immut float16_t chebyshev_dist = max3(abs_pe.x, abs_pe.y, abs_pe.z);
 
-				immut f16vec3 rcp_color = float16_t(1.0) / max(color.rgb, float16_t(1.0e-4));
+				immut f16vec3 rcp_color = float16_t(1.0) / max(color.rgb, float16_t(1.0e-3));
 
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
 

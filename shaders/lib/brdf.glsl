@@ -260,8 +260,9 @@ BrdfReceiver create_brdf_rec(
 	// Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886".
 	immut float16_t n_dot_v = max(saturate(dot(normal, -obs_to_rec_dir)), float16_t(0.0001));
 
-	immut f16vec3 rcp_color = float16_t(1.0) / max(color, float16_t(1.0e-4));
-	immut f16vec3 specular_multiplier = (float16_t(1.0) + (f0 / f_ab_sum(roughness, n_dot_v) - f0)) * rcp_color;
+	immut f16vec3 specular_multiplier = (
+		float16_t(1.0) + (f0 / f_ab_sum(roughness, n_dot_v) - f0)
+	) / max(color, float16_t(1.0e-3));
 
 	return BrdfReceiver(
 		reflects_diffuse,
