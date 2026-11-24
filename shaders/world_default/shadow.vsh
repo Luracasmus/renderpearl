@@ -1,5 +1,7 @@
 #include "/prelude/core.glsl"
 
+#ifdef SM_ENABLED
+#endif
 #ifdef SM_ENTITY
 #endif
 #ifdef SM_PLR
@@ -11,7 +13,9 @@
 	#define TEXTURED
 #endif
 
-#include "/lib/mmul.glsl"
+#if defined TERRAIN || defined SM_ACTIVE
+	#include "/lib/mmul.glsl"
+#endif
 
 #ifdef TERRAIN
 	uniform bool LLCollect;
