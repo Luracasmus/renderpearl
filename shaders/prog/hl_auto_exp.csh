@@ -1,6 +1,6 @@
 #include "/prelude/core.glsl"
 
-/* Automatic Exposure Interpolation & SSBO Clearing */
+/* Automatic Exposure Interpolation & Hand Light Packing */
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 const ivec3 workGroups = ivec3(1, 1, 1);
@@ -29,16 +29,14 @@ const ivec3 workGroups = ivec3(1, 1, 1);
 #if AUTO_EXP
 	#include "/buf/auto_exp.glsl"
 
-	uniform bool autoExpReset;
+	uniform bool autoExpSample;
 	uniform int packedView;
 	uniform float frameTime;
 #endif
 
 void main() {
-	// TODO: Test merging this into prepare.csh
-
 	#if HAND_LIGHT
-		if (handLightPackedLR != 0) {
+		if (subgroupBroadcastFirst(handLightPackedLR != 0)) {
 			immut u16vec2 hand_light_lr = unpackUint2x16(uint(handLightPackedLR));
 			immut bvec2 active_lr = notEqual(hand_light_lr, u16vec2(0u));
 
@@ -78,7 +76,7 @@ void main() {
 			saturate(exp2(float16_t(-AUTO_EXP_SPEED) * float16_t(frameTime)))
 		), float16_t(0.0));
 
-		if (autoExpReset) {
+		if (subgroupBroadcastFirst(autoExpSample)) {
 			auto_exp.sum_log_luma = 0;
 		}
 	#endif

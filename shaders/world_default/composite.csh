@@ -3,6 +3,11 @@
 layout(local_size_x = 8, local_size_y = 16, local_size_z = 1) in; // Keep synced with composite2_a.csh `composite_wg_size`.
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
+#ifndef SMAA
+	uniform layout(rgba8) writeonly restrict image2D colorimg0;
+
+	readonly
+#endif
 uniform layout(rgba16f) restrict image2D colorimg1;
 
 #if AUTO_EXP
@@ -20,6 +25,10 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 #endif
 
 #include "/lib/tonemap.glsl"
+
+#if (VL != 0 && defined SM_ACTIVE) || !defined SMAA
+	#include "/lib/srgb.glsl"
+#endif
 
 #if VL != 0 && defined SM_ACTIVE
 	#include "/lib/mv_inv.glsl"
@@ -51,7 +60,6 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	#endif
 
 	#include "/lib/mmul.glsl"
-	#include "/lib/srgb.glsl"
 	#include "/lib/skylight.glsl"
 	#include "/lib/sm/sample.glsl"
 	#include "/lib/sm/distort.glsl"
@@ -256,5 +264,11 @@ void main() {
 		}
 	#endif
 
-	imageStore(colorimg1, texel, f16vec4(tonemap(color), 0.0));
+	color = tonemap(color);
+
+	#ifdef SMAA
+		imageStore(colorimg1, texel, f16vec4(color, 0.0));
+	#else
+		imageStore(colorimg0, texel, f16vec4(srgb(color), 0.0));
+	#endif
 }
