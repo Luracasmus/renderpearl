@@ -46,14 +46,12 @@ in
 	#include "/lib/skylight.glsl"
 #endif
 
-#if defined SM_ACTIVE || !(defined NETHER || defined END)
+#ifdef SM_ACTIVE
 	uniform vec3 shadowLightDirectionPlr;
-	#include "/lib/light/shadows.glsl"
+	uniform mat4 shadowModelView;
 
-	#ifdef SM_ACTIVE
-		uniform mat4 shadowModelView;
-		#include "/lib/sm/distort.glsl"
-	#endif
+	#include "/lib/sm/distort.glsl"
+	#include "/lib/light/shadows.glsl"
 #endif
 
 #if defined END || defined SM_ACTIVE
@@ -534,7 +532,7 @@ void main() {
 				color.a *= float16_t(1.0/2047.0) * float16_t(packed_alpha);
 			#endif
 
-			#if defined SM_ACTIVE || !(defined NETHER || defined END)
+			#ifdef SM_ACTIVE
 				immut f16vec3 sky_light_color = skylight();
 			#else
 				const f16vec3 sky_light_color = f16vec3(0.0);
@@ -542,7 +540,7 @@ void main() {
 
 			light += ao * non_block_light(sky_light_color, block_sky_light.y);
 
-			#if defined SM_ACTIVE || !(defined NETHER || defined END)
+			#ifdef SM_ACTIVE
 				immut f16vec3 n_w_shadow_light = f16vec3(shadowLightDirectionPlr);
 
 				#ifdef NO_NORMAL
@@ -553,11 +551,7 @@ void main() {
 					immut float16_t tex_n_dot_l = dot(rec.normal, n_w_shadow_light);
 				#endif
 
-				#ifdef SM_ACTIVE
-					sample_shadow(light, sky_light_color, face_n_dot_l, tex_n_dot_l, n_w_shadow_light, rec, chebyshev_dist, v.s_distortion, w_face_normal, pf);
-				#else
-					sample_shadow(light, sky_light_color, face_n_dot_l, tex_n_dot_l, n_w_shadow_light, rec);
-				#endif
+				sample_shadow(light, chebyshev_dist, v.s_distortion, sky_light_color, face_n_dot_l, tex_n_dot_l, n_w_shadow_light, w_face_normal, pf, rec);
 			#endif
 
 			#if HAND_LIGHT != 0
