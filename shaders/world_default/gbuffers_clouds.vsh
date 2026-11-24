@@ -1,7 +1,5 @@
 #include "/prelude/core.glsl"
 
-out gl_PerVertex { vec4 gl_Position; };
-
 out VertexData { layout(location = 0, component = 0) flat uint tint; } v;
 
 uniform mat4 gbufferProjection, gbufferProjectionInverse;

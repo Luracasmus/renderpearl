@@ -1,7 +1,5 @@
 #include "/prelude/core.glsl"
 
-out gl_PerVertex { vec4 gl_Position; };
-
 #ifdef SM_ENTITY
 #endif
 #ifdef SM_PLR

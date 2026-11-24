@@ -1,7 +1,5 @@
 #include "/prelude/core.glsl"
 
-out gl_PerVertex { vec4 gl_Position; };
-
 #include "/lib/mv_inv.glsl"
 #include "/lib/mmul.glsl"
 #include "/lib/srgb.glsl"

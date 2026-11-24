@@ -9,8 +9,6 @@
 #ifdef SM
 #endif
 
-out gl_PerVertex { vec4 gl_Position; };
-
 #include "/lib/mmul.glsl"
 #include "/lib/luminance.glsl"
 #include "/lib/norm_light_level.glsl"
