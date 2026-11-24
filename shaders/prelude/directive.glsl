@@ -40,7 +40,7 @@
 const float shadowDistanceRenderMul = 0.85;
 const float voxelDistance = 15.0;
 
-#if defined SM_ENABLED && !(defined END || defined NETHER)
+#if !defined NETHER && !defined END
 	#define SM_ACTIVE
 	const int shadowMapResolution = SM_RES;
 #else
