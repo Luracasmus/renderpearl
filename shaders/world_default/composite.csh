@@ -86,7 +86,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 
 			// immut float16_t density = float16_t(-0.02) * float16_t(fogState.y);
 
-			for (uint i = 0u; i < uint(VL_SAMPLES); ++i) {
+			for (uint i = 0u; i < uint(VL_SAMPLES); i++) {
 				immut float dist = ign(vec2(texel), float(frameCounter + i)); // pow(..., 1.5) ?
 				immut vec3 sample_pf = mix(pf_zero, pf, dist);
 

@@ -57,7 +57,7 @@ f16vec3 get_hand_light(
 					bool occluded = false;
 				#endif
 
-				for (uint i = 0u; i < steps; ++i) {
+				for (uint i = 0u; i < steps; i++) {
 					ray_halfclip += step;
 
 					immut f16vec2 ray_screen_undiv_xy = fma(ray_halfclip.ww, f16vec2(0.5), ray_halfclip.xy);

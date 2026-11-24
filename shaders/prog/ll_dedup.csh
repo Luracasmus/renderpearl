@@ -77,7 +77,7 @@ void main() {
 
 			// Remove our light if there is another one at the same position with a higher color value,
 			// or there is an identical light at a lower index.
-			for (uint16_t j = uint16_t(0u); unique && j < len; ++j) {
+			for (uint16_t j = uint16_t(0u); unique && j < len; j++) {
 				immut uint16_t other_color = sh.index_color[j];
 
 				if (sh.index_data[j] == data && ((other_color > color) || ((other_color == color) && (j < i)))) {

@@ -3,7 +3,7 @@ float16_t gen_tex_ao(float16_t srgb_luma, float16_t avg_srgb_luma) {
 }
 
 // Must run in uniform control flow.
-vec3 ao_dir(f16vec3 face_normal, vec3 pos, float linear_ao) {
+f16vec3 ao_dir(f16vec3 face_normal, vec3 pos, float linear_ao) {
 	immut vec4 pos_ao = vec4(pos, linear_ao);
 	immut vec4 pos_ao_ddx = dFdxCoarse(pos_ao);
 	immut vec4 pos_ao_ddy = dFdyCoarse(pos_ao);

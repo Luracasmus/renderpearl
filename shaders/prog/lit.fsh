@@ -187,7 +187,7 @@ void main() {
 			immut mat3 w_tbn = mat3(w_face_tangent, vec3(cross(w_face_tangent, w_face_normal) * handedness), w_face_normal);
 
 			#if NORMALS == 1 && defined MC_NORMAL_MAP
-				immut f16vec3 w_tex_normal = f16vec3(w_tbn * sample_normal(texture(normals, v.coord).rg));
+				immut f16vec3 w_tex_normal = f16vec3(w_tbn * sample_normal(texture(normals, v.coord).rg)); // TODO: What happens if the normals are of the wrong length?
 			#else
 				immut f16vec3 w_tex_normal = f16vec3(w_tbn * gen_normal(gtexture, tint, v.coord, mid_coord, v.uint2x16_face_tex_size, srgb_luma));
 			#endif
@@ -451,13 +451,13 @@ void main() {
 						// Now we actually check the lights per invocation, skipping the ones which are outside the BBs.
 
 						immut uvec4 in_bb_ballot = subgroupBallot(inv_is_in_bb);
-						immut uint16_t lsb = uint16_t(subgroupBallotFindLSB(in_bb_ballot));
-						immut uint16_t msb = uint16_t(subgroupBallotFindMSB(in_bb_ballot));
+						immut uint8_t lsb = uint8_t(subgroupBallotFindLSB(in_bb_ballot));
+						immut uint8_t msb = uint8_t(subgroupBallotFindMSB(in_bb_ballot));
 
 						if (sg_quad_uniform) {
 							// Vectorize light sampling to work on chunks of 4, using quad operations.
 
-							for (uint16_t i0 = lsb; i0 <= msb; i0 += uint16_t(4u)) {
+							for (uint16_t i0 = uint16_t(lsb); i0 <= uint16_t(msb); i0 += uint16_t(4u)) {
 								immut bvec4 chunk_in_bb = bvec4(
 									subgroupBallotBitExtract(in_bb_ballot, i0),
 									subgroupBallotBitExtract(in_bb_ballot, i0 + uint16_t(1u)),
@@ -466,7 +466,7 @@ void main() {
 								); // These are always true when `i + ?? == lsb` or `i + ?? == msb`.
 
 								if (any(chunk_in_bb)) {
-									immut uint8_t i = i0 + quad_inv_id;
+									immut uint8_t i = uint8_t(i0) + quad_inv_id;
 
 									immut float16_t offset_intensity = float16_t(subgroupShuffle(inv_offset_intensity, i));
 									immut f16vec3 pe_light = f16vec3(subgroupShuffle(inv_pe_light, i));
@@ -485,7 +485,7 @@ void main() {
 								}
 							}
 						} else {
-							for (uint16_t i = lsb; i <= msb; ++i) {
+							for (uint8_t i = lsb; i <= msb; i++) {
 								if (subgroupBallotBitExtract(in_bb_ballot, i)) { // This is always true when `i == lsb` or `i == msb`.
 									immut float16_t offset_intensity = float16_t(SG_BROADCAST_NONCONST(inv_offset_intensity, i));
 									immut f16vec3 pe_light = f16vec3(SG_BROADCAST_NONCONST(inv_pe_light, i));

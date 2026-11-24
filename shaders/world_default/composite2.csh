@@ -61,7 +61,7 @@ uniform int packedView;
 	vec2 search_diag_1(vec2 coord, vec2 dir, out vec2 end, vec2 texel_size) {
 		float w = 1.0;
 		int z;
-		for (z = -1; z < SMAA_SEARCH_DIAG - 1 && w > 0.9; ++z) {
+		for (z = -1; z < SMAA_SEARCH_DIAG - 1 && w > 0.9; z++) {
 			coord.xy += dir * texel_size;
 
 			end = textureLod(edgeS, coord.xy, 0.0).rg;
@@ -75,7 +75,7 @@ uniform int packedView;
 
 		float w = 1.0;
 		int z;
-		for (z = -1; z < SMAA_SEARCH_DIAG - 1 && w > 0.9; ++z) {
+		for (z = -1; z < SMAA_SEARCH_DIAG - 1 && w > 0.9; z++) {
 			coord.xy += dir * texel_size;
 
 			end = textureLod(edgeS, coord.xy, 0.0).rg;

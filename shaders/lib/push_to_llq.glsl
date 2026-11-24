@@ -22,7 +22,7 @@ void push_to_llq(uvec3 offset_floor_pf, f16vec3 srgb_avg_col, uint intensity, bo
 		uint shuffles = subgroupBallotFindMSB(sg_ballot) - subgroupBallotFindLSB(sg_ballot);
 
 		// Shuffle down through all active invocations.
-		for (uint i = 1u; i <= shuffles; ++i) {
+		for (uint i = 1u; i <= shuffles; i++) {
 			immut uint other_packed_pf = subgroupShuffleDown(packed_pf, i);
 			immut uint16_t other_packed_color = uint16_t(subgroupShuffleDown(packed_color, i));
 
@@ -44,7 +44,7 @@ void push_to_llq(uvec3 offset_floor_pf, f16vec3 srgb_avg_col, uint intensity, bo
 			shuffles = subgroupBallotFindMSB(sg_ballot) - subgroupBallotFindLSB(sg_ballot);
 
 			// Shuffle up through all remaining invocations.
-			for (uint i = 1u; i <= shuffles; ++i) {
+			for (uint i = 1u; i <= shuffles; i++) {
 				immut uint other_packed_pf = subgroupShuffleUp(packed_pf, i);
 
 				// We know that if an invocation with the same position at a lower index is still active,
