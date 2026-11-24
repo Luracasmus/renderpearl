@@ -59,13 +59,13 @@ void main() {
 	immut bvec2 edges = greaterThanEqual(delta.xy, f16vec2(SMAA_THRESHOLD*SMAA_THRESHOLD));
 
 	if (any(edges)) {
-		const lowp f16vec2 delta_max = max3(
+		const f16vec2 delta_max = max3(
 			delta,
-			vec2(
+			f16vec2(
 				sq_redmean(color, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(1, 0)).rgb))), // Right.
 				sq_redmean(color, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(0, 1)).rgb))) // Bottom.
 			),
-			vec2(
+			f16vec2(
 				sq_redmean(left, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(-2, 0)).rgb))), // Left-left.
 				sq_redmean(top, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(0, -2)).rgb))) // Top-top.
 			)
