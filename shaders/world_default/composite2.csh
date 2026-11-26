@@ -11,7 +11,7 @@ uniform int packedView;
 
 /*
 	SMAA Blending Weight Calculation
-	https://github.com/Luracasmus/smaa-mc
+	https://github.com/Luracasmus/grindstone
 
 	Copyright (C) 2013 Jorge Jimenez (jorge@iryoku.com)
 	Copyright (C) 2013 Jose I. Echevarria (joseignacioechevarria@gmail.com)

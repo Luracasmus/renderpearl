@@ -10,7 +10,7 @@ uniform layout(rg8) restrict writeonly image2D edge;
 
 /*
 	SMAA Color (redmean) Edge Detection
-	https://github.com/Luracasmus/smaa-mc
+	https://github.com/Luracasmus/grindstone
 
 	Copyright (C) 2013 Jorge Jimenez (jorge@iryoku.com)
 	Copyright (C) 2013 Jose I. Echevarria (joseignacioechevarria@gmail.com)

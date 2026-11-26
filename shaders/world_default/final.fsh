@@ -4,9 +4,9 @@
 layout(location = 0) out IO_F16VEC3 final;
 layout(depth_unchanged) out float gl_FragDepth;
 
-#include "/lib/srgb.glsl"
-
 #ifdef FFX_CAS
+	#include "/lib/srgb.glsl"
+
 	#ifdef SMAA
 		#define CAS_SAMPLER tempColorLinearS
 	#else
@@ -17,10 +17,19 @@ layout(depth_unchanged) out float gl_FragDepth;
 
 	#include "/lib/post/ffx_cas.glsl"
 #elif defined SMAA
+	#include "/lib/srgb.glsl"
+
+	uniform int packedView;
 	uniform sampler2D colortex0;
 	#include "/lib/post/smaa_nbh_blend.glsl"
-#else
+#elif VL != 0 && defined SM_ACTIVE
 	uniform sampler2D tempColorSrgbS;
+#else
+	#include "/lib/srgb.glsl"
+
+	uniform int packedView;
+	uniform sampler2D colortex0;
+	#include "/lib/post/color.glsl"
 #endif
 
 void main() {
@@ -32,8 +41,10 @@ void main() {
 		#elif defined SMAA
 			// This is done in `composite3` instead if CAS is also enabled.
 			srgb(smaa_nbh_blend(colortex0, texel))
-		#else
+		#elif VL != 0 && defined SM_ACTIVE
 			f16vec3(texelFetch(tempColorSrgbS, texel, 0).rgb)
+		#else
+			srgb(process_color(f16vec3(texelFetch(colortex0, texel, 0).rgb), texel))
 		#endif
 	);
 }

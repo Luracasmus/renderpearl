@@ -28,6 +28,9 @@
 	IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+
+uniform sampler2D blendWeightS;
+
 f16vec3 smaa_nbh_blend(sampler2D colortex, i16vec2 texel) {
 	immut vec2 texel_size = 1.0 / vec2(unpackUint2x16(uint(packedView)));
 	immut vec2 coord = fma(vec2(texel), texel_size, 0.5 * texel_size);

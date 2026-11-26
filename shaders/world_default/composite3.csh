@@ -2,12 +2,12 @@
 
 /* SMAA Neighborhood Blending (if FFX CAS is enabled) */
 
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in; // TODO: Retune.
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 uniform layout(rgba16f) restrict writeonly image2D tempColorLinear;
 
-uniform sampler2D blendWeightS, colortex0;
+uniform sampler2D colortex0;
 uniform int packedView;
 
 #include "/lib/post/smaa_nbh_blend.glsl"
