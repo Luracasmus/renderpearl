@@ -8,7 +8,7 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 #include "/lib/mv_inv.glsl"
 uniform int packedView;
 uniform mat4 gbufferProjectionInverse;
-uniform layout(rgba16f) writeonly restrict image2D colorimg1;
+uniform layout(rgba16f) writeonly restrict image2D colorimg0;
 
 #ifdef END
 	uniform float endFlashIntensity;
@@ -72,5 +72,5 @@ void main() {
 		#endif
 	#endif
 
-	imageStore(colorimg1, texel, vec4(color, 0.0));
+	imageStore(colorimg0, texel, vec4(color, 0.0));
 }

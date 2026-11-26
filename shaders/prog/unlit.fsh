@@ -9,12 +9,12 @@
 	#define TINTED
 #endif
 
-/* RENDERTARGETS: 1 */
+/* RENDERTARGETS: 0 */
 
 #ifdef TRANSLUCENT // Requires `TINTED`
-	layout(location = 0) out IO_F16VEC4 colortex1;
+	layout(location = 0) out IO_F16VEC4 colortex0;
 #else
-	layout(location = 0) out IO_F16VEC3 colortex1;
+	layout(location = 0) out IO_F16VEC3 colortex0;
 
 	#ifdef CLRWL
 		layout(depth_greater) out float gl_FragDepth;
@@ -56,14 +56,14 @@ void main() {
 			color.rgb = unpack_un11_11_10(v.tint) * linear(color.rgb);
 
 			#ifdef TRANSLUCENT
-				colortex1 = color;
+				colortex0 = color;
 			#else
-				colortex1 = color.rgb;
+				colortex0 = color.rgb;
 			#endif
 		#elif defined TINTED
 			#ifdef TRANSLUCENT
 				immut f16vec4 color = f16vec4(texture(gtexture, v.coord));
-				colortex1 = f16vec4(unpackUnorm4x8(v.tint)) * f16vec4(linear(color.rgb), color.a);
+				colortex0 = f16vec4(unpackUnorm4x8(v.tint)) * f16vec4(linear(color.rgb), color.a);
 
 				// TODO: Maybe write the ignore flag here too, for the chunk debug lines.
 			#else
@@ -74,7 +74,7 @@ void main() {
 					immut f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
 				#endif
 
-				colortex1 = unpack_un11_11_10(v.tint) * linear(color.rgb);
+				colortex0 = unpack_un11_11_10(v.tint) * linear(color.rgb);
 			#endif
 		#else
 			/* // Currently unused.
@@ -87,13 +87,13 @@ void main() {
 			*/
 			immut f16vec3 color = f16vec3(texture(gtexture, v.coord).rgb);
 
-			colortex1 = linear(color.rgb);
+			colortex0 = linear(color.rgb);
 		#endif
 	#else // Has to be `TINTED`.
 		#ifdef TRANSLUCENT
-			colortex1 = f16vec4(unpackUnorm4x8(v.tint));
+			colortex0 = f16vec4(unpackUnorm4x8(v.tint));
 		#else
-			colortex1 = unpack_un11_11_10(v.tint);
+			colortex0 = unpack_un11_11_10(v.tint);
 		#endif
 	#endif
 }

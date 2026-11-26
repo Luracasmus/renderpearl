@@ -1,7 +1,7 @@
 #include "/prelude/core.glsl"
 
-/* RENDERTARGETS: 1 */
-layout(location = 0) out IO_F16VEC4 colortex1;
+/* RENDERTARGETS: 0 */
+layout(location = 0) out IO_F16VEC4 colortex0;
 layout(depth_greater) out float gl_FragDepth;
 
 uniform sampler2D depthtex0;
@@ -120,7 +120,7 @@ void main() {
 				);
 			#endif
 
-			colortex1 = color * f16vec4(
+			colortex0 = color * f16vec4(
 				light,
 				// Fade in where regular translucents fade out, and then fade out again at DH render distance. TODO: It might be possible to make the transition smoother.
 				// TODO: Skip shading and stuff far inside the regular RD.

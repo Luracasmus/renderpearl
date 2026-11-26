@@ -9,8 +9,8 @@
 
 // TODO
 
-/* RENDERTARGETS: 1,2 */
-layout(location = 0) out vec4 colortex1;
+/* RENDERTARGETS: 0,2 */
+layout(location = 0) out vec4 colortex0;
 
 #ifdef SM_ACTIVE
 	layout(location = 1) out uvec4 colortex2;
@@ -30,7 +30,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	immut vec3 color = linear(parameters.sampledColour.rgb * parameters.tinting.rgb);
 	immut vec2 block_sky_light = fma(parameters.lightMap, vec2(16.0/15.0), vec2(-1.0/32.0));
 
-	colortex1 = vec4(color, block_sky_light.x);
+	colortex0 = vec4(color, block_sky_light.x);
 
 	{
 		// From cortex (https://github.com/MCRcortex):

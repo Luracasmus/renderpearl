@@ -3,12 +3,12 @@
 layout(local_size_x = 8, local_size_y = 16, local_size_z = 1) in; // Keep synced with composite2_a.csh `composite_wg_size`.
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
-#ifndef SMAA
-	uniform layout(rgba8) writeonly restrict image2D colorimg0;
-
-	readonly
+#if defined SMAA || defined FFX_CAS
+	uniform layout(rgba16f) restrict image2D colorimg0;
+#else
+	uniform layout(rgba16f) restrict readonly image2D colorimg0;
+	uniform layout(rgba8) restrict writeonly image2D tempColorSrgb;
 #endif
-uniform layout(rgba16f) restrict image2D colorimg1;
 
 #if AUTO_EXP
 	#include "/buf/auto_exp.glsl"
@@ -24,7 +24,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 	uniform int packedView;
 #endif
 
-#include "/lib/tonemap.glsl"
+#include "/lib/post/tonemap.glsl"
 
 #if (VL != 0 && defined SM_ACTIVE) || !defined SMAA
 	#include "/lib/srgb.glsl"
@@ -118,7 +118,7 @@ uniform layout(rgba16f) restrict image2D colorimg1;
 
 void main() {
 	immut i16vec2 texel = i16vec2(gl_GlobalInvocationID.xy);
-	f16vec3 color = f16vec3(imageLoad(colorimg1, texel).rgb);
+	f16vec3 color = f16vec3(imageLoad(colorimg0, texel).rgb);
 
 	#if VL != 0 && defined SM_ACTIVE
 		immut float depth = texelFetch(depthtex0, texel, 0).r;
@@ -266,9 +266,9 @@ void main() {
 
 	color = tonemap(color);
 
-	#ifdef SMAA
-		imageStore(colorimg1, texel, f16vec4(color, 0.0));
+	#if defined SMAA || defined FFX_CAS
+		imageStore(colorimg0, texel, f16vec4(color, 0.0));
 	#else
-		imageStore(colorimg0, texel, f16vec4(srgb(color), 0.0));
+		imageStore(tempColorSrgb, texel, f16vec4(srgb(color), 0.0));
 	#endif
 }

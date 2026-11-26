@@ -1,7 +1,7 @@
 #include "/prelude/core.glsl"
 
-/* RENDERTARGETS: 1 */
-layout(location = 0) out IO_F16VEC4 colortex1;
+/* RENDERTARGETS: 0 */
+layout(location = 0) out IO_F16VEC4 colortex0;
 layout(depth_unchanged) out float gl_FragDepth;
 
 #include "/lib/mv_inv.glsl"
@@ -68,7 +68,7 @@ void main() {
 	immut f16vec3 skylight_col = skylight();
 	immut f16vec3 color = float16_t(0.25) * skylight_col + luminance(skylight_col) * float16_t(0.5) * unpack_un11_11_10(v.tint);
 
-	colortex1 = f16vec4(
+	colortex0 = f16vec4(
 		mix(mix(color, fog_col, float16_t(0.25)), fog_col, fog),
 		min(dist * float16_t(0.01), float16_t(0.75)) * (float16_t(1.0) - fog) * alpha
 	);

@@ -7,8 +7,8 @@
 #include "/prelude/directive.glsl"
 #include "/prelude/lib.glsl"
 
-/* RENDERTARGETS: 1 */
-layout(location = 0) out vec4 colortex1;
+/* RENDERTARGETS: 0 */
+layout(location = 0) out vec4 colortex0;
 
 #include "/lib/srgb.glsl"
 
@@ -20,5 +20,5 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 
 	// TODO
 
-	colortex1 = color * dot(block_sky_light, vec2(1.0));
+	colortex0 = color * dot(block_sky_light, vec2(1.0));
 }

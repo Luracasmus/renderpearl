@@ -5,7 +5,7 @@
 layout(local_size_x = 16, local_size_y = 8, local_size_z = 1) in;
 const vec2 workGroupsRender = vec2(1.0, 1.0);
 
-uniform sampler2D colortex1;
+uniform sampler2D colortex0;
 uniform layout(rg8) restrict writeonly image2D edge;
 
 /*
@@ -45,9 +45,9 @@ uniform layout(rg8) restrict writeonly image2D edge;
 void main() {
 	immut i16vec2 texel = i16vec2(gl_GlobalInvocationID.xy);
 
-	immut f16vec3 color = srgb(f16vec3(texelFetch(colortex1, texel, 0).rgb));
-	immut f16vec3 left = srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(-1, 0)).rgb));
-	immut f16vec3 top = srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(0, -1)).rgb));
+	immut f16vec3 color = srgb(f16vec3(texelFetch(colortex0, texel, 0).rgb));
+	immut f16vec3 left = srgb(f16vec3(texelFetchOffset(colortex0, texel, 0, ivec2(-1, 0)).rgb));
+	immut f16vec3 top = srgb(f16vec3(texelFetchOffset(colortex0, texel, 0, ivec2(0, -1)).rgb));
 
 	immut f16vec2 delta = f16vec2(
 		sq_redmean(color, left),
@@ -62,12 +62,12 @@ void main() {
 		const f16vec2 delta_max = max3(
 			delta,
 			f16vec2(
-				sq_redmean(color, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(1, 0)).rgb))), // Right.
-				sq_redmean(color, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(0, 1)).rgb))) // Bottom.
+				sq_redmean(color, srgb(f16vec3(texelFetchOffset(colortex0, texel, 0, ivec2(1, 0)).rgb))), // Right.
+				sq_redmean(color, srgb(f16vec3(texelFetchOffset(colortex0, texel, 0, ivec2(0, 1)).rgb))) // Bottom.
 			),
 			f16vec2(
-				sq_redmean(left, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(-2, 0)).rgb))), // Left-left.
-				sq_redmean(top, srgb(f16vec3(texelFetchOffset(colortex1, texel, 0, ivec2(0, -2)).rgb))) // Top-top.
+				sq_redmean(left, srgb(f16vec3(texelFetchOffset(colortex0, texel, 0, ivec2(-2, 0)).rgb))), // Left-left.
+				sq_redmean(top, srgb(f16vec3(texelFetchOffset(colortex0, texel, 0, ivec2(0, -2)).rgb))) // Top-top.
 			)
 		);
 

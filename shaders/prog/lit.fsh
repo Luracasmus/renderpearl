@@ -1,11 +1,11 @@
 #include "/prelude/core.glsl"
 
-/* RENDERTARGETS: 1 */
+/* RENDERTARGETS: 0 */
 
 #ifdef TRANSLUCENT
-	layout(location = 0) out IO_F16VEC4 colortex1;
+	layout(location = 0) out IO_F16VEC4 colortex0;
 #else
-	layout(location = 0) out IO_F16VEC3 colortex1;
+	layout(location = 0) out IO_F16VEC3 colortex0;
 #endif
 
 #ifdef CLRWL
@@ -605,7 +605,7 @@ void main() {
 					color.a *= float16_t(1.0) - vanilla_fog(pe + mvInv3, float16_t(far)); // TODO: Look into if this should be pe or pf.
 				#endif
 
-				colortex1 = color;
+				colortex0 = color;
 			#else
 				#ifdef NETHER
 					immut f16vec3 srgb_fog_col = f16vec3(fogColor);
@@ -618,7 +618,7 @@ void main() {
 
 				color.rgb = linear(mix(srgb(color.rgb), srgb_fog_col, vanilla_fog(pe, float16_t(far))));
 
-				colortex1 = color.rgb;
+				colortex0 = color.rgb;
 			#endif
 		}
 	}

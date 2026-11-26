@@ -2,14 +2,14 @@
 
 // TODO
 
-/* RENDERTARGETS: 1,2 */
+/* RENDERTARGETS: 0,2 */
 #ifdef SM_ACTIVE
 	layout(location = 1) out uvec4 colortex2;
 #else
 	layout(location = 1) out uvec3 colortex2;
 #endif
 
-layout(location = 0) out IO_F16VEC4 colortex1;
+layout(location = 0) out IO_F16VEC4 colortex0;
 layout(depth_unchanged) out float gl_FragDepth;
 
 #include "/lib/luminance.glsl"
@@ -72,6 +72,6 @@ void main() {
 			colortex2.r = floatBitsToUint(v.s_distortion);
 		#endif
 
-		colortex1 = f16vec4(color.rgb, unpackFloat2x16(v.float2x16_light).x);
+		colortex0 = f16vec4(color.rgb, unpackFloat2x16(v.float2x16_light).x);
 	}
 }

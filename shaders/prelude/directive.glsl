@@ -18,34 +18,30 @@
 
 	const bool colortex0Clear = true;
 	const vec4 colortex0ClearColor = vec4(0.0, 0.0, 0.0, 0.0);
-	const int colortex0Format = RGBA8;
-
-	const bool colortex1Clear = true;
-	const vec4 colortex1ClearColor = vec4(0.0, 0.0, 0.0, 0.0);
-	const int colortex1Format = RGBA16F;
+	const int colortex0Format = RGBA16F;
 */
-
-#ifdef VULKAN
-	// RGB565 isn't supported.
-
-	/*
-		const int shadowcolor0Format = RGBA8;
-	*/
-#else
-	/*
-		const int shadowcolor0Format = RGB565;
-	*/
-#endif
-
 const float shadowDistanceRenderMul = 0.85;
 const float voxelDistance = 15.0;
 
 #if !defined NETHER && !defined END
 	#define SM_ACTIVE
 	const int shadowMapResolution = SM_RES;
+
+	#ifdef VULKAN
+		// RGB565 isn't supported.
+
+		/*
+			const int shadowcolor0Format = RGB10_A2;
+		*/
+	#else
+		/*
+			const int shadowcolor0Format = RGB565;
+		*/
+	#endif
 #else
 	/*
 		const int shadowMapResolution = 1;
+		const int shadowcolor0Format = R8;
 	*/
 #endif
 
